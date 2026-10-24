@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "estimation-format"
+dynamic = ["version"]
+description = "Reference validator, writer and redactor for the estimation format: one JSON record per statistical estimation run"
+readme = "README.md"
+license = "MIT AND CC0-1.0"  # CC0: the schemas, catalog and example records in schema/
+license-files = ["LICENSE", "schema/LICENSE"]
+authors = [{ name = "Ted Matherly" }]
+requires-python = ">=3.10"
+keywords = [
+  "econometrics", "statistics", "reproducibility", "provenance", "json schema",
+  "regression", "fixed effects", "replication",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+# No required dependencies: the core checks, digest and redactor use only the standard library
+dependencies = []
+
+[project.optional-dependencies]
+# JSON Schema validation against the core and the profiles; without it, built-in checks
+jsonschema = ["jsonschema>=4.18"]
+# spilled matrices and tables as Parquet attachments; without it, they go to JSON
+parquet = ["pyarrow>=12"]
+test = ["pytest>=7", "jsonschema>=4.18", "pyarrow>=12", "numpy>=1.25"]
+
+[project.scripts]
+estimation = "estimation_format.records:main"
+
+[project.urls]
+Homepage = "https://github.com/estimation-format/estimation"
+Specification = "https://github.com/estimation-format/estimation/blob/main/spec/estimation.md"
+Schemas = "https://estimation-format.github.io/estimation/schema/"
+Issues = "https://github.com/estimation-format/estimation/issues"
+
+[tool.setuptools]
+# schema/ at the top of the repository is the one copy; the wheel carries it as
+# estimation_format/schema, where records.PACKAGED_SCHEMAS finds it
+packages = ["estimation_format", "estimation_format.schema"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+"estimation_format.schema" = "schema"
+
+[tool.setuptools.package-data]
+"estimation_format.schema" = ["*.json", "LICENSE", "profiles/*.json", "examples/*.json"]
+
+[tool.setuptools.dynamic]
+version = { attr = "estimation_format.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

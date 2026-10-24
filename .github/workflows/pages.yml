@@ -1,0 +1,43 @@
+# Publishes schema/ at https://estimation-format.github.io/estimation/schema/, the schemas'
+# $id base. Needs Settings > Pages > Source: "GitHub Actions".
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["schema/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the site
+        run: |
+          mkdir -p _site
+          cp -r schema _site/schema
+          cat > _site/index.html <<'EOF'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>estimation format schemas</title>
+          <p>JSON Schemas for the <code>estimation</code> format:
+          <a href="schema/catalog.json">catalog.json</a>.
+          Specification and source: <a href="https://github.com/estimation-format/estimation">github.com/estimation-format/estimation</a>.</p>
+          EOF
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+      - id: deployment
+        uses: actions/deploy-pages@v4

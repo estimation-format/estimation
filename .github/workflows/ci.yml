@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install "ruff==0.17.1"
+      - run: ruff check --output-format=github .
+      - run: ruff format --check .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e '.[test]'
+      - run: pytest -q
+
+  minimal:
+    # No optional dependencies: the built-in checks and the JSON fallback for spilling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install -e . pytest numpy   # numpy: the tests build records from arrays
+      - run: pytest -q
+
+  wheel:
+    # The wheel must carry schema/ as estimation_format/schema and both licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install build
+      - run: python -m build
+      - name: Check the wheel's contents
+        run: |
+          python - <<'EOF'
+          import glob, json, zipfile
+          whl = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
+          names = set(whl.namelist())
+          catalog = json.loads(whl.read("estimation_format/schema/catalog.json"))
+          files = [catalog["core"]["file"], *(p["file"] for p in catalog["profiles"])]
+          files += [x for e in [catalog["core"], *catalog["profiles"]] for x in e["examples"]]
+          missing = [f for f in files if f"estimation_format/schema/{f}" not in names]
+          assert not missing, f"missing from the wheel: {missing}"
+          assert "estimation_format/schema/LICENSE" in names
+          assert any(n.endswith("licenses/LICENSE") for n in names)
+          print(len(files), "schema files in the wheel")
+          EOF
+      - name: The installed package finds its schemas
+        run: |
+          pip install dist/*.whl 'jsonschema>=4.18'
+          cd /tmp && estimation validate "$(python -c 'import estimation_format as ef; print(ef.PACKAGED_SCHEMAS)')"/examples/*.json
