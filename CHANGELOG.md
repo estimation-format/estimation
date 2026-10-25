@@ -8,6 +8,8 @@
 - Draft profiles for generalized linear models: `glm/0.1` (standard; Stata logit/probit/
   poisson/glm, ppmlhdfe, R glm, fixest feglm/fepois, statsmodels, pyfixest) and the tool
   profile `ppmlhdfe/0.1`, with example records and pages in `spec/profiles/`.
+- Draft standard profile `conditional-logit/0.1` (Stata clogit and xtlogit fe,
+  survival::clogit, statsmodels ConditionalLogit), with an example record and a page.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

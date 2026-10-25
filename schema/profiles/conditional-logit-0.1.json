@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/conditional-logit-0.1.json",
+  "title": "conditional-logit/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for conditional (fixed-effects) logit: the likelihood conditional on the number of positive outcomes in each group, so the group effects drop out and are never estimated. Stata clogit and xtlogit, fe; R survival::clogit; Python statsmodels ConditionalLogit (survey 2026-10-25, spec/profiles/conditional-logit.md). Requires specification.groups; specification.options.likelihood (exact, or R's breslow/efron approximations) and drop_uninformative (Stata and statsmodels drop groups whose outcomes are all 0 or all 1, R keeps them, which changes nobs); estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; and a default vcov with type and ssc.convention. metrics.n_groups, log_lik and structures.groups are expected; convergence is vocabulary only, since statsmodels doesn't keep it and R only warns. Not for unconditional FE logit (fixest feglm, pyfixest feglm, bife), which estimates the group effects: those records claim glm/0.1.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "properties": {
+            "estimator": {
+              "description": "Recommended: {family: \"conditional_logit\", method: \"conditional_mle\", distribution: \"binomial\", link: \"logit\"}.",
+              "properties": {
+                "method": {"x-vocabulary": ["conditional_mle"]}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["groups", "options"],
+          "properties": {
+            "groups": {
+              "description": "The grouping (stratum, panel unit, choice set) the likelihood conditions on.",
+              "$ref": "../estimation-0.1.json#/$defs/strings",
+              "minItems": 1,
+              "x-tools": {"clogit": "group(), e(group)", "xtlogit, fe": "xtset panel variable, e(ivar)", "survival::clogit": "strata() term", "statsmodels": "groups"}
+            },
+            "options": {
+              "required": ["likelihood", "drop_uninformative"],
+              "properties": {
+                "likelihood": {
+                  "description": "exact conditional likelihood, or a tied-event approximation (R only).",
+                  "type": "string",
+                  "x-vocabulary": ["exact", "breslow", "efron"],
+                  "x-tools": {"clogit, xtlogit fe": "exact", "survival::clogit": "method: \"exact\" (default), \"approximate\" (= breslow), \"efron\", \"breslow\"", "statsmodels": "exact"}
+                },
+                "drop_uninformative": {
+                  "description": "Whether groups whose outcomes are all 0 or all 1 (they add nothing to the likelihood) were dropped from the sample, and so from nobs.",
+                  "type": "boolean",
+                  "x-tools": {"clogit, xtlogit fe": "true (e(N_drop), e(N_group_drop))", "survival::clogit": "false: they stay in n", "statsmodels": "true (ModelWarning \"Dropped ... groups\")"}
+                },
+                "optimizer": {
+                  "type": "string",
+                  "x-tools": {"Stata": "technique() (nr)", "survival::clogit": "Newton-Raphson (coxph)", "statsmodels": "fit(method=) (\"BFGS\")"}
+                }
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error", "p_value"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "x-expected": ["n_groups", "log_lik"],
+          "properties": {
+            "nobs": {
+              "description": "Rows used, as the tool counts them: see specification.options.drop_uninformative.",
+              "x-tools": {"clogit, xtlogit fe": "e(N)", "survival::clogit": "n", "statsmodels": "nobs"}
+            },
+            "n_groups": {"description": "Groups used.", "type": ["integer", "null"], "x-tools": {"xtlogit, fe": "e(N_g)", "statsmodels": "n_groups", "survival::clogit": "number of strata (not stored)"}},
+            "n_events": {"description": "Positive outcomes.", "type": ["integer", "null"], "x-tools": {"survival::clogit": "nevent"}},
+            "n_dropped_uninformative": {"description": "Rows dropped in all-0 or all-1 groups.", "type": ["integer", "null"], "x-tools": {"clogit, xtlogit fe": "e(N_drop)", "statsmodels": "warning text only"}},
+            "n_groups_dropped": {"description": "All-0 or all-1 groups dropped.", "type": ["integer", "null"], "x-tools": {"clogit, xtlogit fe": "e(N_group_drop)", "statsmodels": "warning text only"}},
+            "log_lik": {"x-tools": {"Stata": "e(ll)", "survival::clogit": "loglik[2]", "statsmodels": "llf"}},
+            "log_lik_null": {
+              "description": "Conditional log-likelihood at all coefficients zero (the conditional model has no constant, so this is its null).",
+              "x-tools": {"Stata": "e(ll_0)", "survival::clogit": "loglik[1] (at the initial values, zero by default)", "statsmodels": "loglike(zeros) (not stored)"}
+            },
+            "pseudo_r2": {"description": "1 - log_lik / log_lik_null.", "x-tools": {"clogit": "e(r2_p)"}},
+            "chi2": {"description": "Model test; chi2_type says which (LR, Wald, score).", "x-tools": {"Stata": "e(chi2), e(chi2type)", "survival::clogit": "summary(): logtest (LR), waldtest, sctest (score)"}},
+            "df_model": {"x-tools": {"Stata": "e(df_m)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov"],
+          "x-expected": ["groups"],
+          "properties": {
+            "vcov": {
+              "description": "At most one vcov is the default; the default (or a lone vcov) needs type and ssc with at least convention.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type", "ssc"], "properties": {"default": {"const": true}, "ssc": {"required": ["convention"]}}}},
+                {"maxItems": 1, "items": {"required": ["type", "ssc"], "properties": {"ssc": {"required": ["convention"]}}}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {"x-tools": {"Stata": "e(vce), e(vcetype) (oim, robust, cluster)", "survival::clogit": "var (oim); with cluster(), robust var and naive.var (not with method \"exact\")", "statsmodels": "cov_params() (inverse Hessian, oim)"}}
+                }
+              }
+            },
+            "groups": {
+              "description": "The conditioning groups: counts only.",
+              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "properties": {
+                "kind": {"const": "object"},
+                "n": {"$ref": "../estimation-0.1.json#/$defs/count"},
+                "size": {
+                  "type": "object",
+                  "properties": {
+                    "min": {"$ref": "../estimation-0.1.json#/$defs/number"},
+                    "mean": {"$ref": "../estimation-0.1.json#/$defs/number"},
+                    "max": {"$ref": "../estimation-0.1.json#/$defs/number"}
+                  },
+                  "x-tools": {"xtlogit, fe": "e(g_min), e(g_avg), e(g_max)", "statsmodels": "summary() group sizes"}
+                },
+                "multiple_positive": {"description": "Some groups have more than one positive outcome.", "type": "boolean", "x-tools": {"clogit": "e(multiple)"}}
+              }
+            },
+            "numerics": {
+              "description": "Vocabulary only: statsmodels' ConditionalResults doesn't keep the optimizer's convergence flag, and survival::clogit only warns (\"Ran out of iterations\").",
+              "x-tools": {
+                "converged": {"Stata": "e(converged)"},
+                "iterations": {"Stata": "e(ic)", "survival::clogit": "iter"},
+                "max_iterations": {"survival::clogit": "control$iter.max (20)", "Stata": "iterate()"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

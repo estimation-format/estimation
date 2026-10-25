@@ -90,6 +90,15 @@
       "maintainer": "jemather",
       "description": "Stata ppmlhdfe records: glm (Poisson, log) plus separation methods and counts, singletons, absorbed fixed effects, and reghdfe's asymptotic vcov adjustment.",
       "examples": ["examples/ppmlhdfe.estimation.json"]
+    },
+    {
+      "name": "conditional-logit/0.1",
+      "file": "profiles/conditional-logit-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Conditional (fixed-effects) logit (Stata clogit, xtlogit fe; R survival::clogit; statsmodels ConditionalLogit): the conditioning groups, exact or approximate likelihood, whether all-0/all-1 groups were dropped, group counts.",
+      "examples": ["examples/conditional-logit.estimation.json"]
     }
   ]
 }

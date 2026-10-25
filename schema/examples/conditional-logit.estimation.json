@@ -1,0 +1,103 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "c5d8e1a4-2f7b-4b93-8c06-7e9a1d3f5b22",
+    "created": "2026-10-25T21:30:00Z",
+    "status": "ok",
+    "estimator": {
+      "family": "conditional_logit",
+      "method": "conditional_mle",
+      "distribution": "binomial",
+      "link": "logit"
+    },
+    "responses": ["case"],
+    "profiles": ["conditional-logit/0.1"],
+    "notes": "Real run: statsmodels 0.15.0 ConditionalLogit on R's infert data (matched case-control, 1 case and 2 controls per stratum, via Rdatasets). The estimates match survival::clogit(case ~ spontaneous + induced + strata(stratum), infert). No stratum is all-0 or all-1, so nothing was dropped. statsmodels doesn't keep the optimizer's convergence flag; the score at the estimate was below 1e-5."
+  },
+  "specification": {
+    "call": "ConditionalLogit(d[\"case\"], d[[\"spontaneous\", \"induced\"]], groups=d[\"stratum\"]).fit()",
+    "terms": ["spontaneous", "induced"],
+    "groups": ["stratum"],
+    "weights": null,
+    "sample": {"rows_input": 248, "dropped": {"uninformative": 0}},
+    "options": {"likelihood": "exact", "drop_uninformative": true, "optimizer": "BFGS"}
+  },
+  "metrics": {
+    "nobs": 248,
+    "n_groups": 83,
+    "n_events": 83,
+    "n_dropped_uninformative": 0,
+    "n_groups_dropped": 0,
+    "log_lik": -64.20223692443487,
+    "log_lik_null": -90.77935485134483,
+    "pseudo_r2": 0.2927661027160984,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "spontaneous",
+      "estimate": 1.9858764924846355,
+      "std_error": 0.35244366623557766,
+      "statistic": 5.634592653332721,
+      "p_value": 1.7547260150785538e-08,
+      "conf_low": 1.2950996000836477,
+      "conf_high": 2.6766533848856233
+    },
+    {
+      "term": "induced",
+      "estimate": 1.409012462314131,
+      "std_error": 0.3607125340755583,
+      "statistic": 3.906192131430026,
+      "p_value": 9.376197029646592e-05,
+      "conf_low": 0.7020288867538597,
+      "conf_high": 2.1159960378744023
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["spontaneous", "induced"],
+        "data": [
+          [0.12421653786957526, 0.09272594915018957],
+          [0.09272594915018957, 0.13011353223921082]
+        ],
+        "type": "oim",
+        "ssc": {"convention": "statsmodels", "formula": "none (inverse Hessian)"},
+        "default": true
+      }
+    ],
+    "groups": {
+      "kind": "object",
+      "n": 83,
+      "size": {"min": 2, "mean": 2.9879518072289155, "max": 3},
+      "multiple_positive": false
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "statsmodels",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/statsmodels@0.15.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "infert",
+        "location": "Rdatasets csv/datasets/infert.csv",
+        "rows": 248,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "38c7332f1ba72d1b5e68ae634ce4ba0fa32a8e667437276075a8077df42e56d8",
+          "of": "file"
+        },
+        "source": "R datasets::infert (Trichopoulos et al. 1976), via vincentarelbundock/Rdatasets @ 1dcc2bf"
+      }
+    ]
+  }
+}
