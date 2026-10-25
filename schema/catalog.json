@@ -117,6 +117,24 @@
       "maintainer": "jemather",
       "description": "Discrete-choice models (mlogit, logitr, apollo, xlogit, Biogeme, Stata cmclogit/cmmixlogit/mixlogit): choice situations and alternatives, random parameters and simulation draws, preference or WTP space, null and constants-only log-likelihoods, Hessian vs BFGS-approximate vs robust vcov.",
       "examples": ["examples/choice-mnl.estimation.json", "examples/choice-mixed-logit.estimation.json"]
+    },
+    {
+      "name": "sem/0.1",
+      "file": "profiles/sem-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Structural equation models (lavaan, semopy, Stata sem): estimator, model syntax, partable rows (op, lhs, rhs, free) with standardized estimates, chi-square and fit indices, missing-data and likelihood options.",
+      "examples": ["examples/sem.estimation.json"]
+    },
+    {
+      "name": "mediation/0.1",
+      "file": "profiles/mediation-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Mediation analyses from regressions or SEM (R mediation, lavaan :=, PROCESS, Stata sem estat teffects, pingouin, statsmodels Mediation): treatment, mediators, outcome, the inference method (bootstrap, quasi-Bayesian, delta) with replications and CI type, and which effect each row is.",
+      "examples": ["examples/mediation.estimation.json"]
     }
   ]
 }

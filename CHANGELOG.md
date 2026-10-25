@@ -14,6 +14,9 @@
   statsmodels MixedLM, MixedModels.jl), with an example record and a page.
 - Draft standard profile `choice/0.1` (mlogit, logitr, apollo, xlogit, Biogeme, Stata cm*
   and mixlogit), with MNL and mixed-logit example records and a page.
+- Draft standard profiles `sem/0.1` (lavaan, semopy, Stata sem) and `mediation/0.1` (R
+  mediation, lavaan :=, PROCESS, Stata estat teffects, pingouin, statsmodels Mediation),
+  with example records and pages.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

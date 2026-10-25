@@ -574,6 +574,8 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`conditional-logit/0.1`](profiles/conditional-logit.md) | standard | `specification.groups`; `options.likelihood` and `drop_uninformative`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `n_groups`, `log_lik`, `structures.groups` expected |
 | [`mixed/0.1`](profiles/mixed.md) | standard | `meta.estimator.method` (REML/ML/quadrature); `specification.random_effects`; fixed-effect `estimate` and `std_error`; a `vc` object on variance-component rows; `metrics.nobs`; `structures.random_effects` with `levels`; a default `vcov` with `type`; `numerics.converged`; `log_lik` and `singular` expected |
 | [`choice/0.1`](profiles/choice.md) | standard | `meta.estimator.method`; `specification.choice` (case, alternative); `estimate`, `std_error`; `n_cases`, `log_lik`; a default `vcov` with `type`; `numerics.converged`; mixed logit adds random parameters, draws and a spread row |
+| [`sem/0.1`](profiles/sem.md) | standard | `meta.estimator.method`; `specification.formula` (model syntax); a `sem` row object (op, lhs, rhs, free); `std_error` on free parameters; `nobs`, `chisq`, `chisq_df`; a default `vcov` with `type`; `numerics.converged`; `cfi`, `tli`, `rmsea`, `srmr` expected |
+| [`mediation/0.1`](profiles/mediation.md) | standard | `specification.mediation` (treatment, mediators, outcome, inference method); `nobs`; an indirect-effect row; `estimate` with `std_error` or an interval on effect rows |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

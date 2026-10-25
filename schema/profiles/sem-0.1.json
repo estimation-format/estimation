@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/sem-0.1.json",
+  "title": "sem/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for structural equation models (CFA, path models, full SEM; single- or multi-group): R lavaan; Python semopy; Stata sem (survey 2026-10-25, spec/profiles/sem.md). Requires meta.estimator.method (ml, mlr, wlsmv, ...); specification.formula with the model syntax; a `sem` object (op, lhs, rhs, free) on every row that isn't dropped, with estimate, and std_error on free parameters; metrics.nobs, chisq and chisq_df; a default vcov with type; and structures.numerics.converged. cfi, tli, rmsea and srmr are expected. Fit indices that tools define differently (N vs N-1 in the chi-square, semopy's LogLik) are recorded as {value, definition}. Indirect effects defined in the model (lavaan :=) can also be described by mediation/0.1.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"sem\" is recommended.", "type": "string"},
+                "method": {
+                  "type": "string",
+                  "x-vocabulary": ["ml", "mlw", "mlr", "mlm", "mlmv", "fiml", "gls", "wls", "dwls", "wlsmv", "uls", "adf", "pml", "bayes"],
+                  "x-tools": {"lavaan": "estimator (\"ML\"; MLR, MLM, MLMV, WLSMV, ...), lavInspect(fit, \"options\")$estimator", "semopy": "fit(obj=) (\"MLW\", Wishart ML; \"ULS\", \"GLS\", \"DWLS\", \"FIML\")", "Stata sem": "method() (ml, mlmv, adf), e(method)"}
+                }
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["formula"],
+          "properties": {
+            "formula": {"description": "The model as written, with syntax lavaan, stata or semopy.", "x-tools": {"lavaan": "model syntax", "semopy": "model description (lavaan-like)", "Stata sem": "path notation"}},
+            "groups": {"description": "Grouping variable(s) of a multi-group model.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"lavaan": "group", "semopy": "fit(groups=)", "Stata sem": "group()"}},
+            "options": {
+              "properties": {
+                "missing": {"type": "string", "x-vocabulary": ["listwise", "fiml", "pairwise"], "x-tools": {"lavaan": "missing (\"listwise\"; \"ml\" = fiml)", "Stata sem": "method(mlmv) = fiml", "semopy": "obj=\"FIML\""}},
+                "likelihood": {"description": "normal (N in the chi-square) or wishart (N - 1).", "type": "string", "x-vocabulary": ["normal", "wishart"], "x-tools": {"lavaan": "likelihood (\"normal\" unless mimic=\"EQS\"/\"LISREL\")", "semopy": "MLW is Wishart"}},
+                "mimic": {"type": "string", "x-tools": {"lavaan": "mimic (\"lavaan\", \"Mplus\", \"EQS\", \"LISREL\")"}},
+                "information": {"type": "string", "x-vocabulary": ["expected", "observed", "first_order"], "x-tools": {"lavaan": "information (\"expected\"; \"observed\" with missing = \"ml\")", "semopy": "inspect(information=) (\"expected\")", "Stata sem": "vce(oim) (observed)"}},
+                "test": {"description": "Chi-square test variant.", "type": "string", "x-vocabulary": ["standard", "satorra_bentler", "yuan_bentler", "scaled_shifted", "mean_var_adjusted", "bollen_stine"], "x-tools": {"lavaan": "test", "Stata sem": "vce(sbentler)"}},
+                "std_lv": {"description": "Latent variances fixed to 1 instead of marker loadings.", "type": "boolean", "x-tools": {"lavaan": "std.lv (FALSE)"}},
+                "optimizer": {"type": "string", "x-tools": {"lavaan": "optim.method (\"nlminb\")", "semopy": "solver (\"SLSQP\")", "Stata sem": "technique()"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"sem": {"$ref": "#/$defs/sem_row"}},
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {
+              "required": ["sem", "estimate"],
+              "if": {"properties": {"sem": {"properties": {"free": {"const": false}}, "required": ["free"]}}},
+              "else": {"required": ["std_error"]}
+            }
+          }
+        },
+        "metrics": {
+          "required": ["nobs", "chisq", "chisq_df"],
+          "x-expected": ["cfi", "tli", "rmsea", "srmr"],
+          "properties": {
+            "nobs": {"x-tools": {"lavaan": "nobs() / lavInspect(\"nobs\") (per group)", "semopy": "rows of the data", "Stata sem": "e(N)"}},
+            "npar": {"description": "Free parameters.", "type": ["integer", "null"], "x-tools": {"lavaan": "fitMeasures \"npar\"", "semopy": "len(param_vals)"}},
+            "chisq": {"description": "Model chi-square against the saturated model. Record {value, definition} when it uses N - 1 or a scaled test.", "x-tools": {"lavaan": "fitMeasures \"chisq\" (\"chisq.scaled\")", "semopy": "calc_stats chi2", "Stata sem": "e(chi2_ms)"}},
+            "chisq_df": {"x-tools": {"lavaan": "\"df\"", "semopy": "DoF", "Stata sem": "e(df_ms)"}},
+            "chisq_p": {"x-tools": {"lavaan": "\"pvalue\"", "semopy": "chi2 p-value", "Stata sem": "e(p_ms)"}},
+            "chisq_baseline": {"x-tools": {"lavaan": "\"baseline.chisq\"", "semopy": "chi2 Baseline", "Stata sem": "e(chi2_bs)"}},
+            "chisq_baseline_df": {"x-tools": {"lavaan": "\"baseline.df\"", "semopy": "DoF Baseline", "Stata sem": "e(df_bs)"}},
+            "cfi": {"x-tools": {"lavaan": "\"cfi\" (\"cfi.scaled\", \"cfi.robust\")", "semopy": "CFI", "Stata sem": "estat gof, stats(all): r(cfi)"}},
+            "tli": {"x-tools": {"lavaan": "\"tli\"", "semopy": "TLI", "Stata sem": "r(tli)"}},
+            "rmsea": {"x-tools": {"lavaan": "\"rmsea\"", "semopy": "RMSEA", "Stata sem": "r(rmsea)"}},
+            "rmsea_ci_low": {"x-tools": {"lavaan": "\"rmsea.ci.lower\"", "Stata sem": "r(lb90_rmsea)"}},
+            "rmsea_ci_high": {"x-tools": {"lavaan": "\"rmsea.ci.upper\"", "Stata sem": "r(ub90_rmsea)"}},
+            "rmsea_pclose": {"x-tools": {"lavaan": "\"rmsea.pvalue\"", "Stata sem": "r(pclose)"}},
+            "srmr": {"x-tools": {"lavaan": "\"srmr\"", "semopy": "not in calc_stats", "Stata sem": "r(srmr)"}},
+            "gfi": {"x-tools": {"lavaan": "\"gfi\"", "semopy": "GFI"}},
+            "log_lik": {"description": "Log-likelihood of the model (ML). semopy's calc_stats LogLik is the fit objective, not this: leave it out or record it as {value, definition}.", "x-tools": {"lavaan": "\"logl\"", "Stata sem": "e(ll)"}},
+            "log_lik_saturated": {"x-tools": {"lavaan": "\"unrestricted.logl\""}},
+            "aic": {"description": "From log_lik; semopy's AIC is built from its objective and is not comparable.", "x-tools": {"lavaan": "\"aic\"", "Stata sem": "r(aic)"}},
+            "bic": {"x-tools": {"lavaan": "\"bic\"", "Stata sem": "r(bic)"}},
+            "n_groups": {"type": ["integer", "null"], "x-tools": {"lavaan": "lavInspect(\"ngroups\")", "Stata sem": "e(N_groups)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov", "numerics"],
+          "properties": {
+            "vcov": {
+              "description": "Of the free parameters. At most one default; the default (or a lone vcov) needs type.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {"x-vocabulary": ["expected_information", "observed_information", "robust_sem", "robust_huber_white", "bootstrap"], "x-tools": {"lavaan": "se (\"standard\" + information; \"robust.sem\", \"robust.huber.white\", \"bootstrap\"); vcov()", "semopy": "inspect information (\"expected\"); se_robust", "Stata sem": "e(vce): oim, robust, sbentler, bootstrap"}}
+                }
+              }
+            },
+            "numerics": {
+              "required": ["converged"],
+              "x-tools": {"converged": {"lavaan": "lavInspect(\"converged\")", "semopy": "fit() result: \"Optimization successful\"", "Stata sem": "e(converged)"}, "iterations": {"lavaan": "lavInspect(\"iterations\")", "semopy": "fit() result: Number of iterations", "Stata sem": "e(ic)"}}
+            }
+          }
+        }
+      }
+    },
+    "sem_row": {
+      "description": "Which model parameter a row is, in lavaan's partable terms.",
+      "type": "object",
+      "required": ["op", "lhs", "rhs", "free"],
+      "properties": {
+        "op": {"type": "string", "x-vocabulary": ["=~", "~", "~~", "~1", ":=", "|", "~*~"], "x-tools": {"lavaan": "parameterEstimates op", "semopy": "inspect op (loadings are written y ~ factor)", "Stata sem": "e(b) equation:column names"}},
+        "lhs": {"type": "string"},
+        "rhs": {"type": "string"},
+        "free": {"description": "false for fixed parameters (marker loadings, fixed variances); they have no standard error.", "type": "boolean"},
+        "group": {"type": ["integer", "string"]},
+        "label": {"type": "string"},
+        "std_all": {"description": "Fully standardized estimate.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.all", "semopy": "inspect(std_est=True) Est. Std", "Stata sem": "standardized"}},
+        "std_lv": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.lv"}}
+      }
+    }
+  }
+}

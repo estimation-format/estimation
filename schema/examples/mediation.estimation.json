@@ -1,0 +1,102 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "8b2e4d6f-0a1c-4f39-b7e8-2c5d9f1a3e46",
+    "created": "2026-10-25T23:30:00Z",
+    "status": "ok",
+    "estimator": {"family": "mediation", "method": "ols"},
+    "responses": ["depress2"],
+    "profiles": ["mediation/0.1"],
+    "notes": "Real run: pingouin 0.7.0 mediation_analysis on the JOBS II data from R's mediation package (treat -> job_seek -> depress2), no covariates, 5000 bias-corrected bootstrap replications, seed 42. Indirect-effect SE is the SD of the bootstrap draws and its p-value comes from the bootstrap distribution; a and b rows use OLS standard errors. Imai et al.'s published example adjusts for covariates, so its ACME differs."
+  },
+  "specification": {
+    "call": "pg.mediation_analysis(data=d, x=\"treat\", m=\"job_seek\", y=\"depress2\", n_boot=5000, seed=42)",
+    "weights": null,
+    "mediation": {
+      "treatment": "treat",
+      "mediators": ["job_seek"],
+      "outcome": "depress2",
+      "covariates": [],
+      "structure": "simple",
+      "models": [
+        {"response": "job_seek", "estimator": "ols"},
+        {"response": "depress2", "estimator": "ols"}
+      ],
+      "inference": {"method": "bootstrap", "reps": 5000, "ci_type": "bc", "seed": 42}
+    }
+  },
+  "metrics": {"nobs": 899, "conf_level": 0.95},
+  "parameters": [
+    {
+      "term": "job_seek ~ X",
+      "estimate": 0.06745002262967154,
+      "std_error": 0.05154483098210763,
+      "p_value": 0.1910152025724776,
+      "conf_low": -0.033712489878811494,
+      "conf_high": 0.16861253513815455,
+      "mediation": {"effect": "a"}
+    },
+    {
+      "term": "Y ~ job_seek",
+      "estimate": -0.22668444718527408,
+      "std_error": 0.028898539097292942,
+      "p_value": 1.2359892923370576e-14,
+      "conf_low": -0.2834010716693388,
+      "conf_high": -0.16996782270120936,
+      "mediation": {"effect": "b", "mediator": "job_seek"}
+    },
+    {
+      "term": "Total",
+      "estimate": -0.06334627191225722,
+      "std_error": 0.04611283194359457,
+      "p_value": 0.169870800141483,
+      "conf_low": -0.15384787700850344,
+      "conf_high": 0.02715533318398898,
+      "mediation": {"effect": "total"}
+    },
+    {
+      "term": "Direct",
+      "estimate": -0.04814813955704543,
+      "std_error": 0.044693733533319235,
+      "p_value": 0.281640411152786,
+      "conf_low": -0.13586473711564356,
+      "conf_high": 0.03956845800155272,
+      "mediation": {"effect": "direct"}
+    },
+    {
+      "term": "Indirect",
+      "estimate": -0.01519813235521095,
+      "std_error": 0.011480276069227673,
+      "p_value": 0.1704,
+      "conf_low": -0.04039308507190537,
+      "conf_high": 0.005436475100073785,
+      "mediation": {"effect": "indirect", "mediator": "job_seek"}
+    }
+  ],
+  "provenance": {
+    "software": [
+      {
+        "name": "pingouin",
+        "version": "0.7.0",
+        "purl": "pkg:pypi/pingouin@0.7.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "jobs",
+        "location": "mediation data/jobs.RData",
+        "rows": 899,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "d6827d0ac65e489c140ce4bd1723128e75e76a6a725e44a921d3d95506082701",
+          "of": "file"
+        },
+        "source": "JOBS II (Vinokur et al.), R mediation (kosukeimai/mediation @ 44e1146)"
+      }
+    ]
+  }
+}
