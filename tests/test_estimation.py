@@ -441,8 +441,8 @@ def test_profiles(mode):
     assert expected <= paths
     # dfeols/0.1 includes the linear-fe rules: each problem is reported once
     assert len(found) == len(paths)
-    rec["meta"]["profiles"] = ["glm/0.1"]
-    assert any(i.level == "info" and "glm/0.1" in i.message for i in est.validate(rec, schema=mode))
+    rec["meta"]["profiles"] = ["unknown-model/0.1"]
+    assert any(i.level == "info" and "unknown-model/0.1" in i.message for i in est.validate(rec, schema=mode))
 
 
 def test_digest_mismatch_is_a_warning():

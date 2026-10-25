@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/glm-0.1.json",
+  "title": "glm/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for generalized linear models (logit, probit, Poisson, ...), with or without absorbed fixed effects: Stata logit, probit, poisson, glm, ppmlhdfe; R glm, fixest feglm/fepois; Python statsmodels GLM/Logit/Poisson, pyfixest feglm/fepois (survey 2026-10-25, spec/profiles/glm.md). Requires meta.estimator distribution and link; estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; a default vcov with type and ssc.convention; and structures.numerics.converged, which every surveyed tool stores. metrics.log_lik and deviance are expected. Does not build on inference/0.1, because Stata's ML commands and ppmlhdfe post no e(df_r) (z tests); records that also have a residual df (R glm, fixest, statsmodels) claim inference/0.1 too. A GLM with absorbed fixed effects records them in structures.fixed_effects with linear-fe's names.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["distribution", "link"],
+              "properties": {
+                "family": {"description": "\"glm\" is recommended.", "type": "string"},
+                "method": {"description": "Fitting method.", "type": "string", "x-vocabulary": ["mle", "irls", "qmle"]},
+                "distribution": {
+                  "type": "string",
+                  "x-vocabulary": ["binomial", "poisson", "gaussian", "gamma", "inverse_gaussian", "negative_binomial"],
+                  "x-tools": {"Stata glm": "e(varfunct) / family()", "Stata logit/probit": "binomial", "Stata poisson, ppmlhdfe": "poisson", "R glm": "family$family", "fixest": "family$family (fepois: poisson)", "statsmodels": "model.family", "pyfixest": "_method (fepois, feglm-logit, feglm-probit, feglm-gaussian)"}
+                },
+                "link": {
+                  "type": "string",
+                  "x-vocabulary": ["logit", "probit", "cloglog", "log", "identity", "inverse", "sqrt"],
+                  "x-tools": {"Stata glm": "e(linkt) / link()", "R glm, fixest": "family$link", "statsmodels": "model.family.link"}
+                }
+              }
+            }
+          }
+        },
+        "specification": {
+          "properties": {
+            "offset": {
+              "description": "Offset in the linear predictor, or null. exposure: true when the tool took log(variable) (Stata exposure()).",
+              "anyOf": [
+                {"type": "null"},
+                {"type": "object", "required": ["variable"], "properties": {"variable": {"type": "string"}, "exposure": {"type": "boolean"}}}
+              ],
+              "x-tools": {"Stata": "e(offset) (\"ln(x)\" with exposure())", "R glm, fixest": "offset", "statsmodels": "offset / exposure", "pyfixest": "offset"}
+            },
+            "options": {
+              "properties": {
+                "separation": {
+                  "description": "Methods used to find and drop separated observations, in order; [] when none.",
+                  "$ref": "../estimation-0.1.json#/$defs/strings",
+                  "x-vocabulary": ["fe", "simplex", "relu", "mu", "perfect_fit"],
+                  "x-tools": {"ppmlhdfe": "e(separation) (\"ir\" is relu)", "pyfixest": "separation_check ([\"fe\"]; \"ir\")", "fixest": "fixef.rm (\"perfect_fit\" drops FE levels with only 0 outcomes)"}
+                },
+                "tolerance": {"description": "Convergence tolerance of the IRLS / ML iterations.", "type": "number", "x-tools": {"ppmlhdfe": "tolerance() (1e-8)", "fixest": "glm.tol (1e-8)", "pyfixest": "iwls_tol (1e-8)", "R glm": "control$epsilon (1e-8)", "statsmodels": "tol (1e-8)", "Stata ML": "tolerance(), ltolerance(), nrtolerance()"}},
+                "max_iterations": {"type": "integer", "x-tools": {"ppmlhdfe": "maxiterations() (10000)", "fixest": "glm.iter (25)", "pyfixest": "iwls_maxiter (25)", "R glm": "control$maxit (25)", "statsmodels": "maxiter (100)", "Stata ML": "iterate()"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error", "p_value"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "x-expected": ["log_lik", "deviance"],
+          "properties": {
+            "nobs": {"x-tools": {"Stata": "e(N)", "R glm": "nobs()", "fixest": "nobs", "statsmodels": "nobs", "pyfixest": "_N"}},
+            "log_lik": {"x-tools": {"Stata": "e(ll)", "R glm": "logLik()", "fixest": "loglik", "statsmodels": "llf", "pyfixest": "_loglik (fepois)"}},
+            "log_lik_null": {
+              "description": "Log-likelihood of the constant-only model. A model with only the fixed effects is log_lik_fe_only, not this.",
+              "x-tools": {"Stata logit/poisson/glm": "e(ll_0)", "fixest": "ll_null", "statsmodels": "llnull", "pyfixest": "_loglik_null"}
+            },
+            "log_lik_fe_only": {"description": "Log-likelihood with only the fixed effects.", "x-tools": {"ppmlhdfe": "e(ll_0)", "fixest": "ll_fe_only"}},
+            "deviance": {"x-tools": {"Stata glm": "e(deviance)", "ppmlhdfe": "e(deviance)", "R glm": "deviance", "fixest": "deviance", "statsmodels": "deviance", "pyfixest": "deviance"}},
+            "null_deviance": {"x-tools": {"R glm": "null.deviance", "statsmodels": "null_deviance"}},
+            "df_null": {"x-tools": {"R glm": "df.null"}},
+            "df_residual": {"description": "As the tool reports it. ppmlhdfe stores it as e(df), not e(df_r).", "x-tools": {"R glm": "df.residual", "fixest": "df.residual()", "statsmodels": "df_resid", "ppmlhdfe": "e(df)", "Stata glm": "e(df)"}},
+            "df_model": {"x-tools": {"Stata": "e(df_m)", "statsmodels": "df_model"}},
+            "pseudo_r2": {
+              "description": "McFadden: 1 - log_lik / log_lik_null. Use {value, definition} for any other: fixest's pseudo_r2 element is the adjusted 1 - (ll - k)/(ll_null - 1); ppmlhdfe's e(r2_p) uses the FE-only log-likelihood.",
+              "x-tools": {"Stata logit/poisson": "e(r2_p)", "ppmlhdfe": "e(r2_p) (vs e(ll_0), FE-only)", "fixest": "fitstat(, \"pr2\") (pseudo_r2 element is adjusted)", "statsmodels": "pseudo_rsquared(kind=\"mcf\")", "pyfixest": "_pseudo_r2"}
+            },
+            "aic": {"x-tools": {"Stata glm": "e(aic) (per observation)", "R glm": "aic", "fixest": "AIC()", "statsmodels": "aic"}},
+            "bic": {"x-tools": {"Stata glm": "e(bic)", "fixest": "BIC()", "statsmodels": "bic"}},
+            "dispersion": {"description": "Dispersion (scale) parameter used for the vcov; 1 for binomial and Poisson unless estimated.", "x-tools": {"R glm": "summary()$dispersion", "fixest": "dispersion", "statsmodels": "scale", "Stata glm": "e(phi)"}},
+            "pearson_chi2": {"x-tools": {"Stata glm": "e(deviance_p)", "statsmodels": "pearson_chi2"}},
+            "chi2": {"description": "Model test statistic; chi2_type says which (Wald, LR).", "x-tools": {"Stata": "e(chi2), e(chi2type)", "ppmlhdfe": "e(chi2) (Wald)"}},
+            "n_separated": {"description": "Rows dropped as separated (their fitted mean is 0 or the outcome bound).", "type": ["integer", "null"], "x-tools": {"ppmlhdfe": "e(num_separated)", "pyfixest": "n_separation_na", "fixest": "obs_selection / fixef_removed (perfect_fit)"}},
+            "n_completely_determined": {"description": "Rows whose outcome the model predicts exactly but kept (Stata logit/probit e(N_cds) + e(N_cdf)).", "type": ["integer", "null"]},
+            "n_singletons": {"description": "As in linear-fe.", "x-tools": {"ppmlhdfe": "e(num_singletons)"}},
+            "nobs_full": {"description": "As in linear-fe: rows used plus singleton (and here separated) rows dropped.", "x-tools": {"ppmlhdfe": "e(N_full)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov", "numerics"],
+          "properties": {
+            "vcov": {
+              "description": "At most one vcov is the default; the default (or a lone vcov) needs type and ssc with at least convention.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type", "ssc"], "properties": {"default": {"const": true}, "ssc": {"required": ["convention"]}}}},
+                {"maxItems": 1, "items": {"required": ["type", "ssc"], "properties": {"ssc": {"required": ["convention"]}}}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {"x-vocabulary": ["oim", "opg", "eim"], "x-tools": {"Stata": "e(vce) (oim, robust, cluster), e(vcetype)", "ppmlhdfe": "robust by default (unadjusted becomes robust)", "statsmodels": "cov_type (nonrobust = iid)"}},
+                  "ssc": {"x-tools": {"Stata ML robust/cluster": "N/(N-1) / G/(G-1)", "ppmlhdfe": "robust N/(N-1), cluster G/(G-1) (reghdfe vce_asymptotic)", "fixest": "ssc()", "pyfixest": "ssc()"}}
+                }
+              }
+            },
+            "numerics": {
+              "required": ["converged"],
+              "x-tools": {
+                "converged": {"Stata": "e(converged)", "R glm": "converged", "fixest": "convStatus", "statsmodels": "converged", "pyfixest": "_convergence"},
+                "iterations": {"Stata": "e(ic)", "R glm": "iter", "fixest": "iterations", "statsmodels": "fit_history[\"iteration\"]"}
+              }
+            },
+            "fixed_effects": {"description": "Absorbed fixed effects, as in linear-fe/0.1: one {kind: \"object\", name, levels} per FE."}
+          }
+        }
+      }
+    }
+  }
+}

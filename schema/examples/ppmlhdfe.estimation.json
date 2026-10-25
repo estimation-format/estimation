@@ -1,0 +1,92 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "9a2f6d31-0c4b-4e78-a5d9-3b1e7f8c2d40",
+    "created": "2026-10-25T20:30:00Z",
+    "status": "ok",
+    "estimator": {"family": "glm", "method": "irls", "distribution": "poisson", "link": "log"},
+    "responses": ["Y"],
+    "profiles": ["glm/0.1", "ppmlhdfe/0.1"],
+    "notes": "Shape example: the record a ppmlhdfe writer would produce for this call on pyfixest's get_data(model=\"Fepois\") data. Estimates, deviance and log-likelihood were computed with pyfixest 0.60.0 fepois (same estimator, singletons dropped, no separated rows); standard errors use ppmlhdfe's G/(G-1) cluster adjustment and z tests. Not run in Stata, so e(ll_0) (FE-only) and e(r2_p) are left out."
+  },
+  "specification": {
+    "call": "ppmlhdfe Y X1 X2, absorb(f1 f2) vce(cluster f1)",
+    "terms": ["X1", "X2"],
+    "fixed_effects": ["f1", "f2"],
+    "clusters": ["f1"],
+    "weights": null,
+    "offset": null,
+    "sample": {
+      "rows_input": 1000,
+      "dropped": {"missing": 3, "singletons": 2, "separated": 0}
+    },
+    "options": {
+      "separation": ["fe", "simplex", "relu"],
+      "drop_singletons": true,
+      "tolerance": 1e-08,
+      "max_iterations": 10000,
+      "guess": "simple"
+    }
+  },
+  "metrics": {
+    "nobs": 995,
+    "nobs_full": 997,
+    "n_singletons": 2,
+    "n_separated": 0,
+    "log_lik": -1247.5623429323116,
+    "deviance": 1068.1692714804349,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "X1",
+      "estimate": -0.006591089615734243,
+      "std_error": 0.034746145386778816,
+      "statistic": -0.18969268511269755,
+      "p_value": 0.849549953173103,
+      "conf_low": -0.07469228317541327,
+      "conf_high": 0.06151010394394479
+    },
+    {
+      "term": "X2",
+      "estimate": -0.01492392962028312,
+      "std_error": 0.010302704324927572,
+      "statistic": -1.4485448819660305,
+      "p_value": 0.14746472331808314,
+      "conf_low": -0.03511685904050621,
+      "conf_high": 0.00526899979993997
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["X1", "X2"],
+        "data": [
+          [0.0012072946192391708, 1.5994261264612788e-05],
+          [1.5994261264612788e-05, 0.0001061457164068813]
+        ],
+        "type": "CRV1",
+        "cluster": ["f1"],
+        "n_clusters": {"f1": 30},
+        "ssc": {
+          "convention": "ppmlhdfe",
+          "formula": "G/(G-1)",
+          "factors": {"G/(G-1)": 1.0344827586206897}
+        },
+        "default": true
+      }
+    ],
+    "fixed_effects": [
+      {"kind": "object", "name": "f1", "levels": 30},
+      {"kind": "object", "name": "f2", "levels": 30}
+    ],
+    "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "irls",
+      "tolerance": 1e-08,
+      "converged": true
+    }
+  }
+}

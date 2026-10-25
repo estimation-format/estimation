@@ -72,6 +72,24 @@
       "maintainer": "jemather",
       "description": "Stata csdid records: did plus method, agg and typebase, the influence-function or wild-bootstrap vcov, ATT(g,t) alongside any aggregation, and the e(gtt) cells.",
       "examples": ["examples/csdid.estimation.json"]
+    },
+    {
+      "name": "glm/0.1",
+      "file": "profiles/glm-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Generalized linear models with or without absorbed fixed effects (Stata logit/probit/poisson/glm, ppmlhdfe; R glm, fixest feglm/fepois; statsmodels, pyfixest): distribution and link, convergence, log-likelihood, deviance, separation and offsets.",
+      "examples": ["examples/glm-logit.estimation.json", "examples/ppmlhdfe.estimation.json"]
+    },
+    {
+      "name": "ppmlhdfe/0.1",
+      "file": "profiles/ppmlhdfe-0.1.json",
+      "kind": "tool",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Stata ppmlhdfe records: glm (Poisson, log) plus separation methods and counts, singletons, absorbed fixed effects, and reghdfe's asymptotic vcov adjustment.",
+      "examples": ["examples/ppmlhdfe.estimation.json"]
     }
   ]
 }

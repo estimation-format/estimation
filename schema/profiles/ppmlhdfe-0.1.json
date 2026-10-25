@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/ppmlhdfe-0.1.json",
+  "title": "ppmlhdfe/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Records of Stata ppmlhdfe (Correia, Guimaraes and Zylkin; ppmlhdfe.ado 2.3.4, surveyed from source 2026-10-25), Poisson pseudo-maximum likelihood with high-dimensional fixed effects; see spec/profiles/ppmlhdfe.md. Includes glm/0.1, plus: distribution poisson and link log; metrics.n_separated and n_singletons; specification.options.separation and drop_singletons; and structures.fixed_effects with name and levels (ppmlhdfe absorbs _cons when nothing else is absorbed). The fixed-effect fields use linear-fe/0.1's names, but the profile doesn't claim linear-fe: that profile is for linear models.",
+  "x-extends": ["glm/0.1"],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "allOf": [{"$ref": "glm-0.1.json#/$defs/rules"}],
+      "type": "object",
+      "required": ["specification"],
+      "properties": {
+        "meta": {
+          "properties": {
+            "estimator": {"properties": {"distribution": {"const": "poisson"}, "link": {"const": "log"}}}
+          }
+        },
+        "specification": {
+          "required": ["options"],
+          "properties": {
+            "options": {
+              "required": ["separation", "drop_singletons"],
+              "properties": {
+                "separation": {"x-tools": {"ppmlhdfe": "e(separation): default \"fe simplex relu\"; separation(all) adds mu; separation(none) is []"}},
+                "drop_singletons": {"type": "boolean", "x-tools": {"ppmlhdfe": "e(drop_singletons) (keepsingletons turns it off)"}},
+                "tolerance": {"x-tools": {"ppmlhdfe": "tolerance() (1e-8)"}},
+                "inner_tolerance": {"description": "Tolerance of the fixed-effect partialling inside each IRLS step.", "type": "number", "x-tools": {"ppmlhdfe": "itolerance()"}},
+                "max_iterations": {"x-tools": {"ppmlhdfe": "maxiterations() (10000)"}},
+                "guess": {"type": "string", "x-vocabulary": ["simple", "ols"], "x-tools": {"ppmlhdfe": "guess() (simple)"}}
+              }
+            }
+          }
+        },
+        "metrics": {
+          "required": ["n_separated", "n_singletons"],
+          "properties": {
+            "n_separated": {"x-tools": {"ppmlhdfe": "e(num_separated)"}},
+            "n_singletons": {"x-tools": {"ppmlhdfe": "e(num_singletons)"}},
+            "nobs_full": {"x-tools": {"ppmlhdfe": "e(N_full) = e(N) + singletons + separated"}},
+            "df_residual": {"x-tools": {"ppmlhdfe": "e(df)"}},
+            "df_absorbed": {"x-tools": {"ppmlhdfe": "e(df_a)"}},
+            "log_lik_fe_only": {"x-tools": {"ppmlhdfe": "e(ll_0)"}},
+            "pseudo_r2": {"x-tools": {"ppmlhdfe": "e(r2_p) = 1 - e(ll)/e(ll_0): against the FE-only model, so record it as {value, definition}"}}
+          }
+        },
+        "structures": {
+          "required": ["fixed_effects"],
+          "properties": {
+            "fixed_effects": {
+              "minItems": 1,
+              "items": {
+                "required": ["name", "levels"],
+                "x-tools": {"name": {"ppmlhdfe": "e(absvars), e(extended_absvars)"}, "levels": {"ppmlhdfe": "e(dof_table)"}, "redundant": {"ppmlhdfe": "e(dof_table)"}}
+              }
+            },
+            "vcov": {
+              "items": {
+                "properties": {
+                  "ssc": {"description": "reghdfe's asymptotic adjustment: N/(N-1) for robust, G/(G-1) for cluster; record {convention: \"ppmlhdfe\", formula, factors}."},
+                  "df_t": {"description": "Absent: ppmlhdfe uses z tests."}
+                }
+              }
+            },
+            "numerics": {
+              "x-tools": {"converged": {"ppmlhdfe": "e(converged)"}, "iterations": {"ppmlhdfe": "e(ic)"}, "inner_iterations": {"ppmlhdfe": "e(ic2)"}}
+            }
+          }
+        }
+      }
+    }
+  }
+}

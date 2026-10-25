@@ -569,6 +569,8 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`did/0.1`](profiles/did.md) | standard | `meta.estimator.method`; `specification.did` (time, comparison, cohort or treatment); `metrics.nobs`; `estimate` and `std_error`; a `did` object saying which effect a row is; a default `vcov` with `type`; `structures.did` expected |
 | [`did2s/0.1`](profiles/did2s.md) | tool | `did` plus first- and second-stage specifications, the cluster, and a two-stage GMM or bootstrap vcov |
 | [`csdid/0.1`](profiles/csdid.md) | tool | `did` plus `method`, `agg`, `typebase`, an influence-function or wild-bootstrap vcov, and the `e(gtt)` cells |
+| [`glm/0.1`](profiles/glm.md) | standard | `meta.estimator.distribution` and `link`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `structures.numerics.converged`; `log_lik` and `deviance` expected |
+| [`ppmlhdfe/0.1`](profiles/ppmlhdfe.md) | tool | `glm` (Poisson, log) plus separation and singleton counts and options, and `structures.fixed_effects` |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).
