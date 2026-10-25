@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Draft profiles for difference-in-differences: `did/0.1` (standard; csdid, R did, did2s,
+  pyfixest did2s), and the tool profiles `did2s/0.1` and `csdid/0.1`, with example records
+  and pages in `spec/profiles/`.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

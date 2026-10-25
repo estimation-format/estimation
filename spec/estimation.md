@@ -566,6 +566,9 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`linear-fe/0.1`](profiles/linear-fe.md) | standard | `inference` plus `n_singletons`, `specification.options.drop_singletons`, and `structures.fixed_effects` with `levels` |
 | [`iv/0.1`](profiles/iv.md) | standard | `inference` plus `specification.endogenous` and `instruments`; `structures.first_stage` expected |
 | [`dfeols/0.1`](profiles/dfeols.md) | tool | `linear-fe` plus `extensions.dfeols`: the first worked tool profile |
+| [`did/0.1`](profiles/did.md) | standard | `meta.estimator.method`; `specification.did` (time, comparison, cohort or treatment); `metrics.nobs`; `estimate` and `std_error`; a `did` object saying which effect a row is; a default `vcov` with `type`; `structures.did` expected |
+| [`did2s/0.1`](profiles/did2s.md) | tool | `did` plus first- and second-stage specifications, the cluster, and a two-stage GMM or bootstrap vcov |
+| [`csdid/0.1`](profiles/csdid.md) | tool | `did` plus `method`, `agg`, `typebase`, an influence-function or wild-bootstrap vcov, and the `e(gtt)` cells |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

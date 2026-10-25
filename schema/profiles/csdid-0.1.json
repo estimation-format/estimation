@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/csdid-0.1.json",
+  "title": "csdid/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Records of Stata csdid (Rios-Avila, Sant'Anna and Callaway; csdid.ado 1.71, surveyed 2026-10-25), the Callaway-Sant'Anna estimator; see spec/profiles/csdid.md. Includes did/0.1, plus: meta.estimator.method \"callaway_santanna\"; specification.did.cohort (gvar) and a comparison of never_treated or not_yet_treated; specification.options method, agg and typebase; a default vcov of type influence_function or wild_bootstrap; and structures.did with cells (e(gtt), which csdid always stores). When agg() aggregates, e(b)/e(V) hold the aggregates and e(b_attgt)/e(V_attgt) the ATT(g,t): both go in parameters, with the ATT(g,t) vcov as a second, non-default vcov.",
+  "x-extends": ["did/0.1"],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "allOf": [{"$ref": "did-0.1.json#/$defs/rules"}],
+      "type": "object",
+      "properties": {
+        "meta": {
+          "properties": {"estimator": {"properties": {"method": {"const": "callaway_santanna"}}}}
+        },
+        "specification": {
+          "required": ["options"],
+          "properties": {
+            "did": {
+              "required": ["cohort"],
+              "properties": {"comparison": {"enum": ["never_treated", "not_yet_treated"], "x-tools": {"csdid": "e(control_group): \"Never Treated\" / \"Not yet Treated\" (notyet); csdid switches to not-yet-treated when there are no never-treated units"}}}
+            },
+            "options": {
+              "required": ["method", "agg", "typebase"],
+              "properties": {
+                "method": {"description": "e(method), resolved: dripw with covariates and reg without, when method() is not given.", "enum": ["drimp", "dripw", "reg", "ipw", "stdipw"]},
+                "outcome_model": {"description": "Same as method; writers may fill both."},
+                "agg": {"description": "e(agg), resolved (attgt when agg() is not given).", "enum": ["attgt", "simple", "group", "calendar", "event"]},
+                "typebase": {"description": "e(typebase): default (varying base period), long or long2.", "enum": ["default", "long", "long2"]},
+                "wboot": {"description": "Wild bootstrap requested (wboot / wboot()).", "type": "boolean"},
+                "reps": {"type": "integer", "x-tools": {"csdid": "e(reps) (999)"}},
+                "wbtype": {"type": "string", "x-tools": {"csdid": "e(wbtype)"}},
+                "citype": {"description": "uniform (default with wboot) or pointwise.", "enum": ["uniform", "pointwise"], "x-tools": {"csdid": "e(citype)"}},
+                "level": {"type": "number"},
+                "saverif": {"description": "File the RIFs were saved to (saverif()); identifying, as a path.", "type": ["string", "null"], "x-identifying": true}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {
+              "did": {
+                "properties": {
+                  "type": {"enum": ["att_gt", "event", "group", "calendar", "simple", "pre_avg", "post_avg"]}
+                }
+              }
+            }
+          }
+        },
+        "structures": {
+          "required": ["did"],
+          "properties": {
+            "vcov": {
+              "contains": {
+                "required": ["default", "type"],
+                "properties": {"default": {"const": true}, "type": {"enum": ["influence_function", "wild_bootstrap"]}}
+              },
+              "items": {
+                "properties": {
+                  "ssc": {"description": "None: V = IF'IF / n^2 (cluster sums of the IF when clustered, with no G/(G-1)). Record {convention: \"csdid\", formula: \"none\"}."},
+                  "cluster": {"description": "cluster(), or, in a panel without cluster(), the unit variable: the influence function is summed per unit.", "x-tools": {"csdid": "e(clustvar), else e(id)"}},
+                  "n_clusters": {"x-tools": {"csdid": "e(N_clust)"}}
+                }
+              }
+            },
+            "did": {
+              "required": ["cells"],
+              "properties": {
+                "cells": {"x-tools": {"csdid": "e(gtt): cohort, t0 (base period), t1 (period), error (_rc), N, N_cntr, N_trt"}},
+                "pretrend": {"x-tools": {"csdid": "estat pretrend: r(chi2), r(pchi2), r(df)"}},
+                "uniform_band": {"x-tools": {"csdid": "e(cband) (columns b se t ll ul) when e(citype) is uniform"}}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

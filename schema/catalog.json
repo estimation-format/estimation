@@ -45,6 +45,33 @@
       "maintainer": "jemather",
       "description": "dfeols records: linear-fe plus the dfeols extension block (shards, row key, absorption, demeaning, Dask, replay).",
       "examples": ["examples/dfeols-linear-fe.estimation.json"]
+    },
+    {
+      "name": "did/0.1",
+      "file": "profiles/did-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Heterogeneity-robust difference-in-differences and event studies with staggered timing (csdid, R did, did2s, pyfixest did2s): the design, which effect each row is (ATT(g,t), event time, group, calendar, simple), pointwise and uniform bands, cohorts and pre-trend tests.",
+      "examples": ["examples/did2s.estimation.json", "examples/csdid.estimation.json"]
+    },
+    {
+      "name": "did2s/0.1",
+      "file": "profiles/did2s-0.1.json",
+      "kind": "tool",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Gardner two-stage DiD records from did2s (Stata, R) and pyfixest: did plus the first- and second-stage specifications, the cluster, and the two-stage GMM (or bootstrap) vcov.",
+      "examples": ["examples/did2s.estimation.json"]
+    },
+    {
+      "name": "csdid/0.1",
+      "file": "profiles/csdid-0.1.json",
+      "kind": "tool",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Stata csdid records: did plus method, agg and typebase, the influence-function or wild-bootstrap vcov, ATT(g,t) alongside any aggregation, and the e(gtt) cells.",
+      "examples": ["examples/csdid.estimation.json"]
     }
   ]
 }

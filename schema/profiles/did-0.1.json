@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/did-0.1.json",
+  "title": "did/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for heterogeneity-robust difference-in-differences and event-study estimators with staggered treatment timing: Stata csdid and did2s; R did (att_gt, aggte) and did2s; Python pyfixest did2s (survey 2026-10-25, spec/profiles/did.md). Requires meta.estimator.method; specification.did with the time variable, the comparison group and the cohort (first-treated period) or treatment indicator; metrics.nobs; estimate and std_error on every row that isn't dropped; a default vcov with type; and a `did` object on at least one row saying which treatment effect the row is (att_gt, event, group, calendar, simple, pre_avg, post_avg). conf_low/conf_high are pointwise; uniform bands go in the row's did.band_low/band_high. structures.did (cohort sizes, pre-trend test, uniform-band critical value, per-cell sample sizes) is expected, not required. Does not build on inference/0.1: csdid, R did and Stata did2s use normal inference with no residual df, and csdid's wild bootstrap reports no p-values. Records that meet inference/0.1 too (R and pyfixest did2s) claim both.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"did\" is recommended.", "type": "string"},
+                "method": {
+                  "description": "The DiD estimator.",
+                  "type": "string",
+                  "x-vocabulary": ["callaway_santanna", "did2s", "imputation", "sun_abraham", "extended_twfe", "stacked"]
+                }
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["did"],
+          "properties": {
+            "did": {"$ref": "#/$defs/design"},
+            "options": {
+              "properties": {
+                "outcome_model": {
+                  "description": "How the 2x2 comparisons adjust for covariates (Callaway-Sant'Anna). csdid method(), R did est_method.",
+                  "type": "string",
+                  "x-vocabulary": ["reg", "ipw", "stdipw", "dr", "dripw", "drimp"],
+                  "x-tools": {"csdid": "e(method)", "did": "est_method (\"dr\" = dripw, \"ipw\" = stdipw)"}
+                }
+              }
+            }
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "properties": {
+            "nobs": {
+              "description": "Rows used, as in the core. R did reports units, not rows: its n goes in n_units.",
+              "x-tools": {"csdid": "e(N)", "did2s (Stata)": "e(N)", "did2s (R)": "nobs()", "pyfixest": "_N", "did": "rows of the data used (n is units in a panel)"}
+            },
+            "n_units": {"description": "Cross-sectional units used (panel data).", "type": ["integer", "null"], "x-tools": {"did": "n (panel) / DIDparams$id_count", "pyfixest": "data[idname].nunique()"}},
+            "n_periods": {"description": "Time periods in the sample.", "type": ["integer", "null"], "x-tools": {"did": "DIDparams$time_periods_count (nT)", "csdid": "words(e(tlev))"}},
+            "n_cohorts": {"description": "Treated cohorts (distinct first-treated periods), not counting never-treated.", "type": ["integer", "null"], "x-tools": {"did": "DIDparams$treated_groups_count (nG)", "csdid": "words(e(glev))"}},
+            "n_never_treated": {"description": "Never-treated units (rows, for repeated cross sections).", "type": ["integer", "null"]},
+            "n_not_identified": {"description": "Rows dropped because their counterfactual is not identified (no untreated observations in their fixed-effect level).", "type": ["integer", "null"], "x-tools": {"did2s (Stata)": "e(N_noid)"}}
+          }
+        },
+        "parameters": {
+          "contains": {"required": ["did"]},
+          "items": {
+            "properties": {"did": {"$ref": "#/$defs/did_row"}},
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "structures": {
+          "required": ["vcov"],
+          "x-expected": ["did"],
+          "properties": {
+            "vcov": {
+              "description": "At most one vcov is the default; the default (or a lone vcov) needs type. ssc is recommended: record {convention, formula: \"none\"} when the tool applies no correction.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {
+                    "x-vocabulary": ["influence_function", "multiplier_bootstrap", "wild_bootstrap", "cluster_bootstrap", "two_stage_gmm"],
+                    "x-tools": {"csdid": "influence_function, or wild_bootstrap when e(vcetype) is \"WBoot\"", "did": "multiplier_bootstrap (bstrap = TRUE, the default) or influence_function", "did2s (Stata)": "two_stage_gmm", "did2s (R)": "two_stage_gmm, or cluster_bootstrap (bootstrap = TRUE)", "pyfixest": "two_stage_gmm (_vcov_type_detail \"CRV1 (GMM)\")"}
+                  },
+                  "reps": {"description": "Bootstrap replications.", "type": "integer", "x-tools": {"csdid": "e(reps)", "did": "biters", "did2s (R)": "n_bootstraps"}},
+                  "bootstrap_weights": {"description": "Multiplier/wild bootstrap weight distribution.", "type": "string", "x-vocabulary": ["mammen", "rademacher"], "x-tools": {"csdid": "e(wbtype)", "did": "mammen (fixed)"}},
+                  "seed": {"type": ["string", "integer", "null"], "x-tools": {"csdid": "e(seed)"}}
+                }
+              }
+            },
+            "did": {"$ref": "#/$defs/did_structure"}
+          }
+        }
+      }
+    },
+    "design": {
+      "description": "The DiD design as specified, resolved.",
+      "type": "object",
+      "required": ["time", "comparison"],
+      "anyOf": [{"required": ["cohort"]}, {"required": ["treatment"]}],
+      "properties": {
+        "time": {"description": "Calendar-period variable.", "type": "string", "x-tools": {"csdid": "time()", "did": "tname", "pyfixest": "tname", "did2s": "in first_stage FEs"}},
+        "unit": {"description": "Unit identifier; null for repeated cross sections.", "type": ["string", "null"], "x-tools": {"csdid": "e(id) / ivar()", "did": "idname", "pyfixest": "idname", "did2s (Stata)": "unit()"}},
+        "cohort": {"description": "Variable holding each unit's first treated period (0 or missing for never-treated, as the tool codes it).", "type": "string", "x-tools": {"csdid": "e(ggroup) / gvar()", "did": "gname", "pyfixest": "gname"}},
+        "never_treated_code": {"description": "Value of the cohort variable that marks never-treated units.", "type": ["number", "string", "null"]},
+        "treatment": {"description": "0/1 indicator of treated observations.", "type": "string", "x-tools": {"did2s": "treatment"}},
+        "panel": {"description": "true for a panel, false for repeated cross sections.", "type": "boolean", "x-tools": {"did": "panel", "csdid": "ivar() given"}},
+        "balanced": {"description": "Whether an unbalanced panel was allowed (false) or balanced first (true).", "type": "boolean", "x-tools": {"did": "!allow_unbalanced_panel"}},
+        "comparison": {
+          "description": "Which observations serve as controls. never_treated: units never treated in the sample; not_yet_treated: never-treated plus units not yet treated at t; untreated: every untreated observation (imputation estimators).",
+          "type": "string",
+          "x-vocabulary": ["never_treated", "not_yet_treated", "untreated"],
+          "x-tools": {"csdid": "e(control_group) (notyet)", "did": "control_group", "did2s": "untreated (fixed)"}
+        },
+        "anticipation": {"description": "Periods of anticipation allowed before treatment.", "type": "integer", "minimum": 0, "x-tools": {"did": "anticipation", "csdid": "0 (no option)"}},
+        "base_period": {
+          "description": "Pre-period comparisons: varying (t-1 vs t) or universal (g-1-anticipation for every t).",
+          "type": "string",
+          "x-vocabulary": ["varying", "universal"],
+          "x-tools": {"did": "base_period", "csdid": "e(typebase): default = varying; long/long2 compare with g-1 (record the option too)"}
+        },
+        "covariates": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"csdid": "varlist after the outcome", "did": "xformla", "pyfixest": "xfml"}}
+      }
+    },
+    "did_row": {
+      "description": "Which treatment effect a parameter row is. Rows without it (covariates in a did2s second stage, for example) are not treatment effects.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "x-vocabulary": ["att_gt", "event", "group", "calendar", "simple", "pre_avg", "post_avg", "other"],
+          "x-tools": {"csdid": "agg(): attgt, event (Tm#/Tp#, Pre_avg/Post_avg), group, calendar, simple (ATT)", "did": "att_gt rows; aggte type dynamic = event, group, calendar, simple", "did2s": "event when the second stage is relative-time dummies, simple for a single treatment dummy"}
+        },
+        "cohort": {"description": "First treated period (att_gt, group).", "type": ["number", "string"]},
+        "period": {"description": "Calendar period t (att_gt, calendar).", "type": ["number", "string"]},
+        "base_period": {"description": "Period compared with (att_gt).", "type": ["number", "string"]},
+        "event_time": {"description": "Periods relative to treatment, e = t - g (event). A binned endpoint keeps its edge value and sets binned.", "type": "number"},
+        "binned": {"description": "The row pools event times beyond event_time.", "type": "boolean"},
+        "weight": {"description": "Aggregation weight of this row in the overall ATT, when the tool reports it.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "band_low": {"description": "Lower end of the simultaneous (uniform) confidence band.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "band_high": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "att_gt"}}}, "then": {"required": ["cohort", "period"]}},
+        {"if": {"properties": {"type": {"const": "event"}}}, "then": {"required": ["event_time"]}},
+        {"if": {"properties": {"type": {"const": "group"}}}, "then": {"required": ["cohort"]}},
+        {"if": {"properties": {"type": {"const": "calendar"}}}, "then": {"required": ["period"]}}
+      ]
+    },
+    "test": {
+      "description": "A test statistic, as in iv/0.1.",
+      "type": "object",
+      "required": ["statistic"],
+      "properties": {
+        "name": {"type": "string"},
+        "statistic": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "p_value": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "df": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "distribution": {"type": "string", "x-vocabulary": ["F", "chi2", "normal"]},
+        "vcov": {"description": "vcov type the statistic uses, when it differs from the default vcov.", "type": "string"}
+      }
+    },
+    "did_structure": {
+      "description": "Design and diagnostics of a DiD run: counts, never the unit ids.",
+      "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+      "properties": {
+        "kind": {"enum": ["object", "link"]},
+        "cohorts": {
+          "description": "One entry per cohort in the sample, never-treated included (cohort null or the tool's code, never_treated true).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["cohort"],
+            "properties": {
+              "cohort": {"type": ["number", "string", "null"]},
+              "never_treated": {"type": "boolean"},
+              "n_units": {"$ref": "../estimation-0.1.json#/$defs/count"},
+              "n_rows": {"$ref": "../estimation-0.1.json#/$defs/count"}
+            }
+          }
+        },
+        "periods": {"description": "Calendar periods in the sample.", "type": "array"},
+        "cells": {
+          "description": "Per (cohort, period) 2x2 comparison: the rows behind each ATT(g,t).",
+          "type": "array",
+          "x-tools": {"csdid": "e(gtt): cohort t0 t1 error N N_cntr N_trt"},
+          "items": {
+            "type": "object",
+            "required": ["cohort", "period"],
+            "properties": {
+              "cohort": {"type": ["number", "string"]},
+              "period": {"type": ["number", "string"]},
+              "base_period": {"type": ["number", "string"]},
+              "n": {"$ref": "../estimation-0.1.json#/$defs/count"},
+              "n_control": {"$ref": "../estimation-0.1.json#/$defs/count"},
+              "n_treated": {"$ref": "../estimation-0.1.json#/$defs/count"},
+              "error": {"description": "The tool's return code for the cell (csdid _rc), 0 when it estimated.", "type": ["integer", "null"]}
+            }
+          }
+        },
+        "pretrend": {
+          "description": "Joint test that the pre-treatment effects are zero.",
+          "$ref": "#/$defs/test",
+          "x-tools": {"csdid": "estat pretrend: r(chi2), r(pchi2), r(df)", "did": "W, Wpval (summary: \"P-value for pre-test of parallel trends assumption\")"}
+        },
+        "uniform_band": {
+          "description": "The simultaneous confidence band behind parameters[*].did.band_low/band_high.",
+          "type": "object",
+          "properties": {
+            "critical_value": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"did": "c (att_gt), crit.val.egt (aggte)"}},
+            "level": {"type": "number", "x-tools": {"did": "1 - alp", "csdid": "level()"}},
+            "method": {"type": "string", "x-vocabulary": ["multiplier_bootstrap", "wild_bootstrap"]},
+            "applies_to": {"description": "Row types the band covers.", "$ref": "../estimation-0.1.json#/$defs/strings"}
+          }
+        }
+      }
+    }
+  }
+}

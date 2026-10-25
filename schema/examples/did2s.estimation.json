@@ -1,0 +1,269 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "7d1f0c52-3b8e-4a61-9d2c-5e4f6a7b8c90",
+    "created": "2026-10-25T19:40:00Z",
+    "status": "ok",
+    "estimator": {"family": "did", "method": "did2s"},
+    "responses": ["dep_var"],
+    "profiles": ["inference/0.1", "did/0.1", "did2s/0.1"],
+    "notes": "Real run: pyfixest 0.60.0 did2s on did2s's df_het data, event times binned at -5 and 5, never-treated rows in the reference bin (rel = -1)."
+  },
+  "specification": {
+    "call": "pf.did2s(df_het, yname=\"dep_var\", first_stage=\"~ 0 | unit + year\", second_stage=\"~ i(rel, ref=-1)\", treatment=\"treat\", cluster=\"state\")",
+    "formula": {"text": "dep_var ~ i(rel, ref=-1)", "syntax": "fixest"},
+    "clusters": ["state"],
+    "weights": null,
+    "did": {
+      "time": "year",
+      "unit": "unit",
+      "treatment": "treat",
+      "panel": true,
+      "comparison": "untreated"
+    },
+    "options": {"first_stage": "~ 0 | unit + year", "second_stage": "~ i(rel, ref=-1)"}
+  },
+  "metrics": {
+    "nobs": 46500,
+    "df_residual": 46490,
+    "n_units": 1500,
+    "n_periods": 31,
+    "n_cohorts": 2,
+    "n_never_treated": 526,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "rel::-5",
+      "canonical": {
+        "name": "rel-5",
+        "factors": [
+          {"variable": "rel", "level": "-5", "reference": "-1"}
+        ]
+      },
+      "estimate": -0.0027119567937734365,
+      "std_error": 0.0041440869718245964,
+      "statistic": -0.6544159937307955,
+      "p_value": 0.5128470703143571,
+      "conf_low": -0.01083442947540679,
+      "conf_high": 0.005410515887859916,
+      "did": {"type": "event", "event_time": -5, "binned": true}
+    },
+    {
+      "term": "rel::-4",
+      "canonical": {
+        "name": "rel-4",
+        "factors": [
+          {"variable": "rel", "level": "-4", "reference": "-1"}
+        ]
+      },
+      "estimate": 0.00563043415329474,
+      "std_error": 0.01986589993622672,
+      "statistic": 0.28342205343676824,
+      "p_value": 0.7768545869810564,
+      "conf_low": -0.03330702797651624,
+      "conf_high": 0.04456789628310572,
+      "did": {"type": "event", "event_time": -4}
+    },
+    {
+      "term": "rel::-3",
+      "canonical": {
+        "name": "rel-3",
+        "factors": [
+          {"variable": "rel", "level": "-3", "reference": "-1"}
+        ]
+      },
+      "estimate": 0.024642928744992906,
+      "std_error": 0.021302115080624653,
+      "statistic": 1.1568301387784208,
+      "p_value": 0.24734770974433307,
+      "conf_low": -0.017109536630318025,
+      "conf_high": 0.06639539412030383,
+      "did": {"type": "event", "event_time": -3}
+    },
+    {
+      "term": "rel::-2",
+      "canonical": {
+        "name": "rel-2",
+        "factors": [
+          {"variable": "rel", "level": "-2", "reference": "-1"}
+        ]
+      },
+      "estimate": 0.0011694886549206368,
+      "std_error": 0.025094439209378122,
+      "statistic": 0.046603498295494226,
+      "p_value": 0.9628294439995859,
+      "conf_low": -0.04801598894844612,
+      "conf_high": 0.05035496625828739,
+      "did": {"type": "event", "event_time": -2}
+    },
+    {
+      "term": "rel::0",
+      "canonical": {
+        "name": "rel0",
+        "factors": [
+          {"variable": "rel", "level": "0", "reference": "-1"}
+        ]
+      },
+      "estimate": 1.3730784091330022,
+      "std_error": 0.039535266404723914,
+      "statistic": 34.730470640484626,
+      "p_value": 0.0,
+      "conf_low": 1.2955886934207668,
+      "conf_high": 1.4505681248452376,
+      "did": {"type": "event", "event_time": 0}
+    },
+    {
+      "term": "rel::1",
+      "canonical": {
+        "name": "rel1",
+        "factors": [
+          {"variable": "rel", "level": "1", "reference": "-1"}
+        ]
+      },
+      "estimate": 1.602102127104355,
+      "std_error": 0.05051112918700722,
+      "statistic": 31.717804628221565,
+      "p_value": 0.0,
+      "conf_low": 1.503099555553768,
+      "conf_high": 1.7011046986549418,
+      "did": {"type": "event", "event_time": 1}
+    },
+    {
+      "term": "rel::2",
+      "canonical": {
+        "name": "rel2",
+        "factors": [
+          {"variable": "rel", "level": "2", "reference": "-1"}
+        ]
+      },
+      "estimate": 1.6657198517622158,
+      "std_error": 0.04528632442042285,
+      "statistic": 36.781961730835974,
+      "p_value": 0.0,
+      "conf_low": 1.5769579759962458,
+      "conf_high": 1.7544817275281859,
+      "did": {"type": "event", "event_time": 2}
+    },
+    {
+      "term": "rel::3",
+      "canonical": {
+        "name": "rel3",
+        "factors": [
+          {"variable": "rel", "level": "3", "reference": "-1"}
+        ]
+      },
+      "estimate": 1.787463373764016,
+      "std_error": 0.050534625961044875,
+      "statistic": 35.37106171799709,
+      "p_value": 0.0,
+      "conf_low": 1.6884147481835488,
+      "conf_high": 1.8865119993444832,
+      "did": {"type": "event", "event_time": 3}
+    },
+    {
+      "term": "rel::4",
+      "canonical": {
+        "name": "rel4",
+        "factors": [
+          {"variable": "rel", "level": "4", "reference": "-1"}
+        ]
+      },
+      "estimate": 1.9149127891040354,
+      "std_error": 0.038524159685993695,
+      "statistic": 49.706802295294295,
+      "p_value": 0.0,
+      "conf_low": 1.839404857740666,
+      "conf_high": 1.9904207204674047,
+      "did": {"type": "event", "event_time": 4}
+    },
+    {
+      "term": "rel::5",
+      "canonical": {
+        "name": "rel5",
+        "factors": [
+          {"variable": "rel", "level": "5", "reference": "-1"}
+        ]
+      },
+      "estimate": 2.493466488401622,
+      "std_error": 0.02470014055931023,
+      "statistic": 100.94948578994054,
+      "p_value": 0.0,
+      "conf_low": 2.445053842072154,
+      "conf_high": 2.54187913473109,
+      "did": {"type": "event", "event_time": 5, "binned": true}
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["rel::-5", "rel::-4", "rel::-3", "rel::-2", "rel::0", "rel::1", "rel::2", "rel::3", "rel::4", "rel::5"],
+        "data": [
+          [1.7173456830046356e-05, -3.368205533125088e-05, -4.384547587596812e-05, -5.7343646540092e-05, -3.132796671251433e-05, 5.076637184491995e-07, 2.2460993907667707e-05, -3.387648892836313e-05, 2.8888548319367604e-05, -5.454428489622338e-06],
+          [-3.368205533125088e-05, 0.00039465398027617286, 2.4531838009359943e-05, -6.468495389707807e-05, 0.00011632133426683615, 5.922584246221368e-05, -0.0002359031037811242, -8.278181045500213e-05, -3.213513430272088e-05, 6.776001165403355e-05],
+          [-4.384547587596812e-05, 2.4531838009359943e-05, 0.0004537801069081762, 6.179174662907244e-05, 0.00026083826616455383, 0.00032384708345446127, 6.390603763176111e-06, 0.0002540946369425703, 0.0001446138952565773, -1.7375262700562352e-05],
+          [-5.7343646540092e-05, -6.468495389707807e-05, 6.179174662907244e-05, 0.000629730879233174, -0.00011900384232469477, -0.0002955761889780423, -0.00021983403612951347, -0.00010451731165268909, -5.051855677855792e-05, -2.488198896960353e-06],
+          [-3.132796671251433e-05, 0.00011632133426683615, 0.00026083826616455383, -0.00011900384232469477, 0.0015630372896924911, 0.0002971728141523766, 0.00020497358592778037, 0.0005097508795291343, -5.77924321599056e-06, 0.00025118702620504296],
+          [5.076637184491995e-07, 5.922584246221368e-05, 0.00032384708345446127, -0.0002955761889780423, 0.0002971728141523766, 0.0025513741717465327, 0.00025341850083515687, -4.425311027198233e-05, 9.665933412067858e-05, 0.00026242385237208797],
+          [2.2460993907667707e-05, -0.0002359031037811242, 6.390603763176111e-06, -0.00021983403612951347, 0.00020497358592778037, 0.00025341850083515687, 0.002050851179511787, 0.0014106793914490053, 0.0003089051240831476, 0.00043429455799900675],
+          [-3.387648892836313e-05, -8.278181045500213e-05, 0.0002540946369425703, -0.00010451731165268909, 0.0005097508795291343, -4.425311027198233e-05, 0.0014106793914490053, 0.0025537484210227104, -9.72303092483188e-06, 0.0005963210076995516],
+          [2.8888548319367604e-05, -3.213513430272088e-05, 0.0001446138952565773, -5.051855677855792e-05, -5.77924321599056e-06, 9.665933412067858e-05, 0.0003089051240831476, -9.72303092483188e-06, 0.0014841108795119419, 0.0001887578697126598],
+          [-5.454428489622338e-06, 6.776001165403355e-05, -1.7375262700562352e-05, -2.488198896960353e-06, 0.00025118702620504296, 0.00026242385237208797, 0.00043429455799900675, 0.0005963210076995516, 0.0001887578697126598, 0.0006100969436496822]
+        ],
+        "type": "two_stage_gmm",
+        "cluster": ["state"],
+        "n_clusters": {"state": 40},
+        "ssc": {
+          "convention": "pyfixest",
+          "formula": "none",
+          "K_counts": "pyfixest 0.60.0 leaves the iid second stage's _ssc ((N-1)/(N-K)) on the fit; it is not applied to the GMM vcov"
+        },
+        "df_t": 46490,
+        "default": true
+      }
+    ],
+    "did": {
+      "kind": "object",
+      "cohorts": [
+        {"cohort": 0, "never_treated": true, "n_units": 526},
+        {"cohort": 2000, "n_units": 456},
+        {"cohort": 2010, "n_units": 518}
+      ]
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "pyfixest",
+        "version": "0.60.0",
+        "purl": "pkg:pypi/pyfixest@0.60.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"},
+      {
+        "name": "formulaic",
+        "version": "1.2.2",
+        "purl": "pkg:pypi/formulaic@1.2.2",
+        "role": "dependency"
+      },
+      {"name": "numpy", "version": "2.5.3", "purl": "pkg:pypi/numpy@2.5.3", "role": "dependency"},
+      {"name": "pandas", "version": "3.0.5", "purl": "pkg:pypi/pandas@3.0.5", "role": "dependency"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "df_het",
+        "location": "pyfixest/did/data/df_het.csv",
+        "rows": 46500,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "2b67a1f99673d705010fe0d655fd22a2ef39c56bdd4034bf51412d049f4da40c",
+          "of": "file"
+        },
+        "source": "did2s (Butts), simulated heterogeneous-effects panel"
+      }
+    ]
+  }
+}
