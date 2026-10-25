@@ -168,6 +168,16 @@ columns depend on the estimator:
   `first_stage`, `zero_inflation`, `random`), `group` (for random-effect terms).
 - `dropped`: `null`, `"collinear"` or `"reference"`. Dropped terms stay in the list as rows,
   so the term list is complete.
+- `scale`: the scale of `estimate`, `std_error` and the interval. Absent (or `"estimation"`)
+  means the scale the model was estimated on: log-odds, log hazard, log rate. Writers SHOULD
+  record that scale. A writer whose only source is exponentiated (a table from Stata's `or`,
+  `irr`, `hr` or `eform` display options, broom's `exponentiate = TRUE`, a published table)
+  writes `scale: "exponentiated"`: `estimate` is exp(b), `std_error` is exp(b)·se (the delta
+  method, as Stata displays it), `conf_low`/`conf_high` are the exponentiated endpoints, and
+  `statistic`/`p_value` remain those of the estimation-scale test. `measure` names what an
+  exponentiated estimate is (`odds_ratio`, `hazard_ratio`, `incidence_rate_ratio`,
+  `risk_ratio`, `relative_risk_ratio`, `subhazard_ratio`). Stata's `e(b)` is always on the
+  estimation scale; the display options change only `r(table)`.
 
 Rows are the model's reported parameters. Per-level estimates (fixed-effect coefficients,
 BLUPs) are not parameters in this sense: they MUST go in an attachment (section 8).
@@ -576,6 +586,10 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`choice/0.1`](profiles/choice.md) | standard | `meta.estimator.method`; `specification.choice` (case, alternative); `estimate`, `std_error`; `n_cases`, `log_lik`; a default `vcov` with `type`; `numerics.converged`; mixed logit adds random parameters, draws and a spread row |
 | [`sem/0.1`](profiles/sem.md) | standard | `meta.estimator.method`; `specification.formula` (model syntax); a `sem` row object (op, lhs, rhs, free); `std_error` on free parameters; `nobs`, `chisq`, `chisq_df`; a default `vcov` with `type`; `numerics.converged`; `cfi`, `tli`, `rmsea`, `srmr` expected |
 | [`mediation/0.1`](profiles/mediation.md) | standard | `specification.mediation` (treatment, mediators, outcome, inference method); `nobs`; an indirect-effect row; `estimate` with `std_error` or an interval on effect rows |
+| [`mi/0.1`](profiles/mi.md) | standard | `specification.imputation` (`m`, `method`); `estimate`, `std_error` (pooled); `nobs`; a default `vcov` with `type`; per-row Rubin components as vocabulary |
+| [`survey/0.1`](profiles/survey.md) | standard | `specification.survey_design` (weights, strata, PSUs, fpc with its convention, variance method, single-PSU handling); `estimate`, `std_error`; `nobs`; a default `vcov` with `type` |
+| [`multiple-testing/0.1`](profiles/multiple-testing.md) | standard | `specification.multiple_testing` (method, error rate, `n_tests`); `p_value_adjusted` on the tested rows |
+| [`resampling/0.1`](profiles/resampling.md) | standard | `specification.resampling` (method, `reps`); a row with a `resampling` p-value or interval |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

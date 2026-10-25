@@ -1,0 +1,81 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "7f4b1d9e-3a6c-4e25-a8f1-6d2c9e0b4a57",
+    "created": "2026-10-26T01:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "linear", "method": "ols"},
+    "responses": ["Y", "Y2"],
+    "profiles": ["multiple-testing/0.1"],
+    "notes": "Real run: pyfixest 0.60.0, feols(\"Y + Y2 ~ X1 + X2 | f1\") with CRV1 by f1 on pyfixest's example data; the family is X2's coefficient in the two outcome models, adjusted by Romano-Wolf (9999 wild-bootstrap replications, seed 20261025). The same family gives Westfall-Young 0.0 and 0.0045 and Bonferroni 4.5e-10 and 0.0090. pyfixest's Romano-Wolf floor is 1/reps (1e-4 here), its Westfall-Young floor is 0."
+  },
+  "specification": {
+    "call": "pf.rwolf(pf.feols(\"Y + Y2 ~ X1 + X2 | f1\", data, vcov={\"CRV1\": \"f1\"}).to_list(), param=\"X2\", reps=9999, seed=20261025)",
+    "formula": {"text": "Y + Y2 ~ X1 + X2 | f1", "syntax": "fixest"},
+    "clusters": ["f1"],
+    "multiple_testing": {
+      "method": "romano_wolf",
+      "controls": "fwer",
+      "n_tests": 2,
+      "family": "X2 across outcomes Y and Y2",
+      "reps": 9999,
+      "seed": 20261025,
+      "resampling": "wild_bootstrap"
+    }
+  },
+  "metrics": {
+    "nobs": {"value": 997, "definition": "rows used by the Y model; the Y2 model used 998"},
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "X2",
+      "response": "Y",
+      "estimate": -0.17422527489454392,
+      "std_error": 0.018409010632186022,
+      "statistic": -9.464130277046568,
+      "p_value": 2.2678903199846445e-10,
+      "conf_low": -0.2118759291218269,
+      "conf_high": -0.13657462066726095,
+      "p_value_adjusted": 0.0001
+    },
+    {
+      "term": "X2",
+      "response": "Y2",
+      "estimate": -0.13055808306548833,
+      "std_error": 0.04241233813775494,
+      "statistic": -3.0783043047859495,
+      "p_value": 0.004518855214512563,
+      "conf_low": -0.2173010542169801,
+      "conf_high": -0.04381511191399656,
+      "p_value_adjusted": 0.0046
+    }
+  ],
+  "provenance": {
+    "software": [
+      {
+        "name": "pyfixest",
+        "version": "0.60.0",
+        "purl": "pkg:pypi/pyfixest@0.60.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {
+        "name": "wildboottest",
+        "version": "0.3.2",
+        "purl": "pkg:pypi/wildboottest@0.3.2",
+        "role": "dependency",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "pyfixest get_data()",
+        "rows": 1000,
+        "source": "pyfixest simulated example data"
+      }
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "0d8e2f6a-4b9c-4a71-93e5-1f7a3c8d2b64",
+    "created": "2026-10-26T01:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "linear", "method": "ols"},
+    "responses": ["Y"],
+    "profiles": ["inference/0.1", "resampling/0.1"],
+    "notes": "Real run: pyfixest 0.60.0 feols(\"Y ~ X1 + X2 | f1\") with CRV1 by f1 (30 clusters), then wildboottest(param=\"X2\", reps=9999, seed=20261025): restricted wild cluster bootstrap (WCR11), Rademacher weights. No replication was as extreme as the observed t, so the bootstrap p-value is 0 (resolution about 1/9999). The bootstrap t differs from the analytic t because wildboottest applies its own small-sample factor (k_adj, G_adj)."
+  },
+  "specification": {
+    "call": "pf.feols(\"Y ~ X1 + X2 | f1\", data, vcov={\"CRV1\": \"f1\"}).wildboottest(param=\"X2\", reps=9999, seed=20261025)",
+    "formula": {"text": "Y ~ X1 + X2 | f1", "syntax": "fixest"},
+    "clusters": ["f1"],
+    "resampling": {
+      "method": "wild_cluster_bootstrap",
+      "reps": 9999,
+      "seed": 20261025,
+      "cluster": ["f1"],
+      "weights": "rademacher",
+      "impose_null": true,
+      "variant": "11",
+      "statistic": "t",
+      "small_sample": {"k_adj": true, "G_adj": true}
+    }
+  },
+  "metrics": {"nobs": 997, "df_residual": 29},
+  "parameters": [
+    {
+      "term": "X1",
+      "estimate": -0.949525571419159,
+      "std_error": 0.06655717524100419,
+      "statistic": -14.26631415742807,
+      "p_value": 1.2212453270876722e-14
+    },
+    {
+      "term": "X2",
+      "estimate": -0.17422527489454392,
+      "std_error": 0.018409010632186022,
+      "statistic": -9.464130277046568,
+      "p_value": 2.2678903199846445e-10,
+      "resampling": {"statistic": -9.325050112033143, "p_value": 0.0, "null_value": 0}
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["X1", "X2"],
+        "data": [
+          [0.0044298575760617406, 1.9814525076441565e-06],
+          [1.9814525076441565e-06, 0.00033889167245593807]
+        ],
+        "type": "CRV1",
+        "cluster": ["f1"],
+        "n_clusters": {"f1": 30},
+        "df_t": 29,
+        "ssc": {"convention": "pyfixest", "factors": {"total": 1.0365642128633872}},
+        "default": true
+      }
+    ]
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "pyfixest",
+        "version": "0.60.0",
+        "purl": "pkg:pypi/pyfixest@0.60.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {
+        "name": "wildboottest",
+        "version": "0.3.2",
+        "purl": "pkg:pypi/wildboottest@0.3.2",
+        "role": "dependency",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "pyfixest get_data()",
+        "rows": 1000,
+        "source": "pyfixest simulated example data"
+      }
+    ]
+  }
+}

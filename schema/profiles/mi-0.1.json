@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/mi-0.1.json",
+  "title": "mi/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for results pooled over multiply imputed data sets (Rubin's rules): R mice (mice, pool), Stata mi impute / mi estimate, Python statsmodels MICE (survey 2026-10-25, spec/profiles/mi.md). Combines with the analysis model's profile (glm/0.1, linear-fe/0.1, ...) where that profile's requirements apply to pooled results. Requires specification.imputation with the number of imputations m and the imputation method; estimate and std_error (the pooled total-variance SE) on every row that isn't dropped; metrics.nobs; and a default vcov with type. Per-row within/between variances, riv, lambda, fmi and df are vocabulary: tools differ in what they store, and statsmodels' FMI is mice's lambda.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "metrics", "structures"],
+      "properties": {
+        "specification": {
+          "required": ["imputation"],
+          "properties": {
+            "imputation": {"$ref": "#/$defs/imputation"},
+            "options": {
+              "properties": {
+                "combining_rule": {"type": "string", "x-vocabulary": ["rubin", "reiter2003"], "x-tools": {"mice": "pool(rule =) (\"rubin1987\"; \"reiter2003\" for synthetic data)", "Stata": "Rubin", "statsmodels": "Rubin"}},
+                "df_method": {
+                  "description": "Degrees of freedom for pooled tests.",
+                  "type": "string",
+                  "x-vocabulary": ["barnard_rubin", "rubin_1987", "none"],
+                  "x-tools": {"mice": "barnard_rubin (with dfcom from the model)", "Stata mi estimate": "barnard_rubin by default for models with residual df (nosmall: rubin_1987)", "statsmodels": "none (normal tests)"}
+                },
+                "dfcom": {"description": "Complete-data residual df used in the Barnard-Rubin adjustment.", "type": ["number", "null"], "x-tools": {"mice": "pool(dfcom =) (from the model by default)"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"mi": {"$ref": "#/$defs/mi_row"}},
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "properties": {
+            "nobs": {"description": "Rows in each completed data set.", "x-tools": {"mice": "nobs of each fit", "Stata": "e(N)", "statsmodels": "sample size"}},
+            "relative_efficiency": {"x-tools": {"Stata": "e(re_mi)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov"],
+          "properties": {
+            "vcov": {
+              "description": "The pooled total variance T = Ubar + (1 + 1/m) B. At most one default; the default (or a lone vcov) needs type (the within-imputation type, e.g. iid, HC1).",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ]
+            }
+          }
+        }
+      }
+    },
+    "imputation": {
+      "description": "How the data were imputed.",
+      "type": "object",
+      "required": ["m", "method"],
+      "properties": {
+        "m": {"description": "Number of imputed data sets.", "type": "integer", "minimum": 2, "x-tools": {"mice": "m (5)", "Stata": "e(M_mi), mi impute add()", "statsmodels": "fit(n_imputations=) (10)"}},
+        "method": {"description": "Overall approach.", "type": "string", "x-vocabulary": ["chained", "mvn", "monotone", "jomo", "amelia"], "x-tools": {"mice": "chained", "Stata": "mi impute chained / mvn / monotone", "statsmodels": "chained (MICEData)"}},
+        "variable_methods": {
+          "description": "Per imputed variable: {variable: method}.",
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "x-vocabulary": ["pmm", "norm", "logreg", "polyreg", "polr", "cart", "rf", "gaussian", "regress", "logit", "mlogit", "ologit"],
+          "x-tools": {"mice": "method (default pmm for numeric, logreg/polyreg/polr for factors)", "Stata": "mi impute chained (regress, pmm, logit, ...)", "statsmodels": "perturbation_method (\"gaussian\"), k_pmm (20): predictive mean matching with a perturbed model"}
+        },
+        "imputed": {"description": "Variables imputed.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+        "iterations": {"description": "Iterations (burn-in) per chain.", "type": ["integer", "null"], "x-tools": {"mice": "maxit (5)", "Stata chained": "burnin() (10)", "statsmodels": "fit(n_burnin=) (10)"}},
+        "seed": {"type": ["integer", "string", "null"], "x-tools": {"mice": "seed (NA)", "Stata": "rseed()", "statsmodels": "numpy global RNG"}},
+        "missing": {"description": "Missing values per imputed variable before imputation.", "type": "object", "additionalProperties": {"$ref": "../estimation-0.1.json#/$defs/count"}}
+      }
+    },
+    "mi_row": {
+      "description": "Rubin's-rules components for one parameter.",
+      "type": "object",
+      "properties": {
+        "ubar": {"description": "Mean within-imputation variance.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "ubar", "Stata": "diag(e(W_mi))"}},
+        "b": {"description": "Between-imputation variance.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "b", "Stata": "diag(e(B_mi))"}},
+        "t": {"description": "Total variance Ubar + (1 + 1/m) B.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "t"}},
+        "riv": {"description": "Relative increase in variance (1 + 1/m) B / Ubar.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "riv", "Stata": "e(riv_mi)"}},
+        "lambda": {"description": "Share of total variance due to missingness, (1 + 1/m) B / T.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "lambda", "statsmodels": "frac_miss_info (\"FMI\" in the summary)"}},
+        "fmi": {"description": "Fraction of missing information, df-adjusted: (riv + 2 / (df + 3)) / (1 + riv).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "fmi", "Stata": "e(fmi_mi)"}},
+        "df": {"description": "Degrees of freedom of the pooled test.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "df", "Stata": "e(df_mi)"}}
+      }
+    }
+  }
+}

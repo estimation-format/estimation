@@ -1,0 +1,121 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "2c7e9a4b-5d1f-4e83-9b06-8a3c1f5d7e92",
+    "created": "2026-10-26T00:20:00Z",
+    "status": "ok",
+    "estimator": {"family": "linear", "method": "ols"},
+    "responses": ["chl"],
+    "profiles": ["mi/0.1"],
+    "notes": "Real run: statsmodels 0.15.0 MICE on mice's nhanes data (25 rows; bmi, hyp, chl partly missing), analysis model chl ~ age + bmi by OLS, 20 imputations after 10 burn-in cycles, numpy seed 20261025. statsmodels pools with Rubin's rules and normal tests (no Barnard-Rubin df). Its summary column \"FMI\" is (1 + 1/m) B / T, which mice calls lambda; it is recorded as lambda. ubar and b were taken from the 20 per-imputation fits."
+  },
+  "specification": {
+    "call": "mice.MICE(\"chl ~ age + bmi\", sm.OLS, mice.MICEData(nhanes)).fit(n_burnin=10, n_imputations=20)",
+    "formula": {"text": "chl ~ age + bmi", "syntax": "patsy"},
+    "weights": null,
+    "imputation": {
+      "m": 20,
+      "method": "chained",
+      "imputed": ["bmi", "hyp", "chl"],
+      "variable_methods": {"bmi": "pmm", "hyp": "pmm", "chl": "pmm"},
+      "iterations": 10,
+      "seed": 20261025,
+      "missing": {"bmi": 9, "hyp": 8, "chl": 10}
+    },
+    "options": {"combining_rule": "rubin", "df_method": "none"}
+  },
+  "metrics": {"nobs": 25, "conf_level": 0.95},
+  "parameters": [
+    {
+      "term": "Intercept",
+      "estimate": 38.087768971661966,
+      "std_error": 82.80888196083697,
+      "statistic": 0.45994787116767155,
+      "p_value": 0.64555363801291,
+      "conf_low": -124.21465727160705,
+      "conf_high": 200.390195214931,
+      "mi": {
+        "ubar": 5025.66859375471,
+        "b": 1744.4212741420208,
+        "t": 6857.310931603832,
+        "riv": 0.36445744554769577,
+        "lambda": 0.2671079605574668
+      },
+      "canonical": {"name": "(Intercept)", "factors": []}
+    },
+    {
+      "term": "age",
+      "estimate": 19.992977319561113,
+      "std_error": 14.254264296358217,
+      "statistic": 1.4025962269177978,
+      "p_value": 0.16073727758602874,
+      "conf_low": -7.944867327416169,
+      "conf_high": 47.930821966538396,
+      "mi": {
+        "ubar": 128.5111006630577,
+        "b": 71.11709520702371,
+        "t": 203.1840506304326,
+        "riv": 0.5810622551833818,
+        "lambda": 0.36751383652251346
+      }
+    },
+    {
+      "term": "bmi",
+      "estimate": 4.267604903563611,
+      "std_error": 2.7286350660128704,
+      "statistic": 1.5640072051846459,
+      "p_value": 0.11781587634383969,
+      "conf_low": -1.0804215527746877,
+      "conf_high": 9.61563135990191,
+      "mi": {
+        "ubar": 5.459234507936742,
+        "b": 1.8916331576555423,
+        "t": 7.445449323475062,
+        "riv": 0.363826615737192,
+        "lambda": 0.2667689657460835
+      }
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["Intercept", "age", "bmi"],
+        "data": [
+          [6857.310931603832, -615.5276220973653, -214.374363376334],
+          [-615.5276220973653, 203.1840506304326, 10.311319451025085],
+          [-214.374363376334, 10.311319451025085, 7.445449323475061]
+        ],
+        "type": "iid",
+        "ssc": {"convention": "statsmodels", "formula": "pooled: Ubar + (1 + 1/m) B"},
+        "default": true
+      }
+    ]
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "statsmodels",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/statsmodels@0.15.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "nhanes",
+        "location": "mice data/nhanes.rda",
+        "rows": 25,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "b10f475ce8a2b5247477aec8117ad983bb409732ed62bad8c579e9c468673c85",
+          "of": "file"
+        },
+        "source": "mice (amices/mice @ 61083e6)"
+      }
+    ]
+  }
+}

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Core: optional `parameters[*].scale` (`estimation`, `exponentiated`) and `measure`
+  (`odds_ratio`, `hazard_ratio`, ...), so exponentiated estimates are labeled.
 - Draft profiles for difference-in-differences: `did/0.1` (standard; csdid, R did, did2s,
   pyfixest did2s), and the tool profiles `did2s/0.1` and `csdid/0.1`, with example records
   and pages in `spec/profiles/`.
@@ -17,6 +19,8 @@
 - Draft standard profiles `sem/0.1` (lavaan, semopy, Stata sem) and `mediation/0.1` (R
   mediation, lavaan :=, PROCESS, Stata estat teffects, pingouin, statsmodels Mediation),
   with example records and pages.
+- Draft cross-cutting standard profiles `mi/0.1`, `survey/0.1`, `multiple-testing/0.1` and
+  `resampling/0.1`, which combine with a model's own profile, with example records and pages.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

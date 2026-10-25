@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/survey-0.1.json",
+  "title": "survey/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for estimates from complex survey designs: R survey (svydesign, svyrepdesign, svyglm, svymean), Stata svyset / svy:, Python samplics (survey 2026-10-25, spec/profiles/survey.md). Combines with the analysis model's profile. Requires specification.survey_design with the weights, strata, PSUs, finite-population correction (with its convention: the tools take population sizes, sampling fractions or 1 - fractions) and the variance method (linearization or a replication method), plus how strata with a single PSU were handled; estimate and std_error on every row that isn't dropped; metrics.nobs; and a default vcov with type. Design counts and df, design effects per row, and replicate-weight details are vocabulary.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "metrics", "structures"],
+      "properties": {
+        "specification": {
+          "required": ["survey_design"],
+          "properties": {"survey_design": {"$ref": "#/$defs/design"}}
+        },
+        "parameters": {
+          "items": {
+            "properties": {
+              "deff": {"description": "Design effect (variance ratio to simple random sampling of the same size).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"R survey": "svymean(deff = TRUE), deff()", "Stata": "estat effects: deff (deft, meff, meft)", "samplics": "estimate(deff=True)"}},
+              "deft": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"Stata": "estat effects deft"}}
+            },
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "properties": {
+            "nobs": {"x-tools": {"R survey": "nrow(design)", "Stata": "e(N)", "samplics": "sample_size"}},
+            "n_strata": {"type": ["integer", "null"], "x-tools": {"Stata": "e(N_strata)", "samplics": "nb_strata"}},
+            "n_psu": {"type": ["integer", "null"], "x-tools": {"Stata": "e(N_psu)", "samplics": "nb_psus"}},
+            "population_size": {"description": "Sum of the weights.", "type": ["number", "null"], "x-tools": {"Stata": "e(N_pop)"}},
+            "df_design": {"description": "Design degrees of freedom: PSUs minus strata for linearization; set per replicate method otherwise.", "type": ["number", "null"], "x-tools": {"R survey": "degf()", "Stata": "e(df_r)", "samplics": "degree_of_freedom (means)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov"],
+          "properties": {
+            "vcov": {
+              "description": "At most one default; the default (or a lone vcov) needs type.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {"properties": {"type": {"x-vocabulary": ["linearized", "brr", "fay", "jackknife", "bootstrap", "sdr"]}}}
+            }
+          }
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "required": ["weights", "strata", "psu", "fpc", "variance", "single_psu"],
+      "properties": {
+        "weights": {"description": "Sampling-weight variable, or null.", "type": ["string", "null"], "x-tools": {"R survey": "weights / probs", "Stata": "svyset [pw=]", "samplics": "samp_weight"}},
+        "strata": {"description": "Stratum variable(s); [] when unstratified.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"R survey": "strata", "Stata": "strata(), e(strata1)", "samplics": "stratum"}},
+        "psu": {"description": "PSU (cluster) variable per stage; [] when PSUs are individual rows.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"R survey": "ids", "Stata": "svyset psu || ssu, e(su1)", "samplics": "psu, ssu"}},
+        "nest": {"description": "PSU ids are only unique within strata.", "type": "boolean", "x-tools": {"R survey": "nest (FALSE)"}},
+        "fpc": {
+          "description": "Finite-population correction, or null when none.",
+          "anyOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["convention"],
+              "properties": {
+                "variable": {"type": ["string", "null"]},
+                "convention": {
+                  "description": "What the fpc values are. Tools differ: R survey takes population sizes (or sampling fractions, if < 1); Stata svyset fpc() takes population sizes or sampling fractions; samplics takes 1 - n/N.",
+                  "type": "string",
+                  "x-vocabulary": ["population_size", "sampling_fraction", "one_minus_fraction"]
+                },
+                "values": {"description": "Per stratum, when given as constants.", "type": "object"}
+              }
+            }
+          ]
+        },
+        "variance": {
+          "description": "Variance estimation method.",
+          "type": "string",
+          "x-vocabulary": ["linearization", "brr", "fay", "jackknife", "bootstrap", "sdr"],
+          "x-tools": {"R survey": "svydesign: linearization; svrepdesign(type = BRR, Fay, JK1, JKn, bootstrap, ...)", "Stata": "svyset vce() (linearized default; brr, jackknife, bootstrap, sdr)", "samplics": "TaylorEstimator / ReplicateEstimator (RepMethod)"}
+        },
+        "replicates": {
+          "description": "Replicate-weight details.",
+          "type": "object",
+          "properties": {
+            "weights": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+            "n": {"type": "integer"},
+            "fay_rho": {"type": ["number", "null"]},
+            "scale": {"type": ["number", "null"], "x-tools": {"R survey": "scale, rscales", "Stata": "svyset ... mse"}},
+            "mse": {"description": "Variance around the full-sample estimate (true) or the replicate mean (false).", "type": "boolean", "x-tools": {"R survey": "mse", "Stata": "mse option"}}
+          }
+        },
+        "single_psu": {
+          "description": "Handling of strata with a single PSU. Defaults differ: R survey fails (options(survey.lonely.psu = \"fail\")), Stata reports missing SEs (singleunit(missing)), samplics raises an error.",
+          "type": "string",
+          "x-vocabulary": ["fail", "missing", "remove", "certainty", "adjust", "average", "scaled", "centered", "combine"],
+          "x-tools": {"R survey": "options(survey.lonely.psu) (\"fail\"; remove, adjust, average, certainty)", "Stata": "singleunit() (missing; certainty, scaled, centered)", "samplics": "single_psu (error; skip, certainty, combine)"}
+        },
+        "subpopulation": {"description": "Domain estimation: the subpopulation condition, estimated with the full design (not by dropping rows).", "type": ["string", "null"], "x-tools": {"R survey": "subset(design, ...)", "Stata": "svy, subpop()", "samplics": "domain"}},
+        "calibration": {"description": "Post-stratification, raking or calibration applied to the weights.", "type": ["string", "object", "null"], "x-tools": {"R survey": "postStratify, rake, calibrate", "Stata": "svyset poststrata(), rake()"}}
+      }
+    }
+  }
+}

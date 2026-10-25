@@ -151,6 +151,16 @@
           "description": "Kept as rows so the term list is complete.",
           "enum": [null, "collinear", "reference"]
         },
+        "scale": {
+          "description": "Scale of estimate, std_error, conf_low and conf_high. Absent or \"estimation\": the scale the model was estimated on (log-odds, log hazard, ...). \"exponentiated\": exp(b), with std_error exp(b) * se (delta method) and exponentiated interval endpoints; statistic and p_value stay those of the estimation-scale test. Writers SHOULD record the estimation scale.",
+          "type": "string",
+          "x-vocabulary": ["estimation", "exponentiated"]
+        },
+        "measure": {
+          "description": "What an exponentiated estimate is.",
+          "type": "string",
+          "x-vocabulary": ["odds_ratio", "hazard_ratio", "incidence_rate_ratio", "risk_ratio", "relative_risk_ratio", "subhazard_ratio"]
+        },
         "importance": {"$ref": "#/$defs/number_or_null"},
         "rank": {"type": "integer"}
       }

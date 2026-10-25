@@ -1,0 +1,115 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "5e1a3c7d-9f2b-4d60-8e14-b7c2a9d4f6e3",
+    "created": "2026-10-26T00:40:00Z",
+    "status": "ok",
+    "estimator": {"family": "linear", "method": "wls"},
+    "responses": ["api00"],
+    "profiles": ["survey/0.1"],
+    "notes": "Real run: samplics 0.6.1 SurveyGLM (linear) on R survey's apistrat (stratified by school type, 200 schools, fpc from stratum population sizes), api00 ~ ell + meals + mobility, Taylor linearization, normal tests. samplics takes the fpc as 1 - n_h/N_h; the same design in R (svydesign(id = ~1, strata = ~stype, weights = ~pw, fpc = ~fpc)) gives the population sizes. Design check: samplics' mean of api00 under this design is 662.29 (SE 9.409), as in R's svymean. R's svyglm would use t tests with design df; samplics uses z."
+  },
+  "specification": {
+    "call": "SurveyGLM(ModelType.LINEAR).estimate(y=d[\"api00\"], x=d[[\"ell\", \"meals\", \"mobility\"]], samp_weight=d[\"pw\"], stratum=d[\"stype\"], fpc=fpc, add_intercept=True)",
+    "terms": ["Intercept", "ell", "meals", "mobility"],
+    "weights": {"variable": "pw", "type": "probability"},
+    "survey_design": {
+      "weights": "pw",
+      "strata": ["stype"],
+      "psu": [],
+      "nest": false,
+      "fpc": {
+        "variable": null,
+        "convention": "one_minus_fraction",
+        "values": {"E": 0.9773806831033702, "H": 0.9337748344370861, "M": 0.9508840864440079}
+      },
+      "variance": "linearization",
+      "single_psu": "fail"
+    }
+  },
+  "metrics": {
+    "nobs": 200,
+    "n_strata": 3,
+    "n_psu": 200,
+    "population_size": 6193.99995803833,
+    "df_design": 197,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "Intercept",
+      "estimate": 820.8873159056227,
+      "std_error": 10.077735949885454,
+      "statistic": 81.45552929623574,
+      "p_value": 4.198844098518687e-153,
+      "conf_low": 801.1353163981427,
+      "conf_high": 840.6393154131027,
+      "canonical": {"name": "(Intercept)", "factors": []}
+    },
+    {
+      "term": "ell",
+      "estimate": -0.4805866121719695,
+      "std_error": 0.39197340322253404,
+      "statistic": -1.2260694430308765,
+      "p_value": 0.2216435709830848,
+      "conf_low": -1.2488403653857327,
+      "conf_high": 0.2876671410417936
+    },
+    {
+      "term": "meals",
+      "estimate": -3.1415353099845857,
+      "std_error": 0.2839465064165062,
+      "statistic": -11.063828006309162,
+      "p_value": 2.032485202798231e-22,
+      "conf_low": -3.698060236096909,
+      "conf_high": -2.5850103838722625
+    },
+    {
+      "term": "mobility",
+      "estimate": 0.22571321022956403,
+      "std_error": 0.3932183620225324,
+      "statistic": 0.5740149291823511,
+      "p_value": 0.5666158341180374,
+      "conf_low": -0.544980617394432,
+      "conf_high": 0.9964070378535601
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["Intercept", "ell", "meals", "mobility"],
+        "data": [
+          [101.56076187561368, 0.5237019957835479, -1.3595436432353156, -1.951537091046215],
+          [0.5237019957835469, 0.15364314883385527, -0.08871540886170122, 0.02324477517308517],
+          [-1.359543643235314, -0.08871540886170122, 0.08062561850613899, -0.026538230073559273],
+          [-1.9515370910462149, 0.023244775173085132, -0.026538230073559255, 0.15462068023168335]
+        ],
+        "type": "linearized",
+        "ssc": {"convention": "samplics", "formula": "Taylor linearization with fpc; no further factor"},
+        "default": true
+      }
+    ]
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "samplics",
+        "version": "0.6.1",
+        "purl": "pkg:pypi/samplics@0.6.1",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "apistrat",
+        "location": "survey data/api.rda",
+        "rows": 200,
+        "source": "California Academic Performance Index stratified sample, R survey (cran/survey @ 4834b8b)"
+      }
+    ]
+  }
+}

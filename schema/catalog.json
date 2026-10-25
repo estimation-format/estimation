@@ -135,6 +135,42 @@
       "maintainer": "jemather",
       "description": "Mediation analyses from regressions or SEM (R mediation, lavaan :=, PROCESS, Stata sem estat teffects, pingouin, statsmodels Mediation): treatment, mediators, outcome, the inference method (bootstrap, quasi-Bayesian, delta) with replications and CI type, and which effect each row is.",
       "examples": ["examples/mediation.estimation.json"]
+    },
+    {
+      "name": "mi/0.1",
+      "file": "profiles/mi-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Results pooled over multiply imputed data (mice, Stata mi estimate, statsmodels MICE): number of imputations, imputation method, combining rule and df method, per-row within/between variance, riv, lambda and fmi.",
+      "examples": ["examples/mi.estimation.json"]
+    },
+    {
+      "name": "survey/0.1",
+      "file": "profiles/survey-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Complex survey designs (R survey, Stata svy, samplics): weights, strata, PSUs, fpc and its convention, variance method (linearization or replicates), single-PSU handling, design df and design effects.",
+      "examples": ["examples/survey.estimation.json"]
+    },
+    {
+      "name": "multiple-testing/0.1",
+      "file": "profiles/multiple-testing-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Adjusted p-values for families of hypotheses (p.adjust, multipletests, pyfixest bonferroni/rwolf/wyoung, Stata rwolf/wyoung/qqvalue): method, error rate, family size, resampling details.",
+      "examples": ["examples/multiple-testing.estimation.json"]
+    },
+    {
+      "name": "resampling/0.1",
+      "file": "profiles/resampling-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Resampling inference (boottest, fwildclusterboot, wildboottest, Stata bootstrap/jackknife, ritest, ri2): method, replications, seed, weights, imposed null, and per-row resampled p-values and intervals.",
+      "examples": ["examples/resampling.estimation.json"]
     }
   ]
 }

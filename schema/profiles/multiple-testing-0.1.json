@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/multiple-testing-0.1.json",
+  "title": "multiple-testing/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for p-values adjusted for multiple hypotheses: R p.adjust, Python statsmodels multipletests, pyfixest bonferroni/rwolf/wyoung, Stata rwolf, wyoung and qqvalue (survey 2026-10-25, spec/profiles/multiple-testing.md). Requires specification.multiple_testing with the method, the error rate it controls and the number of tests in the family (plus reps and seed for resampling-based methods); and parameters[*].p_value_adjusted on the tested rows. A family can span several models (outcomes): their tested rows sit in one record, told apart by response. The tools' defaults differ (p.adjust holm, multipletests holm-sidak), so the method is always recorded.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "parameters"],
+      "properties": {
+        "specification": {
+          "required": ["multiple_testing"],
+          "properties": {
+            "multiple_testing": {
+              "type": "object",
+              "required": ["method", "controls", "n_tests"],
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "x-vocabulary": ["bonferroni", "sidak", "holm", "holm_sidak", "hochberg", "hommel", "bh", "by", "storey_q", "romano_wolf", "westfall_young"],
+                  "x-tools": {"p.adjust": "method (\"holm\"; hochberg, hommel, bonferroni, BH, BY)", "multipletests": "method (\"hs\" = holm_sidak; bonferroni, sidak, holm, simes-hochberg, hommel, fdr_bh, fdr_by, fdr_tsbh, fdr_tsbky)", "pyfixest": "bonferroni(), rwolf(), wyoung()", "Stata": "rwolf, wyoung, qqvalue (method())"}
+                },
+                "controls": {"description": "Error rate controlled.", "type": "string", "x-vocabulary": ["fwer", "fdr"]},
+                "n_tests": {"description": "Hypotheses in the family.", "type": "integer", "minimum": 1},
+                "family": {"description": "What the family is, in words (\"X2 across outcomes Y and Y2\").", "type": "string"},
+                "alpha": {"type": ["number", "null"]},
+                "reps": {"description": "Resampling replications (romano_wolf, westfall_young).", "type": ["integer", "null"], "x-tools": {"pyfixest": "reps", "Stata rwolf/wyoung": "reps()"}},
+                "seed": {"type": ["integer", "string", "null"]},
+                "resampling": {"description": "How the null distribution was resampled.", "type": ["string", "null"], "x-vocabulary": ["wild_bootstrap", "pairs_bootstrap", "permutation"], "x-tools": {"pyfixest": "sampling_method (\"wild-bootstrap\")"}},
+                "records": {"description": "ids of the records of the underlying models, when they are written separately.", "type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "contains": {"required": ["p_value_adjusted"]},
+          "items": {
+            "properties": {
+              "p_value_adjusted": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"p.adjust": "return value", "multipletests": "pvals_corrected", "pyfixest": "\"Bonferroni Pr(>|t|)\", \"RW Pr(>|t|)\", \"WY Pr(>|t|)\""}},
+              "q_value": {"description": "Storey q-value, when computed alongside.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+              "test_family": {"description": "Family id when a record holds several families.", "type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

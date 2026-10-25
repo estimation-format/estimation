@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/resampling-0.1.json",
+  "title": "resampling/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for inference by resampling: wild (cluster) bootstrap, pairs and cluster bootstrap, jackknife, permutation and randomization inference. Stata boottest, bootstrap/jackknife prefixes, ritest; R fwildclusterboot, ri2; Python wildboottest / pyfixest wildboottest (survey 2026-10-25, spec/profiles/resampling.md). Combines with the model's profile, whose analytic inference stays in the core columns. Requires specification.resampling with the method and replications (plus seed, weights and whether the null was imposed when they apply); and at least one row with a parameters[*].resampling object carrying the resampled p-value or interval.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "parameters"],
+      "properties": {
+        "specification": {
+          "required": ["resampling"],
+          "properties": {"resampling": {"$ref": "#/$defs/design"}}
+        },
+        "parameters": {
+          "contains": {"required": ["resampling"]},
+          "items": {"properties": {"resampling": {"$ref": "#/$defs/row"}}}
+        },
+        "metrics": {
+          "properties": {
+            "n_reps_failed": {"description": "Replications that failed and were dropped.", "type": ["integer", "null"], "x-tools": {"Stata bootstrap/jackknife": "e(N_misreps)"}}
+          }
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "required": ["method", "reps"],
+      "properties": {
+        "method": {"type": "string", "x-vocabulary": ["wild_bootstrap", "wild_cluster_bootstrap", "pairs_bootstrap", "cluster_bootstrap", "residual_bootstrap", "score_bootstrap", "jackknife", "permutation", "randomization_inference", "subsampling"]},
+        "reps": {"description": "Replications (draws, permutations). For a jackknife, the number of leave-one-out fits.", "type": "integer", "x-tools": {"boottest": "reps() (999)", "fwildclusterboot": "B (required)", "wildboottest / pyfixest": "reps (required)", "Stata bootstrap": "reps() (50)", "ritest": "reps()"}},
+        "seed": {"type": ["integer", "string", "null"], "x-tools": {"boottest": "seed()", "fwildclusterboot": "seed / set.seed", "wildboottest": "seed"}},
+        "cluster": {"description": "Variables resampled as blocks (bootstrap clusters).", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"boottest": "bootcluster() (the model's clusters)", "fwildclusterboot": "bootcluster (\"max\")", "wildboottest": "cluster"}},
+        "weights": {"description": "Wild bootstrap weight distribution.", "type": "string", "x-vocabulary": ["rademacher", "webb", "mammen", "normal", "gamma"], "x-tools": {"boottest": "weighttype() (rademacher)", "fwildclusterboot": "type (\"rademacher\")", "wildboottest": "weights_type (\"rademacher\")"}},
+        "impose_null": {"description": "Restricted (WCR, true) or unrestricted (WCU) bootstrap.", "type": "boolean", "x-tools": {"boottest": "true unless nonull", "fwildclusterboot": "impose_param_null (TRUE)", "wildboottest": "impose_null (True)"}},
+        "variant": {"description": "Wild cluster bootstrap variant (MacKinnon, Nielsen and Webb 11, 13, 31, 33).", "type": ["string", "null"], "x-tools": {"fwildclusterboot": "bootstrap_type (\"fnw11\")", "wildboottest": "bootstrap_type (\"11\")"}},
+        "p_value_type": {"type": "string", "x-vocabulary": ["symmetric", "equal_tailed", "lower", "upper"], "x-tools": {"boottest": "ptype() (symmetric)", "fwildclusterboot": "p_val_type (\"two-tailed\" = symmetric)"}},
+        "ci_method": {"type": "string", "x-vocabulary": ["test_inversion", "percentile", "normal", "bc", "bca"], "x-tools": {"boottest": "test inversion", "fwildclusterboot": "test inversion", "Stata bootstrap": "normal (estat bootstrap: percentile, bc, bca)"}},
+        "statistic": {"description": "Bootstrapped statistic.", "type": "string", "x-vocabulary": ["t", "wald", "score", "coefficient"]},
+        "small_sample": {"description": "Small-sample factor applied to the bootstrapped statistic (boottest small / fwildclusterboot ssc / wildboottest k_adj, G_adj).", "type": ["string", "object", "null"]},
+        "strata": {"description": "Resampling within strata, or permutation within blocks (ritest strata()).", "$ref": "../estimation-0.1.json#/$defs/strings"}
+      }
+    },
+    "row": {
+      "description": "Resampling-based inference for one parameter (the core columns keep the analytic results).",
+      "type": "object",
+      "anyOf": [{"required": ["p_value"]}, {"required": ["conf_low", "conf_high"]}],
+      "properties": {
+        "statistic": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"boottest": "r(t)", "wildboottest": "t value"}},
+        "p_value": {"description": "As reported. A p-value of 0 means no replication was as extreme; its resolution is about 1/reps.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"boottest": "r(p)", "fwildclusterboot": "p_val", "wildboottest": "Pr(>|t|)", "ritest": "p"}},
+        "conf_low": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"boottest": "r(CI)", "fwildclusterboot": "conf_int"}},
+        "conf_high": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "std_error": {"description": "Bootstrap or jackknife SE, when the method gives one.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+        "null_value": {"description": "Hypothesized value tested (default 0).", "type": ["number", "null"]}
+      }
+    }
+  }
+}
