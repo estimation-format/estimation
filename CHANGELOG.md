@@ -21,6 +21,9 @@
   with example records and pages.
 - Draft cross-cutting standard profiles `mi/0.1`, `survey/0.1`, `multiple-testing/0.1` and
   `resampling/0.1`, which combine with a model's own profile, with example records and pages.
+- `mediation/0.1`: two-stage (IV) mediation (`instruments`, `instrumented`), the Aroian
+  method and controlled direct effects; mappings for `mediate_tsls`, `ivmediate` and StataNow
+  `mediate`.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

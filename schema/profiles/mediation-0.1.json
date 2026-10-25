@@ -3,7 +3,7 @@
   "$id": "https://estimation-format.github.io/estimation/schema/profiles/mediation-0.1.json",
   "title": "mediation/0.1",
   "x-license": "CC0-1.0",
-  "description": "Profile for mediation analyses, whether from regressions or from an SEM: R mediation (Imai, Keele, Tingley and Yamamoto), lavaan defined parameters (:=), PROCESS, Stata sem with estat teffects; Python pingouin mediation_analysis and statsmodels Mediation (survey 2026-10-25, spec/profiles/mediation.md). Requires specification.mediation with treatment, mediators and outcome, and the inference method (bootstrap, quasi-Bayesian simulation, delta/Sobel, Monte Carlo) with its replications and CI type; metrics.nobs; and at least one row whose mediation.effect is an indirect effect. Effect rows need estimate and either std_error or a confidence interval: R mediation reports no standard errors. No vcov is required, since bootstrap tools often report none. An SEM-based record also claims sem/0.1.",
+  "description": "Profile for mediation analyses, whether from regressions, two-stage (instrumental-variables) regressions or an SEM: R mediation (Imai, Keele, Tingley and Yamamoto; mediate, mediate_tsls), lavaan defined parameters (:=), PROCESS, Stata sem with estat teffects, StataNow mediate, Stata ivmediate; Python pingouin mediation_analysis and statsmodels Mediation (survey 2026-10-25, spec/profiles/mediation.md). Two-stage designs record their instruments and which variable they instrument. Requires specification.mediation with treatment, mediators and outcome, and the inference method (bootstrap, quasi-Bayesian simulation, delta/Sobel, Monte Carlo) with its replications and CI type; metrics.nobs; and at least one row whose mediation.effect is an indirect effect. Effect rows need estimate and either std_error or a confidence interval: R mediation reports no standard errors. No vcov is required, since bootstrap tools often report none. An SEM-based record also claims sem/0.1.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
@@ -53,24 +53,26 @@
         "process_model": {"description": "PROCESS model number (4 = simple mediation).", "type": ["integer", "null"]},
         "treat_value": {"x-tools": {"mediation": "treat.value (1)"}},
         "control_value": {"x-tools": {"mediation": "control.value (0)"}},
-        "models": {"description": "How the mediator and outcome models were fit: [{response, estimator, formula}], or \"sem\".", "type": ["array", "string"]},
+        "models": {"description": "How the mediator and outcome models were fit: [{response, estimator, formula}], or \"sem\". estimator ols, tsls, logit, ... (StataNow mediate: each model's family).", "type": ["array", "string"]},
+        "instruments": {"description": "Excluded instruments in a two-stage (IV) mediation design.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"mediate_tsls": "regressors of model.m that are not in model.y", "ivmediate": "instrument()"}},
+        "instrumented": {"description": "Which variable the instruments stand in for.", "type": "string", "x-vocabulary": ["mediator", "treatment"], "x-tools": {"mediate_tsls": "mediator (the outcome model uses its first-stage fitted values)", "ivmediate": "treatment (with the mediator handled by the method of Dippel, Ferrara and Heblich)"}},
         "inference": {
           "type": "object",
           "required": ["method"],
           "properties": {
             "method": {
               "type": "string",
-              "x-vocabulary": ["bootstrap", "quasi_bayesian", "delta", "monte_carlo"],
-              "x-tools": {"mediation": "boot (FALSE: quasi_bayesian simulation)", "statsmodels": "fit(method=) (\"parametric\" = quasi_bayesian, \"bootstrap\")", "pingouin": "bootstrap", "lavaan": "se (\"standard\" = delta for :=, \"bootstrap\")", "Stata": "estat teffects: delta; bootstrap prefix", "PROCESS": "bootstrap"}
+              "x-vocabulary": ["bootstrap", "quasi_bayesian", "delta", "aroian", "monte_carlo"],
+              "x-tools": {"mediation": "boot (FALSE: quasi_bayesian simulation)", "statsmodels": "fit(method=) (\"parametric\" = quasi_bayesian, \"bootstrap\")", "pingouin": "bootstrap", "lavaan": "se (\"standard\" = delta for :=, \"bootstrap\")", "Stata": "estat teffects: delta; bootstrap prefix", "PROCESS": "bootstrap", "mediate_tsls": "boot (FALSE: aroian, Aroian 1947 product SE; TRUE: bootstrap)", "StataNow mediate": "vce() (delta method; bootstrap)"}
             },
-            "reps": {"description": "Bootstrap replications or simulation draws.", "type": ["integer", "null"], "x-tools": {"mediation": "sims (1000)", "statsmodels": "n_rep (1000)", "pingouin": "n_boot (500)", "lavaan": "bootstrap (1000)", "PROCESS": "boot= (5000)"}},
+            "reps": {"description": "Bootstrap replications or simulation draws.", "type": ["integer", "null"], "x-tools": {"mediation": "sims (1000)", "mediate_tsls": "sims (1000, bootstrap only)", "statsmodels": "n_rep (1000)", "pingouin": "n_boot (500)", "lavaan": "bootstrap (1000)", "PROCESS": "boot= (5000)"}},
             "ci_type": {
               "type": "string",
               "x-vocabulary": ["percentile", "bc", "bca", "normal"],
               "x-tools": {"mediation": "boot.ci.type (\"perc\"; \"bca\")", "pingouin": "bc (bias-corrected, not accelerated)", "lavaan": "parameterEstimates(boot.ci.type =) (\"perc\")", "PROCESS": "percentile (v3+)"}
             },
             "seed": {"type": ["integer", "string", "null"], "x-tools": {"pingouin": "seed (None)", "statsmodels": "rng", "PROCESS": "seed="}},
-            "robust": {"description": "Robust or clustered SEs in the underlying models.", "type": "boolean", "x-tools": {"mediation": "robustSE, cluster"}}
+            "robust": {"description": "Robust or clustered SEs in the underlying models.", "type": "boolean", "x-tools": {"mediation": "robustSE, cluster", "mediate_tsls": "always sandwich::vcovCL: with cluster = NULL each row is its own cluster (HC1-type), so robustSE has no effect"}}
           }
         }
       }
@@ -82,8 +84,8 @@
       "properties": {
         "effect": {
           "type": "string",
-          "x-vocabulary": ["a", "b", "indirect", "direct", "total", "prop_mediated", "acme_control", "acme_treated", "acme_average", "ade_control", "ade_treated", "ade_average", "prop_mediated_control", "prop_mediated_treated", "index_moderated_mediation", "contrast"],
-          "x-tools": {"mediation": "d0, d1, d.avg (acme_*); z0, z1, z.avg (ade_*); tau.coef (total); n0, n1, n.avg (prop_mediated_*)", "statsmodels": "ACME (control/treated/average), ADE (...), Total effect, Prop. mediated (...)", "pingouin": "paths: \"M ~ X\" (a), \"Y ~ M\" (b), Total, Direct, Indirect", "lavaan": "user labels on := parameters", "Stata": "estat teffects: direct, indirect, total"}
+          "x-vocabulary": ["a", "b", "indirect", "direct", "controlled_direct", "total", "prop_mediated", "acme_control", "acme_treated", "acme_average", "ade_control", "ade_treated", "ade_average", "prop_mediated_control", "prop_mediated_treated", "index_moderated_mediation", "contrast"],
+          "x-tools": {"mediation": "d0, d1, d.avg (acme_*); z0, z1, z.avg (ade_*); tau.coef (total); n0, n1, n.avg (prop_mediated_*)", "statsmodels": "ACME (control/treated/average), ADE (...), Total effect, Prop. mediated (...)", "pingouin": "paths: \"M ~ X\" (a), \"Y ~ M\" (b), Total, Direct, Indirect", "lavaan": "user labels on := parameters", "Stata": "estat teffects: direct, indirect, total", "StataNow mediate": "nie (indirect), nde (direct), te (total), pm (prop_mediated), cde (controlled_direct)", "mediate_tsls": "d0 = d1 (indirect), z0 = z1 (direct), tau.coef (total), n0 (prop_mediated), each with .se", "ivmediate": "indirect, direct and total effects"}
         },
         "mediator": {"description": "Mediator this effect goes through (specific indirect effects).", "type": "string"},
         "path": {"description": "Serial paths: the variables in order.", "$ref": "../estimation-0.1.json#/$defs/strings"},

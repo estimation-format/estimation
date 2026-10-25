@@ -3,10 +3,13 @@
 Status: draft. Schema: [`schema/profiles/mediation-0.1.json`](../../schema/profiles/mediation-0.1.json).
 Kind: standard. Builds on the core only.
 
-Mediation analyses, whether computed from two regressions or inside an SEM. Surveyed
-2026-10-25: from source, R mediation 4.5.1 (kosukeimai/mediation @ 44e1146), lavaan
-(defined parameters, `:=`), pingouin 0.7.0 `mediation_analysis` and statsmodels 0.15
-`Mediation`; PROCESS and Stata `sem` / `estat teffects` from documentation. The same layout
+Mediation analyses, whether computed from two regressions, from two-stage (instrumental-
+variables) regressions, or inside an SEM. Surveyed 2026-10-25: from source, R mediation 4.5.1
+(kosukeimai/mediation @ 44e1146; `mediate` and `mediate_tsls`), lavaan (defined parameters,
+`:=`), pingouin 0.7.0 `mediation_analysis` and statsmodels 0.15 `Mediation`; PROCESS, Stata
+`sem` / `estat teffects`, StataNow `mediate` and Stata `ivmediate` (Dippel, Ferrara and
+Heblich) from documentation, which means their stored-result names still need checking against
+their help files. The same layout
 fits other bootstrap mediation tools (`medsem`, `indirect_boot`): a writer fills
 `specification.mediation` and tags each effect row.
 
@@ -53,6 +56,27 @@ simulation, so `method`, `reps`, `ci_type` and `seed` are what a reader needs to
 results. `conf_low`/`conf_high` on effect rows are the intervals the method produced, not
 estimate ± z·SE.
 
+## Two-stage (IV) mediation
+
+Two tools instrument part of the mediation chain; they record `instruments` and
+`instrumented`:
+
+| | `mediate_tsls` (R mediation) | `ivmediate` (Stata) |
+|---|---|---|
+| `instrumented` | `mediator`: the outcome model uses the mediator's first-stage fitted values | `treatment` |
+| `instruments` | regressors of `model.m` that are not in `model.y` | `instrument()` |
+| `models[].estimator` | `ols` (mediator), `tsls` (outcome) | IV |
+| `inference.method` | `aroian` (Aroian 1947 product SE; default) or `bootstrap` (`boot = TRUE`, `sims`) | |
+| Effects | `d0` = `d1` (indirect), `z0` = `z1` (direct), `tau.coef`, `n0`, each with an SE | indirect, direct, total |
+
+`mediate_tsls` always computes its analytic SEs with `sandwich::vcovCL`; with `cluster = NULL`
+each row is its own cluster (an HC1-type variance), so `robustSE` has no effect. When a tool
+reports first-stage diagnostics, they go in `structures.first_stage` as in [`iv/0.1`](iv.md).
+
+StataNow's `mediate` estimates potential-outcome effects with a model family for the mediator
+and the outcome (`models[].estimator`), one or two mediators, and reports `nie` (indirect),
+`nde` (direct), `te` (total), `pm` (proportion mediated) and `cde` (`controlled_direct`).
+
 ## Effect rows: `parameters[*].mediation`
 
 `{effect, mediator, path, moderator_value}`:
@@ -62,6 +86,7 @@ estimate ± z·SE.
 | `a`, `b` | X → M, M → Y paths | (in the models) | | `M ~ X`, `Y ~ M` |
 | `indirect` | a·b | | | `Indirect` |
 | `acme_control`, `acme_treated`, `acme_average` | average causal mediation effects | `d0`, `d1`, `d.avg` | `ACME (control)`, ... | |
+| `controlled_direct` | direct effect with the mediator fixed | | | |
 | `direct`, `ade_*` | direct effect | `z0`, `z1`, `z.avg` | `ADE (...)` | `Direct` |
 | `total` | total effect | `tau.coef` | `Total effect` | `Total` |
 | `prop_mediated`, `prop_mediated_*` | share mediated | `n0`, `n1`, `n.avg` | `Prop. mediated (...)` | |
