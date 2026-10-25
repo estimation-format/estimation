@@ -9,3 +9,8 @@
 - `estimation-format` 0.1.0.dev0: the reference validator, writer and redactor, from
   `dfeols.estimation`. The built-in fallback checks cover the standard profiles only; tool
   profiles are checked through their schemas.
+- `converters/`: worked converters from pyfixest, fixest (R) and reghdfe (Stata) to
+  `linear-fe/0.1` records, with `tests/test_converters.py` comparing the tools on one panel.
+- `linear-fe/0.1` (draft): `sigma` defined as sqrt(RSS / (N - K)), with pyfixest `_rmse`
+  (sqrt(RSS / N)) recorded as `{value, definition}`; pyfixest has no residual df (`_dfd` is
+  the Wald denominator df); reghdfe per-cluster counts are `e(N_clust#)`.

@@ -31,7 +31,7 @@ Not required, though in the vocabulary: `r2_within` (`areg` reports none), and c
 | ✓ `nobs` | rows used | `nobs` | `e(N)` | `nobs` | pyfixest `_N`; lfe `N`; areg/xtreg `e(N)`; FEM.jl `nobs` |
 | `nobs_full` | rows used plus singleton rows dropped | — (`nobs_origin` counts rows before subset, NA and singleton removal: `specification.sample.rows_input`) | `e(N_full)` | — | |
 | ✓ `n_singletons` | singleton rows dropped | not stored separately | `e(num_singletons)` | — | pyfixest: a warning only; areg/xtreg `e(ksingle)` (per absorbed variable) |
-| ✓ `df_residual` | residual df as the tool reports it | `df.residual`* | `e(df_r)` | `df_resid` | areg/xtreg `e(df_r)`; FEM.jl `dof_residual` (min(G) − 1 under clustering); pyfixest `_dfd` (min(G) − 1 under clustering) |
+| ✓ `df_residual` | residual df as the tool reports it | `df.residual`* | `e(df_r)` (min(G) − 1 under clustering) | `df_resid` | areg/xtreg `e(df_r)`; FEM.jl `dof_residual` (min(G) − 1 under clustering); pyfixest: none (`_dfd` is the Wald test's denominator df: min(G) − 1 under clustering, else N − k − all FE levels; record it with its definition) |
 | `df_model` | model df | | `e(df_m)` | `df_model` | areg/xtreg `e(df_m)`; FEM.jl `dof` |
 | `df_absorbed` | df lost to the fixed effects | | `e(df_a)` | | areg `e(df_a)`, `e(dfabsorb)`; xtreg `e(df_a)`; FEM.jl `dof_fes` |
 | `df_absorbed_nested` | fixed-effect df redundant because nested in a cluster | | `e(df_a_nested)` | | |
@@ -41,7 +41,7 @@ Not required, though in the vocabulary: `r2_within` (`areg` reports none), and c
 | `r2_between`, `r2_overall` | panel R²s | | | `rsquared_between`, `rsquared_overall` | xtreg `e(r2_b)`, `e(r2_o)` |
 | `r2_inclusive` | R² including the fit of the fixed effects | | | `rsquared_inclusive` | |
 | `sq_corr_fitted` | squared corr(y, ŷ) | `sq.cor` | | `corr_squared_*` | |
-| `sigma` | root mean squared error | `sigma()` | `e(rmse)` | `s2` (variance) | areg/xtreg `e(rmse)`; xtreg `e(sigma_e)`; pyfixest `_rmse`; lfe `rse` |
+| `sigma` | root mean squared error, sqrt(RSS / (N − K)), K the regressors plus absorbed levels as the tool counts them | `sigma()` | `e(rmse)` | `s2` (variance) | areg/xtreg `e(rmse)`; xtreg `e(sigma_e)`; pyfixest `_rmse` is sqrt(RSS / N): record it as `{value, definition}`; lfe `rse` |
 | `sigma_fe`, `rho` | fixed-effect SD; share of variance due to the fixed effects | | | `variance_decomposition` | xtreg `e(sigma_u)`, `e(rho)` |
 | `log_lik`, `log_lik_fe_only`, `log_lik_null` | log-likelihoods | `loglik`, `ll_fe_only`, `ll_null` | `e(ll)`, `e(ll_0)` | `loglik` | areg/xtreg `e(ll)`, `e(ll_0)`; FEM.jl `loglikelihood()` |
 | `f_stat`, `f_stat_robust` | joint test of the regressors | `fitstat` | `e(F)` | `f_statistic`, `f_statistic_robust` | areg/xtreg `e(F)`; pyfixest `_f_statistic`; lfe `fstat`, `P.fstat`; FEM.jl `F` |
@@ -74,7 +74,7 @@ FEM.jl `converged`, areg/xtreg `e(converged)`); `collinearity_tolerance` (fixest
 `collinearity_min_norm` (fixest `collin.min_norm`).
 
 **`vcov`**: `type` (mapped to fixest `vcov=`, reghdfe `vce()`, linearmodels `cov_type`);
-`cluster`; `n_clusters` per variable (reghdfe `e(clust#)`) and `n_clusters_min`
+`cluster`; `n_clusters` per variable (reghdfe `e(N_clust#)`) and `n_clusters_min`
 (`e(N_clust)`); `ssc` with every factor the tool has: fixest `ssc()` (`K.adj`, `K.fixef`,
 `G.adj`, `G.df`, `t.df`, `K.exact`); pyfixest `ssc()` (`k_adj`, `k_fixef`, `G_adj`, `G_df`;
 resolved values in `_ssc_dict`); reghdfe `e(dofmethod)`; FEM.jl (no options: a fixed effect
