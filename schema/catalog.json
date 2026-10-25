@@ -108,6 +108,15 @@
       "maintainer": "jemather",
       "description": "Linear and generalized linear mixed models (lme4, lmerTest, glmmTMB, Stata mixed/me*, statsmodels MixedLM, MixedModels.jl): REML/ML/quadrature, random-effect terms and grouping factors, variance components with their scale, df method, convergence and singular fits.",
       "examples": ["examples/mixed.estimation.json"]
+    },
+    {
+      "name": "choice/0.1",
+      "file": "profiles/choice-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Discrete-choice models (mlogit, logitr, apollo, xlogit, Biogeme, Stata cmclogit/cmmixlogit/mixlogit): choice situations and alternatives, random parameters and simulation draws, preference or WTP space, null and constants-only log-likelihoods, Hessian vs BFGS-approximate vs robust vcov.",
+      "examples": ["examples/choice-mnl.estimation.json", "examples/choice-mixed-logit.estimation.json"]
     }
   ]
 }

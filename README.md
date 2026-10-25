@@ -13,7 +13,7 @@ standard errors, convergence, the software and environment, and the data's check
 
 - **Any software, any model**: a small core every tool can fill (`meta`, `parameters`,
   `metrics`, `specification`, `provenance`), with **profiles** for the rules of a kind of
-  model (`inference`, `linear-fe`, `iv`, `did`, `glm`, `conditional-logit`, `mixed`) or one tool.
+  model (`inference`, `linear-fe`, `iv`, `did`, `glm`, `conditional-logit`, `mixed`, `choice`) or one tool.
 - **Small**: results and metadata only; residuals, fitted values and fixed-effect
   coefficients go in linked attachments.
 - **Traceable**: records can cite the paper and table they appear in, carry an integrity

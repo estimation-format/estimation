@@ -1,0 +1,137 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "1f3b5d7e-8a2c-4e61-b9d0-6c4e2a8f1b37",
+    "created": "2026-10-25T22:50:00Z",
+    "status": "ok",
+    "estimator": {"family": "choice", "method": "mnl"},
+    "responses": ["choice"],
+    "profiles": ["choice/0.1"],
+    "notes": "Real run: xlogit MultinomialLogit on the yogurt scanner panel (2,412 choices among 4 brands by 100 households), price and feature plus brand constants. Matches logitr's published yogurt MNL (price -0.3666, feat 0.4914). Standard errors from a numerical Hessian (MultinomialLogit's default num_hess=True)."
+  },
+  "specification": {
+    "call": "MultinomialLogit().fit(X=df[[\"price\", \"feat\"]], y=df[\"choice\"], varnames=[\"price\", \"feat\"], alts=df[\"alt\"], ids=df[\"chid\"], fit_intercept=True, base_alt=\"dannon\")",
+    "terms": ["price", "feat"],
+    "weights": null,
+    "choice": {
+      "case": "chid",
+      "alternative": "alt",
+      "outcome": "choice",
+      "alternatives": ["dannon", "hiland", "weight", "yoplait"],
+      "base_alternative": "dannon",
+      "availability": null,
+      "space": "preference",
+      "decision_maker": "id",
+      "panel": false
+    },
+    "options": {"optimizer": "BFGS", "max_iterations": 2000}
+  },
+  "metrics": {
+    "nobs": 9648,
+    "n_cases": 2412,
+    "n_decision_makers": 100,
+    "n_alternatives": 4,
+    "log_lik": -2656.887878451499,
+    "log_lik_null": -3343.741999021176,
+    "log_lik_constants": -2832.9324507218103,
+    "rho2": 0.20541480795191192,
+    "aic": 5323.775756902998,
+    "bic": {"value": 5352.716814692233, "definition": "log(n_cases) * k - 2 log_lik"}
+  },
+  "parameters": [
+    {
+      "term": "_intercept.hiland",
+      "estimate": -3.7156021527535996,
+      "std_error": 0.14541910965873517,
+      "statistic": -25.550989560266554,
+      "p_value": 1.2100988012991847e-127,
+      "choice": {"role": "asc", "alternative": "hiland"}
+    },
+    {
+      "term": "_intercept.weight",
+      "estimate": -0.641184684120203,
+      "std_error": 0.05449826894098418,
+      "statistic": -11.765230283085463,
+      "p_value": 4.106867331452537e-31,
+      "choice": {"role": "asc", "alternative": "weight"}
+    },
+    {
+      "term": "_intercept.yoplait",
+      "estimate": 0.734569686770681,
+      "std_error": 0.08064416997703995,
+      "statistic": 9.108776083625376,
+      "p_value": 1.7020870809479171e-19,
+      "choice": {"role": "asc", "alternative": "yoplait"}
+    },
+    {
+      "term": "price",
+      "estimate": -0.36658406044312297,
+      "std_error": 0.02436605596538947,
+      "statistic": -15.044866553858112,
+      "p_value": 5.789309678797534e-49,
+      "choice": {"role": "coefficient", "term": "price"}
+    },
+    {
+      "term": "feat",
+      "estimate": 0.49143371457384544,
+      "std_error": 0.12006300822114814,
+      "statistic": 4.093131780178762,
+      "p_value": 4.39578651032517e-05,
+      "choice": {"role": "coefficient", "term": "feat"}
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["_intercept.hiland", "_intercept.weight", "_intercept.yoplait", "price", "feat"],
+        "data": [
+          [0.021146717453939246, 0.0014901144789805482, -0.003681424384859884, 0.0018519367713358157, 0.0008550427230584693],
+          [0.0014901096830290089, 0.0029700613175638415, 0.0007778997652196176, 0.00012501103849844742, 5.089477653450334e-06],
+          [-0.00368142795711373, 0.0007778977612081361, 0.006503482151285711, -0.0015378775123036654, -0.0018214394124098517],
+          [0.0018519372344661838, 0.0001250116566388769, -0.0015378772253253736, 0.0005937046833084917, 0.000572994529420624],
+          [0.000855043370433604, 5.089828703739465e-06, -0.0018214393962160882, 0.0005729945790119646, 0.014415125943111486]
+        ],
+        "type": "oim",
+        "ssc": {"convention": "xlogit", "formula": "none (inverse numerical Hessian)"},
+        "default": true
+      }
+    ],
+    "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "BFGS",
+      "converged": true,
+      "iterations": 11,
+      "message": "The gradients are close to zero"
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "xlogit",
+        "version": "0.2.7",
+        "purl": "pkg:pypi/xlogit@0.2.7",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "scipy", "version": "1.18.1", "purl": "pkg:pypi/scipy@1.18.1", "role": "dependency"},
+      {"name": "numpy", "version": "2.5.3", "purl": "pkg:pypi/numpy@2.5.3", "role": "dependency"},
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "yogurt",
+        "location": "xlogit examples/data/yogurt_long.csv",
+        "rows": 9648,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "e3a149009d95a0372ba7a1faafa4de1633d66edf7f6ce00e9fee0b82093b0291",
+          "of": "file"
+        },
+        "source": "Jain, Vilcassim and Chintagunta (1994) yogurt scanner panel, via logitr and xlogit (arteagac/xlogit @ c3d6d44)"
+      }
+    ]
+  }
+}

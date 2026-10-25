@@ -1,0 +1,151 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "6a9c2e4f-1d3b-4f85-a7e2-0b5d8c3f9a14",
+    "created": "2026-10-25T22:50:00Z",
+    "status": "ok",
+    "estimator": {"family": "choice", "method": "mixed_logit"},
+    "responses": ["choice"],
+    "profiles": ["choice/0.1"],
+    "notes": "Real run: xlogit MixedLogit on the yogurt panel, feature coefficient normal across households (draws per household), 500 Halton draws, random_state 0. num_hess=True: without it MixedLogit reports the BFGS approximation to the inverse Hessian. p-values are as xlogit computes them, from a t distribution with df = number of choice situations."
+  },
+  "specification": {
+    "call": "MixedLogit().fit(X=df[[\"price\", \"feat\"]], y=df[\"choice\"], varnames=[\"price\", \"feat\"], alts=df[\"alt\"], ids=df[\"chid\"], panels=df[\"id\"], randvars={\"feat\": \"n\"}, fit_intercept=True, base_alt=\"dannon\", n_draws=500, halton=True, random_state=0, num_hess=True)",
+    "terms": ["price", "feat"],
+    "weights": null,
+    "choice": {
+      "case": "chid",
+      "alternative": "alt",
+      "outcome": "choice",
+      "alternatives": ["dannon", "hiland", "weight", "yoplait"],
+      "base_alternative": "dannon",
+      "availability": null,
+      "space": "preference",
+      "decision_maker": "id",
+      "panel": true,
+      "random_parameters": [
+        {"term": "feat", "distribution": "normal"}
+      ],
+      "correlated": false,
+      "simulation": {"draws": 500, "type": "halton", "seed": 0}
+    },
+    "options": {"optimizer": "BFGS", "max_iterations": 2000}
+  },
+  "metrics": {
+    "nobs": 9648,
+    "n_cases": 2412,
+    "n_decision_makers": 100,
+    "n_alternatives": 4,
+    "log_lik": -2634.1935147369772,
+    "log_lik_null": -3343.741999021176,
+    "log_lik_constants": -2832.9324507218103,
+    "rho2": 0.21220192362087364,
+    "aic": 5280.3870294739545,
+    "bic": {"value": 5315.116298821037, "definition": "log(n_cases) * k - 2 log_lik"}
+  },
+  "parameters": [
+    {
+      "term": "_intercept.hiland",
+      "estimate": -3.891511716495223,
+      "std_error": 0.15599097799048234,
+      "statistic": -24.947030697715483,
+      "p_value": 2.133549739513667e-122,
+      "choice": {"role": "asc", "alternative": "hiland"}
+    },
+    {
+      "term": "_intercept.weight",
+      "estimate": -0.6592281965242895,
+      "std_error": 0.055145324768208145,
+      "statistic": -11.954380526277024,
+      "p_value": 4.8584733964075866e-32,
+      "choice": {"role": "asc", "alternative": "weight"}
+    },
+    {
+      "term": "_intercept.yoplait",
+      "estimate": 0.7474991891624777,
+      "std_error": 0.08255835441453584,
+      "statistic": 9.054191964742788,
+      "p_value": 2.764458852395114e-19,
+      "choice": {"role": "asc", "alternative": "yoplait"}
+    },
+    {
+      "term": "price",
+      "estimate": -0.37380520995907207,
+      "std_error": 0.025097634191162805,
+      "statistic": -14.89404168982165,
+      "p_value": 4.610775722702308e-48,
+      "choice": {"role": "coefficient", "term": "price"}
+    },
+    {
+      "term": "feat",
+      "estimate": 0.6425563298743875,
+      "std_error": 0.22496495816426662,
+      "statistic": 2.8562507473061687,
+      "p_value": 0.004323450323233956,
+      "choice": {"role": "mean", "term": "feat", "distribution": "normal"}
+    },
+    {
+      "term": "sd.feat",
+      "estimate": 1.4407953024744609,
+      "std_error": 0.2501113375649988,
+      "statistic": 5.760615718190015,
+      "p_value": 9.447894598210166e-09,
+      "choice": {"role": "sd", "term": "feat", "distribution": "normal"}
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["_intercept.hiland", "_intercept.weight", "_intercept.yoplait", "price", "feat", "sd.feat"],
+        "data": [
+          [0.024333185214427146, 0.0016110768038848004, -0.004053463866509044, 0.0020061152039933146, -0.00042821542521853954, -0.0059686898520416],
+          [0.0016110717031463438, 0.003041006843791151, 0.0007656732458151245, 0.00013663274269315904, 8.117000164035952e-05, -0.0005126083540973594],
+          [-0.0040534659869283975, 0.0007656725390478494, 0.006815881883636109, -0.0016327211116210685, -0.0015881469417034803, 0.0006683118744007018],
+          [0.0020061150490736507, 0.00013663307849583593, -0.0016327209233070116, 0.0006298912419934243, 0.0005825336201290813, -0.00029908484184154415],
+          [-0.0004282145970061664, 8.117129189266047e-05, -0.001588144553366704, 0.0005825334393713578, 0.05060923240185023, 0.002363208579655224],
+          [-0.005968688905624119, -0.0005126083338943971, 0.0006683143797135024, -0.0002990852445870205, 0.0023632076006617373, 0.06255568117855279]
+        ],
+        "type": "oim",
+        "ssc": {"convention": "xlogit", "formula": "none (inverse numerical Hessian)"},
+        "default": true
+      }
+    ],
+    "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "BFGS",
+      "converged": true,
+      "iterations": 8,
+      "message": "The gradients are close to zero"
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "xlogit",
+        "version": "0.2.7",
+        "purl": "pkg:pypi/xlogit@0.2.7",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "scipy", "version": "1.18.1", "purl": "pkg:pypi/scipy@1.18.1", "role": "dependency"},
+      {"name": "numpy", "version": "2.5.3", "purl": "pkg:pypi/numpy@2.5.3", "role": "dependency"},
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "yogurt",
+        "location": "xlogit examples/data/yogurt_long.csv",
+        "rows": 9648,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "e3a149009d95a0372ba7a1faafa4de1633d66edf7f6ce00e9fee0b82093b0291",
+          "of": "file"
+        },
+        "source": "Jain, Vilcassim and Chintagunta (1994) yogurt scanner panel, via logitr and xlogit (arteagac/xlogit @ c3d6d44)"
+      }
+    ]
+  }
+}

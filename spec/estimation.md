@@ -573,6 +573,7 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`ppmlhdfe/0.1`](profiles/ppmlhdfe.md) | tool | `glm` (Poisson, log) plus separation and singleton counts and options, and `structures.fixed_effects` |
 | [`conditional-logit/0.1`](profiles/conditional-logit.md) | standard | `specification.groups`; `options.likelihood` and `drop_uninformative`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `n_groups`, `log_lik`, `structures.groups` expected |
 | [`mixed/0.1`](profiles/mixed.md) | standard | `meta.estimator.method` (REML/ML/quadrature); `specification.random_effects`; fixed-effect `estimate` and `std_error`; a `vc` object on variance-component rows; `metrics.nobs`; `structures.random_effects` with `levels`; a default `vcov` with `type`; `numerics.converged`; `log_lik` and `singular` expected |
+| [`choice/0.1`](profiles/choice.md) | standard | `meta.estimator.method`; `specification.choice` (case, alternative); `estimate`, `std_error`; `n_cases`, `log_lik`; a default `vcov` with `type`; `numerics.converged`; mixed logit adds random parameters, draws and a spread row |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

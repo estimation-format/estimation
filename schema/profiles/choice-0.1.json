@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/choice-0.1.json",
+  "title": "choice/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for discrete-choice models: multinomial/conditional logit with alternative attributes, mixed (random-parameters) logit, nested and latent-class logit, in preference or WTP space. R mlogit, logitr, apollo; Python xlogit, Biogeme; Stata cmclogit, cmmixlogit, mixlogit (survey 2026-10-25, spec/profiles/choice.md). Requires meta.estimator.method; specification.choice with the choice-situation and alternative identifiers; estimate and std_error on every row that isn't dropped; metrics.n_cases (choice situations: the tools' nobs count different things) and log_lik; a default vcov with type (Hessian, BFGS approximation, robust, ...); and structures.numerics.converged. A simulated model (mixed logit, GMNL) also requires specification.choice.random_parameters and simulation (number and type of draws), and a row giving each random parameter's spread.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"choice\" is recommended.", "type": "string"},
+                "method": {
+                  "type": "string",
+                  "x-vocabulary": ["mnl", "mixed_logit", "nested_logit", "cross_nested_logit", "latent_class_logit", "gmnl", "probit", "hybrid"],
+                  "x-tools": {"mlogit": "rpar (mixed_logit), nests (nested_logit), probit", "logitr": "randPars (mixed_logit)", "apollo": "user-coded; apollo_control$mixing", "xlogit": "MultinomialLogit / MixedLogit", "Biogeme": "model expression", "Stata": "cmclogit (mnl), cmmixlogit / mixlogit (mixed_logit), nlogit"}
+                }
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["choice"],
+          "properties": {
+            "choice": {"$ref": "#/$defs/design"},
+            "options": {
+              "properties": {
+                "optimizer": {"type": "string", "x-tools": {"mlogit": "method (\"bfgs\"; \"nr\" for plain multinomial)", "logitr": "nloptr L-BFGS", "apollo": "estimationRoutine (\"bgw\")", "xlogit": "optim_method (\"BFGS\")", "Biogeme": "optimization_algorithm", "Stata": "technique()"}},
+                "max_iterations": {"type": "integer", "x-tools": {"mlogit": "iterlim (2000)", "apollo": "maxIterations (200)", "xlogit": "maxiter (2000)", "Biogeme": "max_iterations"}},
+                "n_starts": {"description": "Multistart: number of starting points tried.", "type": "integer", "x-tools": {"logitr": "numMultiStarts (1)", "apollo": "apollo_searchStart"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"choice": {"$ref": "#/$defs/choice_row"}},
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["n_cases", "log_lik"],
+          "x-expected": ["n_decision_makers"],
+          "properties": {
+            "nobs": {
+              "description": "As the tool reports it; tools differ: Stata cmclogit e(N) counts rows (case x alternative), mlogit and xlogit count choice situations. Use {value, definition} when it isn't long-format rows.",
+              "x-tools": {"Stata cm*": "e(N) (rows)", "mlogit": "nobs() (choice situations)", "xlogit": "sample_size (choice situations)", "apollo": "nObs", "Biogeme": "sample size"}
+            },
+            "n_cases": {"description": "Choice situations.", "type": "integer", "x-tools": {"Stata cm*": "e(N_case)", "mlogit": "nobs()", "xlogit": "sample_size", "apollo": "nObs", "Biogeme": "number of observations", "logitr": "n$obs"}},
+            "n_decision_makers": {"description": "Individuals (panel).", "type": ["integer", "null"], "x-tools": {"apollo": "nIndivs"}},
+            "n_alternatives": {"type": ["integer", "null"]},
+            "log_lik": {"x-tools": {"Stata": "e(ll)", "mlogit": "logLik()", "logitr": "logLik", "apollo": "maximum / LLout", "xlogit": "loglikelihood", "Biogeme": "final_loglikelihood"}},
+            "log_lik_null": {"description": "All coefficients zero (equal choice probabilities among available alternatives).", "x-tools": {"apollo": "LL0", "logitr": "nullLogLik", "Biogeme": "null_loglikelihood (when computed)", "mlogit": "update(, . ~ 1) or lratio()"}},
+            "log_lik_constants": {"description": "Alternative-specific constants only (market shares).", "x-tools": {"apollo": "LLC", "mlogit": "sum(freq * log(freq/N))"}},
+            "rho2": {"description": "McFadden 1 - log_lik / log_lik_null; record {value, definition} for another base (Biogeme rho_square_init uses the initial values).", "x-tools": {"apollo": "Rho-squared vs equal shares", "Biogeme": "rho_square_null, rho_square_init", "mlogit": "summary() McFadden R^2 (vs constants)"}},
+            "adj_rho2": {"x-tools": {"apollo": "Adj.Rho-squared", "Biogeme": "rho_bar_square_null"}},
+            "aic": {"x-tools": {"xlogit": "aic", "apollo": "AIC", "Biogeme": "akaike_information_criterion", "mlogit": "AIC()"}},
+            "bic": {"description": "The n in the penalty is usually n_cases (xlogit, apollo); say so with {value, definition} when it isn't.", "x-tools": {"xlogit": "bic", "apollo": "BIC", "Biogeme": "bayesian_information_criterion"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov", "numerics"],
+          "properties": {
+            "vcov": {
+              "description": "At most one default; the default (or a lone vcov) needs type. Tools often report two (apollo se and robse): record both, mark the one parameters uses.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {
+                    "x-vocabulary": ["oim", "bfgs_approx", "opg", "robust", "cluster", "bootstrap"],
+                    "x-tools": {"xlogit": "MultinomialLogit: oim (num_hess=True); MixedLogit: bfgs_approx (optimizer's inverse Hessian) unless num_hess=True; robust=True: robust", "apollo": "se (oim), robse (robust), bootse (bootstrap)", "Biogeme": "robust in the default table; also the Hessian-based and BHHH matrices", "mlogit": "oim (bfgs/nr) or opg (bhhh)", "logitr": "oim; robust = TRUE", "Stata": "e(vce)"}
+                  }
+                }
+              }
+            },
+            "numerics": {
+              "required": ["converged"],
+              "x-tools": {
+                "converged": {"xlogit": "convergence", "mlogit": "est.stat$code in 1, 2 (3: no improvement found)", "apollo": "successfulEstimation", "Biogeme": "algorithm_has_converged", "logitr": "status > 0 (nloptr; statusCodes())", "Stata": "e(converged)"},
+                "iterations": {"xlogit": "total_iter", "mlogit": "est.stat$nb.iter", "Stata": "e(ic)"},
+                "message": {"xlogit": "estimation_message", "apollo": "message"}
+              }
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"enum": ["mixed_logit", "gmnl"]}}, "required": ["method"]}}}},
+        "required": ["meta"]
+      },
+      "then": {
+        "properties": {
+          "specification": {"properties": {"choice": {"required": ["random_parameters", "simulation", "panel"]}}},
+          "parameters": {"contains": {"required": ["choice"], "properties": {"choice": {"required": ["role"], "properties": {"role": {"enum": ["sd", "chol", "spread"]}}}}}}
+        }
+      }
+    },
+    "design": {
+      "description": "The choice data and model structure, resolved.",
+      "type": "object",
+      "required": ["case", "alternative"],
+      "properties": {
+        "case": {"description": "Choice-situation identifier.", "type": "string", "x-tools": {"Stata cm*": "cmset caseid, e(caseid)", "mlogit": "dfidx idx chid", "logitr": "obsID", "xlogit": "ids", "apollo": "one row per case (wide)"}},
+        "alternative": {"description": "Alternative identifier (long data), or the alternatives' names (wide).", "type": "string", "x-tools": {"Stata cm*": "e(altvar)", "mlogit": "idx alt", "xlogit": "alts"}},
+        "outcome": {"description": "Chosen indicator or choice variable.", "type": "string"},
+        "decision_maker": {"description": "Individual identifier; null for cross-sectional choices.", "type": ["string", "null"], "x-tools": {"logitr": "panelID", "xlogit": "panels", "apollo": "indivID", "mlogit": "dfidx id", "Stata": "cmset panelvar"}},
+        "panel": {"description": "Random parameters drawn once per decision maker (true) or per choice situation (false).", "type": "boolean", "x-tools": {"mlogit": "panel (FALSE)", "logitr": "panelID given", "xlogit": "panels given", "apollo": "panelData", "Stata": "cmxtmixlogit vs cmmixlogit"}},
+        "alternatives": {"description": "Alternatives in the sample, in the tool's order.", "type": "array"},
+        "base_alternative": {"description": "Alternative whose constant is normalized to zero; null without constants.", "type": ["string", "number", "null"], "x-tools": {"Stata cm*": "basealternative(), e(basealt)", "mlogit": "reflevel", "xlogit": "base_alt (first alternative)"}},
+        "availability": {"description": "Availability variable, or null when every alternative is always available.", "type": ["string", "null"], "x-tools": {"xlogit": "avail", "apollo": "avail", "Biogeme": "av"}},
+        "space": {"description": "Utility in preference space or willingness-to-pay space.", "type": "string", "x-vocabulary": ["preference", "wtp"], "x-tools": {"logitr": "scalePar given = wtp", "xlogit": "scale_factor given = wtp"}},
+        "scale_term": {"description": "Price (scale) term in WTP space.", "type": ["string", "null"], "x-tools": {"logitr": "scalePar", "xlogit": "scale_factor"}},
+        "nests": {"description": "Nested logit: [{name, alternatives}].", "type": "array"},
+        "n_classes": {"description": "Latent-class models.", "type": "integer"},
+        "random_parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["term", "distribution"],
+            "properties": {
+              "term": {"type": "string"},
+              "distribution": {"type": "string", "x-vocabulary": ["normal", "lognormal", "triangular", "uniform", "censored_normal", "truncated_normal", "johnson_sb", "fixed"], "x-tools": {"mlogit": "rpar codes n, ln, cn, t, u, zbu, zbt", "logitr": "randPars n, ln, cn", "xlogit": "randvars n, ln, t, tn, u", "Stata": "random(), lnrandom(), ..."}}
+            }
+          }
+        },
+        "correlated": {"description": "Random parameters correlated (Cholesky).", "type": "boolean", "x-tools": {"mlogit": "correlation", "logitr": "correlation", "Stata": "corr options"}},
+        "simulation": {
+          "type": "object",
+          "required": ["draws", "type"],
+          "properties": {
+            "draws": {"type": "integer", "x-tools": {"mlogit": "R (40)", "logitr": "numDraws (500)", "xlogit": "n_draws (1000)", "apollo": "interNDraws", "Biogeme": "number_of_draws (10000)", "Stata": "intpoints() / nrep()"}},
+            "type": {"type": "string", "x-vocabulary": ["halton", "scrambled_halton", "mlhs", "sobol", "hammersley", "pmc", "pseudo_random"], "x-tools": {"mlogit": "halton (NULL: pseudo-random; NA: Halton)", "logitr": "drawType (\"sobol\")", "xlogit": "halton (True)", "apollo": "interDrawsType (\"mlhs\")", "Biogeme": "draw type in the expression (e.g. NORMAL_HALTON2)", "Stata": "intmethod() / halton options"}},
+            "seed": {"type": ["integer", "string", "null"], "x-tools": {"mlogit": "seed (10)", "xlogit": "random_state", "apollo": "apollo_control$seed", "Biogeme": "seed (0: a new seed each run)"}},
+            "burn": {"description": "Initial Halton elements dropped.", "type": ["integer", "null"], "x-tools": {"xlogit": "halton_opts", "Stata mixlogit": "burn()"}}
+          }
+        }
+      }
+    },
+    "choice_row": {
+      "description": "What a parameter row is in the choice model.",
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": {"type": "string", "x-vocabulary": ["coefficient", "asc", "mean", "sd", "chol", "spread", "nest", "scale", "class_share", "wtp"]},
+        "term": {"description": "Attribute the row belongs to (for mean, sd, chol, wtp).", "type": "string"},
+        "terms": {"description": "Two attributes for an off-diagonal Cholesky element.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+        "alternative": {"description": "Alternative for an ASC or alternative-specific coefficient.", "type": ["string", "number"]},
+        "class": {"description": "Latent class.", "type": ["integer", "string"]},
+        "nest": {"type": "string"},
+        "distribution": {"type": "string"}
+      }
+    }
+  }
+}
