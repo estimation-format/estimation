@@ -55,7 +55,7 @@ GLMs, multiple-estimation objects (convert each model), fixest `subset`/`split`.
 | `sample.dropped.missing` | not stored separately: `_na_index` holds the missing and singleton rows together | not stored separately: `obs_selection$obsRemoved` likewise | not stored; the converter marks out the model's variables |
 | `metrics.df_residual` | `_dfd`: the Wald test's denominator df, min(G) − 1 when clustered, else N − k − all FE levels (one below fixest per extra FE); recorded with its definition | `df.residual()`: N − K | `e(df_r)`: min(G) − 1 when clustered, recorded with its definition |
 | `vcov.df_t` | `_df_t` | `attr(vcov, "df.t")` | `e(df_r)` |
-| `metrics.sigma` | `_rmse` = sqrt(RSS / N); recorded with its definition | `sigma()` = sqrt(RSS / (N − K)) | `e(rmse)` = sqrt(RSS / df_r) |
+| `metrics.sigma`, `rss` | `_rmse` = sqrt(RSS / N); recorded with its definition | `sigma()` = sqrt(RSS / (N − K)), weights as given | `e(rmse)` = sqrt(RSS / (N − K)); with aweights, which Stata rescales to sum to N, recorded with that definition |
 | `vcov.ssc` | `_ssc_dict` and the factor `_ssc` | `attr(vcov, "ssc")`, `df.K`; no numeric factor | `e(dofmethod)`, `e(df_a)`, `e(df_a_nested)`; no numeric factor |
 | `fixed_effects[*].levels` | `_fe` (counted) | `fixef_sizes` | `e(dof_table)` |
 | iterations, convergence | not stored | `iterations` (per variable) | `e(ic)`, `e(converged)` |

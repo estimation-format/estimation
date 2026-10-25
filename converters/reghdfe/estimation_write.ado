@@ -180,6 +180,15 @@ string scalar _est_num(string scalar name)
 	return(missing(x) ? "" : _ej_n(x))
 }
 
+// An e() scalar as {value, definition} when `labelled`, else as _est_num
+string scalar _est_def(string scalar name, string scalar definition, real scalar labelled)
+{
+	string scalar v
+	v = _est_num(name)
+	if (!labelled | v == "") return(v)
+	return(_ej_o(("value", "definition"), (v, _ej_s(definition))))
+}
+
 string scalar _est_uuid()
 {
 	transmorphic state
@@ -260,7 +269,7 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	string matrix cs, rs
 	string vector terms, clusters, absvars, fe, params, vrows, software, sections, dofrows
 	string scalar canon, dropped, vce, vtype, wtype, wvar, dfr_def, meta, spec, metrics
-	string scalar structures, provenance, history, rec, sample, nested, vcov, datain, messages, nl
+	string scalar structures, provenance, history, rec, sample, nested, vcov, datain, messages, nl, aw_def
 	string vector clk, clv
 	real scalar i, j, N, Nfull, nsing, rows_input, n_missing, n_other, df, se, t, crit, level
 	real scalar fh, ncl
@@ -337,18 +346,21 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	}
 
 	dfr_def = ncl ? "min(G) - 1 under clustering (reghdfe e(df_r))" : ""
+	// Stata rescales aweights to sum to N, so weighted sums of squares differ from tools
+	// that use the weights as given (fixest)
+	wtype = st_global("e(wtype)")
+	aw_def = wtype == "aweight" ? ", with aweights rescaled to sum to N" : ""
 	metrics = _ej_o(("nobs", "nobs_full", "n_singletons", "df_residual", "df_model", "df_absorbed", "df_absorbed_nested",
 		"rss", "tss", "tss_within", "r2", "adj_r2", "r2_within", "adj_r2_within", "sigma", "log_lik", "log_lik_null",
 		"f_stat", "sum_weights", "rank", "conf_level"),
 		(_ej_n(N), _ej_n(Nfull), _ej_n(nsing),
 		 (ncl ? _ej_o(("value", "definition"), (_ej_n(df), _ej_s(dfr_def))) : _ej_n(df)),
-		 _est_num("df_m"), _est_num("df_a"), _est_num("df_a_nested"), _est_num("rss"), _est_num("tss"),
+		 _est_num("df_m"), _est_num("df_a"), _est_num("df_a_nested"), _est_def("rss", "weighted RSS" + aw_def, aw_def != ""), _est_num("tss"),
 		 _est_num("tss_within"), _est_num("r2"), _est_num("r2_a"), _est_num("r2_within"), _est_num("r2_a_within"),
-		 _est_num("rmse"), _est_num("ll"), _est_num("ll_0"), _est_num("F"),
+		 _est_def("rmse", "sqrt(RSS / (N - K))" + aw_def, aw_def != ""), _est_num("ll"), _est_num("ll_0"), _est_num("F"),
 		 (missing(_est_sc("e(sumweights)")) ? "" : _est_num("sumweights")), _est_num("rank"),
 		 _ej_n(level / 100)))
 
-	wtype = st_global("e(wtype)")
 	wvar = strtrim(subinstr(st_global("e(wexp)"), "=", "", 1))
 	sample = _ej_o(("restriction", "rows_input", "dropped"),
 		("null", _ej_n(rows_input),
