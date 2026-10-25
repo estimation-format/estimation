@@ -1,0 +1,143 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "e7a1c3f5-9b2d-4d84-a6e0-2f4b8c1d9e73",
+    "created": "2026-10-25T22:10:00Z",
+    "status": "ok",
+    "estimator": {"family": "mixed", "method": "reml"},
+    "responses": ["Reaction"],
+    "profiles": ["mixed/0.1"],
+    "notes": "Real run: statsmodels 0.15.0 MixedLM on lme4's sleepstudy data, random intercept and slope on Days by Subject. Matches lmer(Reaction ~ Days + (Days | Subject), sleepstudy): fixed effects 251.405 (6.825) and 10.467 (1.546), SDs 24.74 and 5.92, correlation 0.066, residual SD 25.59, REML criterion 1743.6. Variance-component rows are on the summary's scale (variances and covariance); statsmodels' params hold them divided by the residual variance."
+  },
+  "specification": {
+    "call": "smf.mixedlm(\"Reaction ~ Days\", d, groups=d[\"Subject\"], re_formula=\"~Days\").fit(reml=True, method=[\"lbfgs\"])",
+    "formula": {"text": "Reaction ~ Days", "syntax": "patsy"},
+    "terms": ["Intercept", "Days"],
+    "weights": null,
+    "random_effects": [
+      {
+        "group": "Subject",
+        "terms": ["(Intercept)", "Days"],
+        "covariance": "unstructured",
+        "text": "groups=Subject, re_formula=\"~Days\""
+      }
+    ],
+    "options": {"optimizer": "lbfgs", "df_method": "none"}
+  },
+  "metrics": {
+    "nobs": 180,
+    "log_lik": -871.8141359793351,
+    "reml_criterion": 1743.6282719586702,
+    "sigma": 25.591819775996893,
+    "aic": null,
+    "bic": null,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "Intercept",
+      "canonical": {"name": "(Intercept)", "factors": []},
+      "estimate": 251.40510484848463,
+      "std_error": 6.824551381638343,
+      "statistic": 36.83833424199831,
+      "p_value": 4.4963766192074524e-297,
+      "conf_low": 238.02922992983042,
+      "conf_high": 264.78097976713883
+    },
+    {
+      "term": "Days",
+      "estimate": 10.467285959595898,
+      "std_error": 1.545787332562357,
+      "statistic": 6.771491614079228,
+      "p_value": 1.2746135064746331e-11,
+      "conf_low": 7.4375984600154394,
+      "conf_high": 13.496973459176356
+    },
+    {
+      "term": "Group Var",
+      "estimate": 612.0885999185558,
+      "component": "random",
+      "group": "Subject",
+      "vc": {"group": "Subject", "terms": ["(Intercept)"], "type": "var"}
+    },
+    {
+      "term": "Group x Days Cov",
+      "estimate": 9.604923224611197,
+      "component": "random",
+      "group": "Subject",
+      "vc": {"group": "Subject", "terms": ["(Intercept)", "Days"], "type": "cov"}
+    },
+    {
+      "term": "Days Var",
+      "estimate": 35.07157090491654,
+      "component": "random",
+      "group": "Subject",
+      "vc": {"group": "Subject", "terms": ["Days"], "type": "var"}
+    },
+    {
+      "term": "Scale",
+      "estimate": 654.9412394471057,
+      "component": "random",
+      "group": "Residual",
+      "vc": {"group": "Residual", "terms": ["(Residual)"], "type": "var"}
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["Intercept", "Days"],
+        "data": [
+          [46.57450156062181, -1.451063576755266],
+          [-1.4510635767552522, 2.3894584775102468]
+        ],
+        "type": "model",
+        "ssc": {"convention": "statsmodels", "formula": "none"},
+        "default": true
+      }
+    ],
+    "random_effects": [
+      {
+        "kind": "object",
+        "group": "Subject",
+        "levels": 18,
+        "terms": ["(Intercept)", "Days"],
+        "covariance": "unstructured",
+        "size": {"min": 10, "mean": 10.0, "max": 10}
+      }
+    ],
+    "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "lbfgs",
+      "converged": true,
+      "singular": false
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "statsmodels",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/statsmodels@0.15.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "sleepstudy",
+        "location": "lme4 data/sleepstudy.rda",
+        "rows": 180,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "65acebb1584c681b0181906744864de8388c7e6ef6052733db7991e18e82a621",
+          "of": "file"
+        },
+        "source": "lme4 (Belenky et al. 2003), lme4/lme4 @ 808a76d"
+      }
+    ]
+  }
+}

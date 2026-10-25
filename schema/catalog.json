@@ -99,6 +99,15 @@
       "maintainer": "jemather",
       "description": "Conditional (fixed-effects) logit (Stata clogit, xtlogit fe; R survival::clogit; statsmodels ConditionalLogit): the conditioning groups, exact or approximate likelihood, whether all-0/all-1 groups were dropped, group counts.",
       "examples": ["examples/conditional-logit.estimation.json"]
+    },
+    {
+      "name": "mixed/0.1",
+      "file": "profiles/mixed-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Linear and generalized linear mixed models (lme4, lmerTest, glmmTMB, Stata mixed/me*, statsmodels MixedLM, MixedModels.jl): REML/ML/quadrature, random-effect terms and grouping factors, variance components with their scale, df method, convergence and singular fits.",
+      "examples": ["examples/mixed.estimation.json"]
     }
   ]
 }

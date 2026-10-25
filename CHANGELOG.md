@@ -10,6 +10,8 @@
   profile `ppmlhdfe/0.1`, with example records and pages in `spec/profiles/`.
 - Draft standard profile `conditional-logit/0.1` (Stata clogit and xtlogit fe,
   survival::clogit, statsmodels ConditionalLogit), with an example record and a page.
+- Draft standard profile `mixed/0.1` (lme4, lmerTest, glmmTMB, Stata mixed and me*,
+  statsmodels MixedLM, MixedModels.jl), with an example record and a page.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

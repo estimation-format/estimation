@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/mixed-0.1.json",
+  "title": "mixed/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for linear and generalized linear mixed (multilevel) models: R lme4 (lmer, glmer) with lmerTest, glmmTMB; Stata mixed, melogit/mepoisson/meglm; Python statsmodels MixedLM; Julia MixedModels.jl (survey 2026-10-25, spec/profiles/mixed.md). Requires meta.estimator.method (reml, ml, laplace, agq, ...: the tools' defaults differ, so it is always recorded); specification.random_effects as specified; estimate and std_error on fixed-effect rows; a vc object (group, terms, type, the scale the estimate is on) on every variance-component row (component \"random\"); metrics.nobs; structures.random_effects with each grouping factor's levels; a default vcov of the fixed effects with type; and structures.numerics.converged. p-values are optional (lme4 reports none); when given, parameters[*].df and specification.options.df_method say how. log_lik and structures.numerics.singular are expected. GLMMs add distribution and link as in glm/0.1. Random-effect predictions (BLUPs) are per-level and go in attachments, as the core requires.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"mixed\" is recommended.", "type": "string"},
+                "method": {
+                  "description": "Estimation criterion. Defaults differ: lmer and statsmodels REML; Stata mixed, glmmTMB and MixedModels.jl ML; glmer Laplace (nAGQ = 1); Stata me* adaptive quadrature with 7 points.",
+                  "type": "string",
+                  "x-vocabulary": ["reml", "ml", "laplace", "agq", "pql", "variational"],
+                  "x-tools": {"lme4": "isREML(); glmer: nAGQ (1 = laplace, > 1 = agq)", "glmmTMB": "REML (FALSE)", "Stata": "e(method) (mixed: ML default, reml); me*: intmethod() (mvaghermite), e(n_quad)", "statsmodels": "method (\"REML\" default, reml=False for ML)", "MixedModels.jl": "optsum.REML (false); GLMM optsum.nAGQ"}
+                },
+                "distribution": {"description": "GLMMs, as in glm/0.1.", "type": "string"},
+                "link": {"type": "string"}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["random_effects"],
+          "properties": {
+            "random_effects": {
+              "description": "Random-effect terms as specified: one entry per term.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["group", "terms"],
+                "properties": {
+                  "group": {"description": "Grouping factor (Subject; school:class for nested).", "type": "string"},
+                  "terms": {"description": "Terms varying by group; \"(Intercept)\" for the random intercept.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "covariance": {
+                    "type": "string",
+                    "x-vocabulary": ["unstructured", "diagonal", "identity", "exchangeable", "ar1"],
+                    "x-tools": {"lme4": "(x | g) unstructured, (x || g) diagonal", "Stata": "covariance() (independent default with several terms, else unstructured if specified)", "glmmTMB": "us, diag, cs, ar1, ...", "statsmodels": "re_formula: unstructured; vc_formula: variance components"}
+                  },
+                  "nested_in": {"type": "string"},
+                  "text": {"description": "The term as written: \"(Days | Subject)\", \"|| Subject: Days, covariance(unstructured)\".", "type": "string"}
+                }
+              }
+            },
+            "options": {
+              "properties": {
+                "optimizer": {"type": "string", "x-tools": {"lmer": "control$optimizer (\"nloptwrap\")", "glmer": "c(\"bobyqa\", \"Nelder_Mead\")", "glmmTMB": "nlminb", "MixedModels.jl": "optsum.optimizer (:LN_NEWUOA)", "statsmodels": "fit(method=) (bfgs, lbfgs, ...)", "Stata": "technique()"}},
+                "n_quadrature": {"description": "Quadrature points for GLMMs (1 = Laplace).", "type": "integer", "x-tools": {"glmer": "nAGQ (1)", "Stata me*": "intpoints() (7), e(n_quad)", "MixedModels.jl": "nAGQ (1)"}},
+                "df_method": {
+                  "description": "How the df behind fixed-effect tests and intervals were computed.",
+                  "type": "string",
+                  "x-vocabulary": ["satterthwaite", "kenward_roger", "residual", "containment", "between_within", "none"],
+                  "x-tools": {"lme4": "none (t values, no p-values)", "lmerTest": "ddf (\"Satterthwaite\" default, \"Kenward-Roger\", \"lme4\")", "Stata mixed": "dfmethod() (residual, repeated, anova, satterthwaite, kroger); none (z) by default", "statsmodels, glmmTMB, MixedModels.jl": "none (z)"}
+                }
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {
+              "df": {"description": "Per-row df for the test (Satterthwaite, Kenward-Roger).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lmerTest": "summary()$coefficients df"}},
+              "vc": {"$ref": "#/$defs/vc_row"}
+            },
+            "if": {"required": ["component"], "properties": {"component": {"const": "random"}}},
+            "then": {"required": ["vc", "estimate"]},
+            "else": {
+              "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+              "else": {"required": ["estimate", "std_error"]}
+            }
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "x-expected": ["log_lik"],
+          "properties": {
+            "nobs": {"x-tools": {"lme4, glmmTMB": "nobs()", "Stata": "e(N)", "statsmodels": "nobs", "MixedModels.jl": "nobs()"}},
+            "log_lik": {
+              "description": "At the estimate, on the criterion used: the REML log-likelihood when method is reml.",
+              "x-tools": {"lme4": "logLik() (REML when isREML)", "glmmTMB": "logLik()", "Stata": "e(ll)", "statsmodels": "llf", "MixedModels.jl": "loglikelihood() (ML only)"}
+            },
+            "reml_criterion": {"description": "-2 x REML log-likelihood.", "x-tools": {"lme4": "REMLcrit()"}},
+            "deviance": {"description": "As the tool defines it; lme4 deviance() of a REML fit is the ML deviance at the REML estimates, so record {value, definition}.", "x-tools": {"lme4": "deviance()", "MixedModels.jl": "deviance()", "glmmTMB": "deviance()"}},
+            "aic": {"x-tools": {"lme4, glmmTMB": "AIC()", "statsmodels": "aic (NaN under REML)", "MixedModels.jl": "aic()"}},
+            "bic": {"x-tools": {"lme4, glmmTMB": "BIC()", "statsmodels": "bic", "MixedModels.jl": "bic()"}},
+            "sigma": {"description": "Residual standard deviation.", "x-tools": {"lme4": "sigma()", "statsmodels": "sqrt(scale)", "Stata": "exp(_b[lnsig_e:_cons])", "MixedModels.jl": "sdest()"}},
+            "lr_vs_fixed": {"description": "LR test of the random effects against the model without them (on the boundary).", "x-tools": {"Stata": "e(chi2_c), e(p_c), e(df_c)"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov", "random_effects", "numerics"],
+          "properties": {
+            "vcov": {
+              "description": "Variance of the fixed effects. At most one default; the default (or a lone vcov) needs type.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {
+                "properties": {
+                  "type": {"x-vocabulary": ["model", "kenward_roger", "CR2"], "x-tools": {"lme4, glmmTMB, MixedModels.jl, statsmodels": "model (vcov())", "Stata": "e(vce) (oim; robust/cluster)", "pbkrtest / lmerTest KR": "kenward_roger (adjusted vcov)", "clubSandwich": "CR2"}}
+                }
+              }
+            },
+            "random_effects": {
+              "description": "One entry per grouping factor in the sample.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+                "required": ["kind", "group", "levels"],
+                "properties": {
+                  "kind": {"const": "object"},
+                  "group": {"type": "string"},
+                  "levels": {"description": "Groups in the estimation sample.", "$ref": "../estimation-0.1.json#/$defs/count", "x-tools": {"lme4, glmmTMB": "ngrps()", "Stata": "e(N_g)", "statsmodels": "n_groups", "MixedModels.jl": "nlevs per term"}},
+                  "terms": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "covariance": {"type": "string"},
+                  "size": {
+                    "type": "object",
+                    "properties": {"min": {"$ref": "../estimation-0.1.json#/$defs/number"}, "mean": {"$ref": "../estimation-0.1.json#/$defs/number"}, "max": {"$ref": "../estimation-0.1.json#/$defs/number"}},
+                    "x-tools": {"Stata": "e(g_min), e(g_avg), e(g_max)", "statsmodels": "summary group sizes"}
+                  }
+                }
+              }
+            },
+            "numerics": {
+              "required": ["converged"],
+              "x-expected": ["singular"],
+              "properties": {
+                "converged": {
+                  "description": "The optimizer reported success and the tool raised no convergence warning (gradient or Hessian check).",
+                  "x-tools": {"lme4": "optinfo$conv$opt == 0 and no optinfo$conv$lme4$messages other than the singular-fit one", "glmmTMB": "fit$convergence == 0 and sdr$pdHess", "Stata": "e(converged)", "statsmodels": "converged", "MixedModels.jl": "optsum.returnvalue (a success code)"}
+                },
+                "singular": {"description": "Boundary (singular) fit: a variance at zero or a correlation at +/-1.", "type": "boolean", "x-tools": {"lme4": "isSingular() (check.conv.singular message)", "glmmTMB": "no direct flag; check VarCorr", "MixedModels.jl": "issingular()"}},
+                "warnings": {"description": "Convergence messages as the tool wrote them.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"lme4": "optinfo$conv$lme4$messages, optinfo$warnings"}},
+                "function_evaluations": {"type": ["integer", "null"], "x-tools": {"lme4": "optinfo$feval", "MixedModels.jl": "optsum.feval"}},
+                "iterations": {"x-tools": {"Stata": "e(ic)"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    "vc_row": {
+      "description": "A variance-component parameter: rows with component \"random\". group \"Residual\" is the residual variance. estimate is on the scale `type` names, as the tool reports it (Stata's e(b) holds log SDs and atanh correlations; statsmodels prints variances and covariances; lme4 prints SDs and correlations).",
+      "type": "object",
+      "required": ["group", "terms", "type"],
+      "properties": {
+        "group": {"type": "string"},
+        "terms": {"description": "One term for a variance or SD, two for a covariance or correlation.", "$ref": "../estimation-0.1.json#/$defs/strings", "minItems": 1, "maxItems": 2},
+        "type": {"type": "string", "x-vocabulary": ["sd", "var", "cor", "cov", "log_sd", "atanh_cor"]}
+      }
+    }
+  }
+}
