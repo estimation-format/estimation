@@ -11,15 +11,20 @@ Linear models with absorbed fixed effects. Surveyed (documentation or source che
 
 Everything `inference/0.1` requires, plus:
 
-- `metrics.n_singletons`: singleton rows dropped (0 when none were);
 - `specification.options.drop_singletons`: whether singletons were dropped;
 - `structures.fixed_effects`: one entry per fixed effect, each with `name` and `levels`.
 
-Why singletons are required: `nobs` means different samples in different tools. reghdfe,
+Expected (a validator warns when it is missing, but the record is valid):
+
+- `metrics.n_singletons`: singleton rows dropped (0 when none were).
+
+Why singletons matter: `nobs` means different samples in different tools. reghdfe,
 fixest (`fixef.rm = "perfect_fit"`), pyfixest (`fixef_rm = "singleton"`) and
 FixedEffectModels.jl (`drop_singletons = true`) drop singletons by default; lfe documents no
-singleton removal. Requiring `nobs`, `n_singletons` and `drop_singletons` together makes the
-difference visible.
+singleton removal. `drop_singletons` (required) says which convention a record follows, and
+`n_singletons` says how many rows that removed. The count is expected rather than required
+because pyfixest and fixest report it only in a message, not in the fitted object; a writer
+for those tools may leave it out until they store it.
 
 Not required, though in the vocabulary: `r2_within` (`areg` reports none), and convergence
 (`iterations`, `converged`), which several tools don't report by default.
@@ -30,7 +35,7 @@ Not required, though in the vocabulary: `r2_within` (`areg` reports none), and c
 |---|---|---|---|---|---|
 | ✓ `nobs` | rows used | `nobs` | `e(N)` | `nobs` | pyfixest `_N`; lfe `N`; areg/xtreg `e(N)`; FEM.jl `nobs` |
 | `nobs_full` | rows used plus singleton rows dropped | — (`nobs_origin` counts rows before subset, NA and singleton removal: `specification.sample.rows_input`) | `e(N_full)` | — | |
-| ✓ `n_singletons` | singleton rows dropped | not stored separately | `e(num_singletons)` | — | pyfixest: a warning only; areg/xtreg `e(ksingle)` (per absorbed variable) |
+| (✓) `n_singletons` | singleton rows dropped (expected) | not stored separately | `e(num_singletons)` | — | pyfixest: a warning only; areg/xtreg `e(ksingle)` (per absorbed variable) |
 | ✓ `df_residual` | residual df as the tool reports it | `df.residual`* | `e(df_r)` (min(G) − 1 under clustering) | `df_resid` | areg/xtreg `e(df_r)`; FEM.jl `dof_residual` (min(G) − 1 under clustering); pyfixest: none (`_dfd` is the Wald test's denominator df: min(G) − 1 under clustering, else N − k − all FE levels; record it with its definition) |
 | `df_model` | model df | | `e(df_m)` | `df_model` | areg/xtreg `e(df_m)`; FEM.jl `dof` |
 | `df_absorbed` | df lost to the fixed effects | | `e(df_a)` | | areg `e(df_a)`, `e(dfabsorb)`; xtreg `e(df_a)`; FEM.jl `dof_fes` |
@@ -49,7 +54,7 @@ Not required, though in the vocabulary: `r2_within` (`areg` reports none), and c
 | `sum_weights` | sum of weights | | `e(sumweights)` | | |
 | `rank` | rank of the vcov | | `e(rank)` | | areg/xtreg `e(rank)` |
 
-✓ required. \* a method or derived value (`r2()`, `fitstat()`, `sigma()`), not a stored
+✓ required; (✓) expected. \* a method or derived value (`r2()`, `fitstat()`, `sigma()`), not a stored
 element.
 
 ## Structures

@@ -24,7 +24,7 @@ from estimation_pyfixest import to_record
 import estimation_format as ef
 
 fit = pf.feols("y ~ x1 + x2 | firm + year", data, vcov={"CRV1": "firm"})
-ef.write(to_record(fit, data), "fit.estimation.json")   # write adds the core digest
+ef.write(to_record(fit, data), "fit.estimation.json")  # write adds the core digest
 ```
 
 ```r
@@ -60,8 +60,10 @@ GLMs, multiple-estimation objects (convert each model), fixest `subset`/`split`.
 | `fixed_effects[*].levels` | `_fe` (counted) | `fixef_sizes` | `e(dof_table)` |
 | iterations, convergence | not stored | `iterations` (per variable) | `e(ic)`, `e(converged)` |
 
+`n_singletons` is expected, not required, in `linear-fe/0.1`: a native pyfixest or fixest
+writer may leave it out (the validator warns). These converters fill it from the input data.
 A point for the pyfixest and fixest authors: storing the singleton count and the
-missing-value count separately would let a writer fill `n_singletons` without the input data.
+missing-value count separately would let a writer fill it without the data.
 
 Defaults: with fixed effects and no `vcov`, both fixest 0.14 and pyfixest 0.60 use iid
 standard errors (older fixest clustered by the first fixed effect); reghdfe's default is
