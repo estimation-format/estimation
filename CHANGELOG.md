@@ -17,3 +17,5 @@
 - `linear-fe/0.1` (draft): `metrics.n_singletons` is expected, not required (pyfixest and
   fixest don't store it). The validator now warns for a missing `x-expected` field of a
   claimed profile (also `iv/0.1` `structures.first_stage`); `expected_paths()` lists them.
+- `write`/`prepare`: `redact_identifying` also takes a list of paths, so a tool can redact its
+  own extension's fields whatever profiles the record claims.

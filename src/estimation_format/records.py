@@ -521,11 +521,13 @@ def prepare(
     record: dict,
     *,
     digest: bool = True,
-    redact_identifying: bool = False,
+    redact_identifying: bool | Iterable[str] = False,
     by: dict | None = None,
 ) -> dict:
     """The record as it would be written, without spilling: encoded, `schema`, `meta.id`
-    and `meta.created` filled if missing, optionally redacted, history and digest added."""
+    and `meta.created` filled if missing, optionally redacted, history and digest added.
+    `redact_identifying=True` removes the fields `redact` finds; a list of paths removes
+    those instead (a tool can add its own extension's fields this way)."""
     rec = to_json(record)
     rec.setdefault("schema", SCHEMA)
     meta = rec.setdefault("meta", {})
@@ -539,8 +541,10 @@ def prepare(
             "sections": [k for k in (*REQUIRED, *EXPECTED, *OPTIONAL) if k in rec and k != "schema"],
         }
     )
-    if redact_identifying:
+    if redact_identifying is True:
         rec = redact(rec, by=by)
+    elif redact_identifying:
+        rec = redact(rec, paths=list(redact_identifying), by=by)
     if digest:
         add_digest(rec)
     else:
@@ -554,7 +558,7 @@ def write(
     *,
     digest: bool = True,
     spill_large: bool = True,
-    redact_identifying: bool = False,
+    redact_identifying: bool | Iterable[str] = False,
     by: dict | None = None,
     indent: int | None = 1,
 ) -> dict:
@@ -562,7 +566,8 @@ def write(
 
     Large structures are spilled to side files next to it (`spill`), the core digest is
     computed after spilling (on by default), and the size limits are applied: a warning
-    above 1 MB or 10,000 elements in one array, an error above 16 MB."""
+    above 1 MB or 10,000 elements in one array, an error above 16 MB. `redact_identifying`
+    is as in `prepare`."""
     path = Path(path)
     rec = prepare(record, digest=False, redact_identifying=redact_identifying, by=by)
     if spill_large:

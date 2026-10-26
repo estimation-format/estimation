@@ -281,6 +281,16 @@ def test_write_does_not_change_the_input(tmp_path):
     assert json.dumps(rec, sort_keys=True) == before
 
 
+def test_write_redacts_the_paths_given(tmp_path):
+    rec = lm_record()
+    rec["extensions"] = {"tool": {"host": "node7", "kept": 1}}
+    out = est.write(rec, tmp_path / "a.estimation.json", redact_identifying=["extensions.tool.host"])
+    assert out["extensions"]["tool"] == {"kept": 1}
+    assert [h["action"] for h in out["history"]] == ["created", "redacted"]
+    assert out["history"][1]["fields"] == ["extensions.tool.host"]
+    assert est.check_digest(out) is True
+
+
 def test_text_fields_named_like_nonfinite_stay_strings(tmp_path):
     rec = lm_record()
     rec["parameters"][1]["term"] = "Inf"
