@@ -593,6 +593,8 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`survival/0.1`](profiles/survival.md) | standard | `meta.estimator.method`; `specification.survival` (time, event); `estimate`, `std_error`; `nobs`, `n_events`; a default `vcov` with `type`; `ties` for Cox/Fine-Gray; distribution and AFT/PH metric for parametric; competing events for Fine-Gray |
 | [`med2s/0.1`](profiles/med2s.md) | tool | `mediation` plus the DiD design, cluster, placebo-adjustment options, bootstrap percentile inference, and `extensions.med2s` (signal test, moments, placebo composition, diagnostics, sensitivity) |
 | [`meta-analysis/0.1`](profiles/meta-analysis.md) | standard | `meta.estimator.method`; `effect_measure`; pooled rows with `estimate`, `std_error`; `k`, `q`, `q_df`; random effects add `tau2_method`, `ci_method`, `tau2` |
+| [`predictive/0.1`](profiles/predictive.md) | standard | `meta.estimator.method`; `specification.task` and `validation`; `structures.hyperparameters` (resolved) and `evaluation` (metric, split, value) |
+| [`causal-ml/0.1`](profiles/causal-ml.md) | standard | `meta.estimator.method`; `specification.causal` (treatment, outcome, estimand), `learners`, `cross_fitting` (folds, repeats, seed); a row with a `causal` estimand, `estimate`, `std_error`; `nobs` |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

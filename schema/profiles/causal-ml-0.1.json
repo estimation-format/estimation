@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/causal-ml-0.1.json",
+  "title": "causal-ml/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for causal estimates that use machine-learning nuisance models: double/debiased ML (DoubleML for Python and R, EconML's DML family), generalized random forests and causal forests (R grf, EconML CausalForestDML), and meta-learners (survey 2026-10-25, spec/profiles/causal-ml.md). Requires meta.estimator.method; specification.causal with the treatment, outcome, controls and estimand; specification.learners with each nuisance model and its resolved hyperparameters; specification.cross_fitting with folds, repetitions, the aggregation rule across repetitions and the seed (defaults differ: DoubleML 5 folds and median aggregation, EconML 2 folds and mean, grf a random seed unless set); at least one row with a `causal` object naming its estimand, with estimate and std_error; and metrics.nobs. Nuisance losses (structures.nuisance), overlap and trimming, heterogeneity tests and sensitivity bounds are vocabulary; unit-level CATEs go in attachments.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "parameters"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "method": {"type": "string", "x-vocabulary": ["dml_plr", "dml_irm", "dml_pliv", "dml_iivm", "dml_did", "linear_dml", "sparse_linear_dml", "causal_forest", "instrumental_forest", "dr_learner", "s_learner", "t_learner", "x_learner", "r_learner", "orthogonal_forest"], "x-tools": {"DoubleML": "DoubleMLPLR, DoubleMLIRM, DoubleMLPLIV, DoubleMLIIVM, DoubleMLDID", "EconML": "LinearDML, SparseLinearDML, CausalForestDML, DRLearner, metalearners", "grf": "causal_forest, instrumental_forest"}}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["causal", "learners", "cross_fitting"],
+          "properties": {
+            "causal": {
+              "type": "object",
+              "required": ["treatment", "outcome", "estimand"],
+              "properties": {
+                "treatment": {"type": "string", "x-tools": {"DoubleML": "d_cols", "EconML": "T", "grf": "W"}},
+                "treatment_type": {"type": "string", "x-vocabulary": ["binary", "continuous", "multivalued"]},
+                "outcome": {"type": "string", "x-tools": {"DoubleML": "y_col", "EconML": "Y", "grf": "Y"}},
+                "controls": {"description": "Confounders adjusted for (DoubleML x_cols; EconML W and X; grf X).", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                "effect_modifiers": {"description": "Variables the effect varies with (EconML X).", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                "instruments": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "z_cols", "grf": "Z"}},
+                "estimand": {"type": "string", "x-vocabulary": ["ate", "att", "atc", "late", "ate_overlap", "partial_linear", "cate", "gate", "blp"], "x-tools": {"DoubleML": "score (\"partialling out\", \"IV-type\"; IRM \"ATE\", \"ATTE\")", "grf": "average_treatment_effect(target.sample = \"all\", \"treated\", \"control\", \"overlap\")", "EconML": "ate(), effect(), const_marginal_effect()"}},
+                "score": {"description": "Orthogonal score / ATE method as the tool names it.", "type": "string", "x-tools": {"DoubleML": "score", "grf": "average_treatment_effect(method = \"AIPW\" default, \"TMLE\")"}},
+                "clusters": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "cluster_cols", "grf": "clusters"}}
+              }
+            },
+            "learners": {
+              "description": "Nuisance models by role: {role: {learner, hyperparameters, tuned}}. Roles as the tool names them (DoubleML ml_l, ml_m, ml_g, ml_r; EconML model_y, model_t, model_final; grf Y.hat and W.hat forests).",
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "object",
+                "required": ["learner"],
+                "properties": {
+                  "learner": {"description": "Class or engine (sklearn.ensemble.RandomForestRegressor, regression_forest, lasso, ...).", "type": "string"},
+                  "hyperparameters": {"description": "Resolved, defaults included.", "type": "object"},
+                  "tuned": {"type": "boolean"}
+                }
+              }
+            },
+            "cross_fitting": {
+              "type": "object",
+              "required": ["n_folds", "n_repeats", "seed"],
+              "properties": {
+                "n_folds": {"type": "integer", "x-tools": {"DoubleML": "n_folds (5)", "EconML": "cv (2)", "grf": "out-of-bag (honest forests)"}},
+                "n_repeats": {"type": "integer", "x-tools": {"DoubleML": "n_rep (1)", "EconML": "mc_iters (None = 1)"}},
+                "aggregation": {"description": "How estimates over repetitions are combined.", "type": ["string", "null"], "x-vocabulary": ["median", "mean"], "x-tools": {"DoubleML": "median", "EconML": "mc_agg (\"mean\")"}},
+                "seed": {"description": "Seed for the sample splits and learners; null records that none was set (grf then draws one at random).", "type": ["integer", "string", "null"], "x-tools": {"DoubleML": "numpy global RNG / learner random_state", "EconML": "random_state", "grf": "seed (runif() unless set)"}},
+                "honesty": {"type": ["boolean", "null"], "x-tools": {"grf": "honesty (TRUE)", "EconML CausalForestDML": "honest (True)"}},
+                "sample_fraction": {"type": ["number", "null"], "x-tools": {"grf": "sample.fraction (0.5)", "EconML CausalForestDML": "max_samples (0.45)"}},
+                "n_trees": {"type": ["integer", "null"], "x-tools": {"grf": "num.trees (2000)", "EconML CausalForestDML": "n_estimators (100)"}}
+              }
+            },
+            "overlap": {
+              "description": "Propensity-score handling.",
+              "type": "object",
+              "properties": {
+                "trimming_rule": {"type": ["string", "null"], "x-tools": {"DoubleML IRM": "trimming_rule (\"truncate\")"}},
+                "trimming_threshold": {"type": ["number", "null"], "x-tools": {"DoubleML IRM": "trimming_threshold (0.01)"}},
+                "propensity_range": {"description": "[min, max] of the fitted propensity scores.", "type": "array"}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "contains": {"required": ["causal"]},
+          "items": {
+            "properties": {"causal": {"$ref": "#/$defs/row"}},
+            "if": {"required": ["causal"]},
+            "then": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"]
+        },
+        "structures": {
+          "properties": {
+            "nuisance": {
+              "description": "Out-of-fold loss per nuisance role: {kind: \"object\", losses: {role: {metric, value, per_repeat}}}.",
+              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "properties": {"kind": {"const": "object"}, "losses": {"type": "object"}},
+              "x-tools": {"DoubleML": "nuisance_loss (RMSE / log loss), evaluate_learners()", "EconML": "nuisance_scores_y, nuisance_scores_t"}
+            },
+            "heterogeneity": {
+              "description": "Tests and summaries of effect heterogeneity.",
+              "type": "object",
+              "properties": {
+                "calibration": {"description": "grf test_calibration: mean and differential forest prediction coefficients.", "type": "object", "x-tools": {"grf": "test_calibration()"}},
+                "blp": {"description": "Best linear predictor of the CATE.", "type": "object", "x-tools": {"DoubleML": "cate()", "grf": "best_linear_projection()"}},
+                "variable_importance": {"type": "object", "x-tools": {"grf": "variable_importance()", "EconML": "feature_importances_"}}
+              }
+            },
+            "sensitivity": {"description": "Omitted-variable sensitivity bounds (DoubleML sensitivity_analysis: cf_y, cf_d, rho, bounds, robustness values).", "type": "object", "x-tools": {"DoubleML": "sensitivity_analysis(), sensitivity_params"}}
+          }
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["estimand"],
+      "properties": {
+        "estimand": {"type": "string"},
+        "group": {"description": "Group of a GATE.", "type": ["string", "number", "null"]},
+        "per_repeat": {"description": "Estimates from each cross-fitting repetition before aggregation.", "type": "array", "x-tools": {"DoubleML": "all_coef, all_se"}}
+      }
+    }
+  }
+}

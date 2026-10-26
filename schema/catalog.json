@@ -198,6 +198,24 @@
       "maintainer": "jemather",
       "description": "Meta-analyses and meta-regressions (metafor, meta, statsmodels combine_effects, Stata meta): effect measure, number of studies, tau2 estimator and interval method, pooled common/random rows with prediction intervals, Q, tau2, I2 (as a proportion), study weights, small-study tests.",
       "examples": ["examples/meta-analysis.estimation.json"]
+    },
+    {
+      "name": "predictive/0.1",
+      "file": "profiles/predictive-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Predictive / machine-learning models (scikit-learn, XGBoost, LightGBM, ranger, tidymodels, mlr3, caret): task, validation scheme and seed, resolved hyperparameters, out-of-sample metrics by split, tuning, early stopping, leakage guards, importances.",
+      "examples": ["examples/predictive.estimation.json"]
+    },
+    {
+      "name": "causal-ml/0.1",
+      "file": "profiles/causal-ml-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Causal estimates with ML nuisance models (DoubleML, EconML, grf): treatment, outcome, estimand, nuisance learners, cross-fitting folds/repeats/aggregation/seed, nuisance losses, overlap, heterogeneity and sensitivity.",
+      "examples": ["examples/causal-ml.estimation.json"]
     }
   ]
 }

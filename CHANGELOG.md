@@ -31,6 +31,8 @@
   a shape example and a page.
 - Draft standard profile `meta-analysis/0.1` (metafor, meta, statsmodels, Stata meta), with an
   example record and a page.
+- Draft standard profiles `predictive/0.1` (scikit-learn, XGBoost, ranger, tidymodels, mlr3)
+  and `causal-ml/0.1` (DoubleML, EconML, grf), with example records and pages.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

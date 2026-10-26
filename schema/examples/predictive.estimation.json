@@ -1,0 +1,293 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "a1c3e5f7-2b4d-4e69-8f01-3d5b7a9c1e24",
+    "created": "2026-10-26T04:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "ensemble", "method": "random_forest"},
+    "responses": ["target"],
+    "profiles": ["predictive/0.1"],
+    "notes": "Real run: scikit-learn 1.9.1, RandomForestClassifier tuned by GridSearchCV (4 candidates, 5-fold stratified CV on the 75% training split, ROC AUC), refit on the training split, evaluated once on the 25% test split. Importances are impurity-based from the refit model."
+  },
+  "specification": {
+    "call": "GridSearchCV(RandomForestClassifier(random_state=20261025), {\"max_features\": [\"sqrt\", 0.5], \"min_samples_leaf\": [1, 5]}, scoring=\"roc_auc\", cv=StratifiedKFold(5, shuffle=True, random_state=20261025)).fit(X_train, y_train)",
+    "weights": null,
+    "task": {
+      "type": "binary_classification",
+      "target": "target",
+      "positive_class": 1,
+      "n_classes": 2,
+      "class_balance": 0.6274165202108963,
+      "features": 30
+    },
+    "validation": {
+      "scheme": "holdout",
+      "test_size": 0.25,
+      "stratify": true,
+      "seed": 20261025,
+      "n_train": 426,
+      "n_test": 143,
+      "preprocessing_in_resampling": true
+    },
+    "tuning": {
+      "search": "grid",
+      "space": {"max_features": ["sqrt", 0.5], "min_samples_leaf": [1, 5]},
+      "n_candidates": 4,
+      "selection_metric": "roc_auc",
+      "selection_rule": "best",
+      "refit": true
+    }
+  },
+  "metrics": {"nobs": 426},
+  "parameters": [
+    {
+      "term": "mean concave points",
+      "importance": 0.14222444024690067,
+      "importance_type": "impurity",
+      "rank": 1
+    },
+    {
+      "term": "worst radius",
+      "importance": 0.1288350213241545,
+      "importance_type": "impurity",
+      "rank": 2
+    },
+    {
+      "term": "worst perimeter",
+      "importance": 0.11238552059643173,
+      "importance_type": "impurity",
+      "rank": 3
+    },
+    {
+      "term": "worst concave points",
+      "importance": 0.10593247881540264,
+      "importance_type": "impurity",
+      "rank": 4
+    },
+    {
+      "term": "worst area",
+      "importance": 0.08786161453817587,
+      "importance_type": "impurity",
+      "rank": 5
+    },
+    {
+      "term": "mean concavity",
+      "importance": 0.07230697620259284,
+      "importance_type": "impurity",
+      "rank": 6
+    },
+    {
+      "term": "mean perimeter",
+      "importance": 0.06911510525236857,
+      "importance_type": "impurity",
+      "rank": 7
+    },
+    {
+      "term": "mean radius",
+      "importance": 0.04932048513949128,
+      "importance_type": "impurity",
+      "rank": 8
+    },
+    {
+      "term": "mean area",
+      "importance": 0.03752355456828675,
+      "importance_type": "impurity",
+      "rank": 9
+    },
+    {
+      "term": "worst concavity",
+      "importance": 0.0329988632098237,
+      "importance_type": "impurity",
+      "rank": 10
+    },
+    {
+      "term": "mean compactness",
+      "importance": 0.023722194659127224,
+      "importance_type": "impurity",
+      "rank": 11
+    },
+    {
+      "term": "worst texture",
+      "importance": 0.021115011642723263,
+      "importance_type": "impurity",
+      "rank": 12
+    },
+    {
+      "term": "radius error",
+      "importance": 0.01804618198960727,
+      "importance_type": "impurity",
+      "rank": 13
+    },
+    {
+      "term": "worst compactness",
+      "importance": 0.016899952783249097,
+      "importance_type": "impurity",
+      "rank": 14
+    },
+    {
+      "term": "area error",
+      "importance": 0.014996676773916941,
+      "importance_type": "impurity",
+      "rank": 15
+    },
+    {
+      "term": "perimeter error",
+      "importance": 0.011604831405547324,
+      "importance_type": "impurity",
+      "rank": 16
+    },
+    {
+      "term": "worst smoothness",
+      "importance": 0.010162979041577267,
+      "importance_type": "impurity",
+      "rank": 17
+    },
+    {
+      "term": "mean texture",
+      "importance": 0.009792666708849434,
+      "importance_type": "impurity",
+      "rank": 18
+    },
+    {
+      "term": "worst symmetry",
+      "importance": 0.005406804201396829,
+      "importance_type": "impurity",
+      "rank": 19
+    },
+    {
+      "term": "concave points error",
+      "importance": 0.005188505359377313,
+      "importance_type": "impurity",
+      "rank": 20
+    },
+    {
+      "term": "mean smoothness",
+      "importance": 0.00398710618060492,
+      "importance_type": "impurity",
+      "rank": 21
+    },
+    {
+      "term": "concavity error",
+      "importance": 0.003577531980108061,
+      "importance_type": "impurity",
+      "rank": 22
+    },
+    {
+      "term": "worst fractal dimension",
+      "importance": 0.0035220388093369975,
+      "importance_type": "impurity",
+      "rank": 23
+    },
+    {
+      "term": "mean fractal dimension",
+      "importance": 0.003299807332350705,
+      "importance_type": "impurity",
+      "rank": 24
+    },
+    {
+      "term": "smoothness error",
+      "importance": 0.002771033851856302,
+      "importance_type": "impurity",
+      "rank": 25
+    },
+    {
+      "term": "compactness error",
+      "importance": 0.002187191314374846,
+      "importance_type": "impurity",
+      "rank": 26
+    },
+    {
+      "term": "texture error",
+      "importance": 0.0019811709950668327,
+      "importance_type": "impurity",
+      "rank": 27
+    },
+    {
+      "term": "fractal dimension error",
+      "importance": 0.0015417477007085491,
+      "importance_type": "impurity",
+      "rank": 28
+    },
+    {
+      "term": "symmetry error",
+      "importance": 0.0009436205203127705,
+      "importance_type": "impurity",
+      "rank": 29
+    },
+    {
+      "term": "mean symmetry",
+      "importance": 0.0007488868562796555,
+      "importance_type": "impurity",
+      "rank": 30
+    }
+  ],
+  "structures": {
+    "hyperparameters": {
+      "kind": "object",
+      "values": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": null,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 5,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 20261025,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "evaluation": [
+      {
+        "kind": "object",
+        "metric": "roc_auc",
+        "split": "cv",
+        "value": 0.9868918503866009,
+        "sd": 0.010465468371527177,
+        "per_fold": [0.984375, 0.970131421744325, 1.0, 0.995872641509434, 0.9840801886792453],
+        "definition": "mean over 5 stratified folds of the training split, selected candidate"
+      },
+      {"kind": "object", "metric": "roc_auc", "split": "test", "value": 0.9976939203354298},
+      {"kind": "object", "metric": "log_loss", "split": "test", "value": 0.10223351281540566},
+      {"kind": "object", "metric": "brier", "split": "test", "value": 0.025429346091692232},
+      {
+        "kind": "object",
+        "metric": "accuracy",
+        "split": "test",
+        "value": 0.9790209790209791,
+        "definition": "threshold 0.5 on predicted probability"
+      }
+    ]
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "scikit-learn",
+        "version": "1.9.1",
+        "purl": "pkg:pypi/scikit-learn@1.9.1",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "numpy", "version": "2.5.3", "purl": "pkg:pypi/numpy@2.5.3", "role": "dependency"},
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "sklearn.datasets.load_breast_cancer",
+        "rows": 569,
+        "columns": 31,
+        "source": "Wisconsin Diagnostic Breast Cancer (UCI), bundled with scikit-learn"
+      }
+    ]
+  }
+}

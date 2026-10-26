@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/predictive-0.1.json",
+  "title": "predictive/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for predictive (machine-learning) models judged by out-of-sample performance: scikit-learn, XGBoost, LightGBM, R ranger, tidymodels, mlr3, caret, and deep-learning frameworks (survey 2026-10-25, spec/profiles/predictive.md). Requires meta.estimator.method; specification.task (classification, regression, ...) and specification.validation (the resampling scheme, with folds, repeats, stratification and seed); structures.hyperparameters with every hyperparameter resolved, defaults included (defaults differ across libraries and versions); and structures.evaluation with at least one metric, each naming the split it was computed on. Tuning (search space, candidates, selection metric), early stopping, preprocessing inside or outside the resampling, feature importance with its type, and a model-artifact attachment are vocabulary.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "method": {"type": "string", "x-vocabulary": ["random_forest", "gradient_boosting", "lasso", "ridge", "elastic_net", "logistic_regression", "svm", "knn", "neural_network", "naive_bayes", "decision_tree", "stacking"], "x-tools": {"scikit-learn": "estimator class", "xgboost": "XGBClassifier / XGBRegressor / train()", "ranger": "ranger()", "tidymodels": "parsnip model spec + engine", "mlr3": "learner id"}}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["task", "validation"],
+          "properties": {
+            "task": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": {"type": "string", "x-vocabulary": ["binary_classification", "multiclass_classification", "regression", "survival", "ranking", "multilabel"]},
+                "target": {"type": "string"},
+                "positive_class": {"type": ["string", "number", "boolean", "null"]},
+                "n_classes": {"type": ["integer", "null"]},
+                "class_balance": {"description": "Share of each class (or the positive class) in the training data.", "type": ["object", "number", "null"]},
+                "features": {"description": "Feature names, or a count when there are many.", "type": ["array", "integer"]}
+              }
+            },
+            "validation": {
+              "type": "object",
+              "required": ["scheme"],
+              "properties": {
+                "scheme": {"type": "string", "x-vocabulary": ["holdout", "kfold", "stratified_kfold", "repeated_kfold", "group_kfold", "time_series_split", "nested_cv", "loo", "bootstrap", "oob", "none"], "x-tools": {"scikit-learn": "train_test_split, KFold, StratifiedKFold, GroupKFold, TimeSeriesSplit, RepeatedKFold", "tidymodels": "rsample: initial_split, vfold_cv, group_vfold_cv, rolling_origin, bootstraps", "mlr3": "rsmp(\"cv\"), rsmp(\"holdout\"), ...", "caret": "trainControl(method =)"}},
+                "test_size": {"description": "Held-out share or count.", "type": ["number", "null"]},
+                "n_folds": {"type": ["integer", "null"]},
+                "n_repeats": {"type": ["integer", "null"]},
+                "stratify": {"type": ["boolean", "string", "null"]},
+                "groups": {"description": "Grouping variable kept together across splits.", "type": ["string", "null"]},
+                "shuffle": {"type": ["boolean", "null"], "x-tools": {"scikit-learn": "KFold shuffle (False)"}},
+                "seed": {"type": ["integer", "string", "null"], "x-tools": {"scikit-learn": "random_state", "tidymodels": "set.seed()", "mlr3": "set.seed()"}},
+                "n_train": {"type": ["integer", "null"]},
+                "n_test": {"type": ["integer", "null"]},
+                "preprocessing_in_resampling": {"description": "Preprocessing (scaling, imputation, feature selection, target encoding) fit inside each resample (a pipeline or recipe), not on all the data first. false means the reported metrics can leak.", "type": ["boolean", "null"], "x-tools": {"scikit-learn": "Pipeline", "tidymodels": "workflow() with a recipe", "mlr3": "GraphLearner"}}
+              }
+            },
+            "tuning": {
+              "type": "object",
+              "properties": {
+                "search": {"type": "string", "x-vocabulary": ["grid", "random", "bayesian", "halving", "none"], "x-tools": {"scikit-learn": "GridSearchCV, RandomizedSearchCV, HalvingGridSearchCV", "tidymodels": "tune_grid, tune_bayes", "mlr3": "tnr(\"grid_search\"), tnr(\"random_search\"), tnr(\"mbo\")"}},
+                "space": {"description": "The searched values per hyperparameter.", "type": "object"},
+                "n_candidates": {"type": ["integer", "null"]},
+                "selection_metric": {"type": ["string", "null"], "x-tools": {"scikit-learn": "scoring", "tidymodels": "select_best(metric =)"}},
+                "selection_rule": {"type": ["string", "null"], "x-vocabulary": ["best", "one_se"]},
+                "refit": {"description": "Final model refit on all training data with the selected values.", "type": ["boolean", "null"]}
+              }
+            },
+            "early_stopping": {
+              "type": "object",
+              "properties": {
+                "rounds": {"type": ["integer", "null"], "x-tools": {"xgboost": "early_stopping_rounds", "lightgbm": "early_stopping callback"}},
+                "eval_split": {"description": "Split monitored. \"test\" means the test metrics are optimistic.", "type": ["string", "null"], "x-vocabulary": ["validation", "train", "test"]},
+                "eval_metric": {"type": ["string", "null"], "x-tools": {"xgboost": "eval_metric (objective-dependent default)"}},
+                "best_iteration": {"type": ["integer", "null"], "x-tools": {"xgboost": "best_iteration", "lightgbm": "best_iteration_"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {
+              "importance_type": {"type": "string", "x-vocabulary": ["impurity", "permutation", "gain", "split", "cover", "shap_mean_abs", "coefficient"], "x-tools": {"scikit-learn": "feature_importances_ (impurity); permutation_importance", "xgboost": "feature_importances_ (importance_type, gain for tree boosters); get_booster().get_score(importance_type = \"weight\" by default)", "ranger": "importance (\"none\" default; impurity, permutation)"}},
+              "importance_sd": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"scikit-learn": "permutation_importance importances_std"}}
+            }
+          }
+        },
+        "structures": {
+          "required": ["hyperparameters", "evaluation"],
+          "properties": {
+            "hyperparameters": {
+              "description": "Every hyperparameter with the value in effect, defaults included: an object structure {values: {...}}. Library defaults differ (random forests: 100 trees in scikit-learn, 500 in ranger; max_features 'sqrt' for classifiers and all features for regressors in scikit-learn) and change between versions.",
+              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "required": ["kind", "values"],
+              "properties": {"kind": {"const": "object"}, "values": {"type": "object"}},
+              "x-tools": {"scikit-learn": "get_params()", "xgboost": "get_params() / save_config()", "tidymodels": "extract_spec_parsnip() + engine args", "mlr3": "learner$param_set$values"}
+            },
+            "evaluation": {
+              "description": "Out-of-sample performance: one {kind: \"object\", metric, split, value, ...} per metric and split.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+                "required": ["kind", "metric", "split", "value"],
+                "properties": {
+                  "kind": {"const": "object"},
+                  "metric": {"type": "string", "x-vocabulary": ["roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "log_loss", "brier", "f1", "precision", "recall", "rmse", "mae", "r2", "mape", "c_index", "ndcg"]},
+                  "split": {"type": "string", "x-vocabulary": ["train", "validation", "test", "cv", "oob"]},
+                  "value": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+                  "sd": {"description": "Across folds or repeats.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+                  "per_fold": {"type": "array"},
+                  "definition": {"description": "Averaging (macro, micro, weighted), threshold, class, or anything else needed to recompute it.", "type": ["string", "object", "null"]}
+                }
+              }
+            },
+            "confusion_matrix": {"description": "On the test split: a matrix structure.", "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}]}
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "c7e9a1b3-4d6f-4a28-9c50-7e2b4d6f8a13",
+    "created": "2026-10-26T04:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "causal_ml", "method": "dml_plr"},
+    "responses": ["y"],
+    "profiles": ["causal-ml/0.1"],
+    "notes": "Real run: DoubleML 0.11.4 partially linear model on simulated data (make_plr_CCDDHNR2018, n = 1000, 20 controls, true theta 0.5, numpy seed 20261025), random-forest learners for both nuisances, 5-fold cross-fitting repeated 3 times, median-aggregated."
+  },
+  "specification": {
+    "call": "DoubleMLPLR(DoubleMLData(df, \"y\", \"d\"), ml_l=rf, ml_m=rf, n_folds=5, n_rep=3).fit()",
+    "weights": null,
+    "causal": {
+      "treatment": "d",
+      "treatment_type": "continuous",
+      "outcome": "y",
+      "controls": ["X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9", "X10", "X11", "X12", "X13", "X14", "X15", "X16", "X17", "X18", "X19", "X20"],
+      "estimand": "partial_linear",
+      "score": "partialling out"
+    },
+    "learners": {
+      "ml_l": {
+        "learner": "sklearn.ensemble.RandomForestRegressor",
+        "hyperparameters": {"n_estimators": 200, "max_features": 10, "min_samples_leaf": 2, "random_state": 7},
+        "tuned": false
+      },
+      "ml_m": {
+        "learner": "sklearn.ensemble.RandomForestRegressor",
+        "hyperparameters": {"n_estimators": 200, "max_features": 10, "min_samples_leaf": 2, "random_state": 7},
+        "tuned": false
+      }
+    },
+    "cross_fitting": {"n_folds": 5, "n_repeats": 3, "aggregation": "median", "seed": 20261025}
+  },
+  "metrics": {"nobs": 1000, "conf_level": 0.95},
+  "parameters": [
+    {
+      "term": "d",
+      "estimate": 0.5019947943920525,
+      "std_error": 0.0320204980763533,
+      "statistic": 15.677295000066499,
+      "p_value": 2.162700937496791e-55,
+      "conf_low": 0.43923577139536596,
+      "conf_high": 0.5647538173887391,
+      "causal": {
+        "estimand": "partial_linear",
+        "per_repeat": [
+          {"estimate": 0.4994811804813472, "std_error": 0.03197315368545975},
+          {"estimate": 0.5036694520740149, "std_error": 0.03189663669533834},
+          {"estimate": 0.5019947943920525, "std_error": 0.032020498076353314}
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "software": [
+      {
+        "name": "doubleml",
+        "version": "0.11.4",
+        "purl": "pkg:pypi/doubleml@0.11.4",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {
+        "name": "scikit-learn",
+        "version": "1.9.1",
+        "purl": "pkg:pypi/scikit-learn@1.9.1",
+        "role": "dependency"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "make_plr_CCDDHNR2018(n_obs=1000, dim_x=20, alpha=0.5)",
+        "rows": 1000,
+        "source": "simulated (Chernozhukov et al. 2018 design), DoubleML"
+      }
+    ]
+  },
+  "structures": {
+    "nuisance": {
+      "kind": "object",
+      "losses": {
+        "ml_l": {
+          "metric": "rmse",
+          "per_repeat": [1.1646283384692315, 1.1522189692571283, 1.1523144990268337]
+        },
+        "ml_m": {
+          "metric": "rmse",
+          "per_repeat": [1.0116001037215876, 1.0089127142621708, 1.0153463091838577]
+        }
+      }
+    }
+  }
+}
