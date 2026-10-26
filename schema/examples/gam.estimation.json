@@ -1,0 +1,83 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "f2a4c6e8-3b5d-4f71-a9c2-5e7b9d1f3a46",
+    "created": "2026-10-26T04:30:00Z",
+    "status": "ok",
+    "estimator": {"family": "gam", "method": "gam", "distribution": "gaussian", "link": "identity"},
+    "responses": ["accel"],
+    "profiles": ["gam/0.1"],
+    "notes": "Real run: pyGAM 0.12.0 LinearGAM with one penalized B-spline smooth of time (20 splines) on the mcycle data, lambda chosen by grid search over 31 values on GCV. pyGAM warns that its p-values are too small when smoothing parameters are estimated; the smooth row's p-value is recorded as reported. pyGAM's intercept row has no standard error in its summary."
+  },
+  "specification": {
+    "call": "LinearGAM(s(0, n_splines=20)).gridsearch(X, y, lam=np.logspace(-3, 3, 31))",
+    "formula": {"text": "accel ~ s(times)", "syntax": "R"},
+    "weights": null,
+    "smooths": [
+      {"term": "s(0)", "variables": ["times"], "basis": "ps", "k": 20, "penalty_order": 2}
+    ],
+    "options": {
+      "smoothing_method": "grid_gcv",
+      "lambda_grid": {"from": 0.001, "to": 1000, "n": 31, "spacing": "log"}
+    }
+  },
+  "metrics": {
+    "nobs": 133,
+    "edf_total": 10.968201887140435,
+    "deviance_explained": 0.7959521743799829,
+    "criterion": {"value": 604.3727329488424, "definition": "GCV score at the selected lambda"},
+    "scale": {"value": 22.70187864445304, "definition": "pyGAM statistics_['scale']"},
+    "log_lik": -598.5202655098078,
+    "aic": 1220.9769347938966
+  },
+  "parameters": [
+    {
+      "term": "s(0)",
+      "canonical": {
+        "name": "s(times)",
+        "factors": [
+          {"variable": "times", "transform": "smooth"}
+        ]
+      },
+      "smooth": {
+        "edf": 10.968201887140435,
+        "p_value": 1.1102230246251565e-16,
+        "smoothing_parameter": 0.3981071705534973,
+        "k": 20
+      }
+    },
+    {
+      "term": "intercept",
+      "canonical": {"name": "(Intercept)", "factors": []},
+      "estimate": -10.473556317047708,
+      "std_error": null,
+      "p_value": 0.0010664829491782157
+    }
+  ],
+  "provenance": {
+    "software": [
+      {
+        "name": "pygam",
+        "version": "0.12.0",
+        "purl": "pkg:pypi/pygam@0.12.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "mcycle",
+        "location": "Rdatasets csv/MASS/mcycle.csv",
+        "rows": 133,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "b89a1e4eb0391a982b32be3e378df00e8593ff9971e9425e9c5d7929b74f9801",
+          "of": "file"
+        },
+        "source": "MASS::mcycle (Silverman 1985), via vincentarelbundock/Rdatasets"
+      }
+    ]
+  }
+}

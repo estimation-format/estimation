@@ -1,0 +1,162 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "4b6d8f0a-1c3e-4a52-b7d9-6f8a0c2e4b19",
+    "created": "2026-10-26T04:45:00Z",
+    "status": "ok",
+    "estimator": {"family": "glm", "method": "nuts", "distribution": "binomial", "link": "logit"},
+    "responses": ["GRADE"],
+    "profiles": ["bayesian/0.1"],
+    "notes": "Real run: PyMC 6.3.2 logistic regression on the Spector-Mazzeo data (the glm/0.1 logit example's data), Normal(0, 10) priors, NUTS, 4 chains x 1000 draws after 1000 tuning steps, seed 20261025, summarized by ArviZ 1.3.0 with its defaults (89% equal-tailed intervals). Compare the maximum-likelihood fit in examples/glm-logit.estimation.json (GPA 2.83 vs posterior mean 2.79)."
+  },
+  "specification": {
+    "call": "pm.sample(draws=1000, tune=1000, chains=4, random_seed=20261025); az.summary(idata)",
+    "terms": ["Intercept", "GPA", "TUCE", "PSI"],
+    "weights": null,
+    "priors": [
+      {"parameter": "Intercept", "distribution": "normal(0, 10)", "default": false},
+      {"parameter": "b", "distribution": "normal(0, 10)", "default": false}
+    ],
+    "sampling": {
+      "chains": 4,
+      "draws": 1000,
+      "warmup": 1000,
+      "thin": 1,
+      "seed": 20261025,
+      "target_accept": 0.8,
+      "backend": "pymc"
+    }
+  },
+  "metrics": {
+    "nobs": 32,
+    "elpd_loo": {
+      "value": -17.472033124701397,
+      "definition": "PSIS-LOO expected log predictive density",
+      "se": 3.7777132436833067,
+      "p_loo": 4.3380319766775655,
+      "n_bad_pareto_k": 0
+    }
+  },
+  "parameters": [
+    {
+      "term": "Intercept",
+      "canonical": {"name": "(Intercept)", "factors": []},
+      "estimate": -12.338569532726885,
+      "posterior": {
+        "point": "mean",
+        "mean": -12.338569532726885,
+        "median": -12.097813441574498,
+        "sd": 4.288373048060186,
+        "ci_low": -19.528050909051736,
+        "ci_high": -6.080753170949795,
+        "ci_prob": 0.89,
+        "ci_kind": "eti",
+        "rhat": 1.003014042610064,
+        "ess_bulk": 1510.5753246334164,
+        "ess_tail": 1642.7531371323585,
+        "mcse_mean": 0.11359758743131988,
+        "mcse_sd": 0.097799734510834
+      }
+    },
+    {
+      "term": "GPA",
+      "estimate": 2.789850042273231,
+      "posterior": {
+        "point": "mean",
+        "mean": 2.789850042273231,
+        "median": 2.7110577227814963,
+        "sd": 1.2029440781528289,
+        "ci_low": 1.008068868589974,
+        "ci_high": 4.851173345418016,
+        "ci_prob": 0.89,
+        "ci_kind": "eti",
+        "rhat": 1.0016072396579676,
+        "ess_bulk": 1863.5282765898723,
+        "ess_tail": 1869.4580529236657,
+        "mcse_mean": 0.02807918743461275,
+        "mcse_sd": 0.024189199191920613
+      }
+    },
+    {
+      "term": "TUCE",
+      "estimate": 0.06693337013506857,
+      "posterior": {
+        "point": "mean",
+        "mean": 0.06693337013506857,
+        "median": 0.06563980451143296,
+        "sd": 0.14477592946843543,
+        "ci_low": -0.15852249953259007,
+        "ci_high": 0.2952737726127623,
+        "ci_prob": 0.89,
+        "ci_kind": "eti",
+        "rhat": 1.001570979306303,
+        "ess_bulk": 1752.3706952774992,
+        "ess_tail": 1810.6403520310744,
+        "mcse_mean": 0.0034867236395200773,
+        "mcse_sd": 0.003063800631378244
+      }
+    },
+    {
+      "term": "PSI",
+      "estimate": 2.4486586912656008,
+      "posterior": {
+        "point": "mean",
+        "mean": 2.4486586912656008,
+        "median": 2.416457184031687,
+        "sd": 1.0513718336461473,
+        "ci_low": 0.8280896868886063,
+        "ci_high": 4.163584341378175,
+        "ci_prob": 0.89,
+        "ci_kind": "eti",
+        "rhat": 1.0006683852694018,
+        "ess_bulk": 2100.6356302237864,
+        "ess_tail": 2053.064604499146,
+        "mcse_mean": 0.023206950518533255,
+        "mcse_sd": 0.019954199417016143
+      }
+    }
+  ],
+  "structures": {
+    "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "nuts",
+      "n_divergent": 0,
+      "max_rhat": 1.003014042610064,
+      "min_ess_bulk": 1510.5753246334164
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "pymc",
+        "version": "6.3.2",
+        "purl": "pkg:pypi/pymc@6.3.2",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {
+        "name": "arviz",
+        "version": "1.3.0",
+        "purl": "pkg:pypi/arviz@1.3.0",
+        "role": "dependency",
+        "source": "PyPI"
+      },
+      {
+        "name": "pytensor",
+        "version": "3.3.4",
+        "purl": "pkg:pypi/pytensor@3.3.4",
+        "role": "dependency"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "statsmodels.datasets.spector",
+        "rows": 32,
+        "source": "Spector and Mazzeo (1980), bundled with statsmodels"
+      }
+    ]
+  }
+}

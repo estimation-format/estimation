@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/gam-0.1.json",
+  "title": "gam/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for generalized additive models with penalized smooth terms: R mgcv (gam, bam, gamm), Python pyGAM and statsmodels GLMGam (survey 2026-10-25, spec/profiles/gam.md). Requires specification.smooths (each smooth's variables, basis and basis dimension k); specification.options.smoothing_method (mgcv defaults to GCV.Cp, though REML is recommended; pyGAM grid-searches lambda on GCV/UBRE); a `smooth` object with edf on each smooth-term row; estimate and std_error on parametric rows; and metrics.nobs. GLM-style distribution and link follow glm/0.1's names. Smooth-term p-values are approximate and tools compute them differently (pyGAM's are known to be too small when smoothing parameters are estimated); the basis-dimension check and concurvity are vocabulary.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["specification", "metrics", "parameters"],
+      "properties": {
+        "meta": {
+          "properties": {
+            "estimator": {
+              "properties": {
+                "method": {"type": "string", "x-vocabulary": ["gam", "bam", "gamm", "gamlss"]},
+                "distribution": {"type": "string"},
+                "link": {"type": "string"}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["smooths", "options"],
+          "properties": {
+            "smooths": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["term", "variables", "basis", "k"],
+                "properties": {
+                  "term": {"description": "As the tool names it: s(times), te(x,z), s(0).", "type": "string"},
+                  "variables": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "basis": {"type": "string", "x-vocabulary": ["tp", "ts", "cr", "cs", "cc", "ps", "bs", "re", "te", "ti", "gp", "fs", "ad"], "x-tools": {"mgcv": "bs (\"tp\" default)", "pyGAM": "s() B-splines with a difference penalty (\"ps\")", "statsmodels": "BSplines, CyclicCubicSplines"}},
+                  "k": {"description": "Basis dimension.", "type": "integer", "x-tools": {"mgcv": "k (10 for one-variable tp)", "pyGAM": "n_splines (20)", "statsmodels": "df"}},
+                  "by": {"type": ["string", "null"]},
+                  "penalty_order": {"type": ["integer", "null"], "x-tools": {"pyGAM": "penalties (\"auto\" = 2nd derivative)", "mgcv": "m"}},
+                  "constraint": {"type": ["string", "null"], "x-tools": {"pyGAM": "constraints"}}
+                }
+              }
+            },
+            "options": {
+              "required": ["smoothing_method"],
+              "properties": {
+                "smoothing_method": {
+                  "description": "How smoothing parameters were chosen.",
+                  "type": "string",
+                  "x-vocabulary": ["reml", "ml", "gcv", "ubre", "gcv_cp", "freml", "grid_gcv", "grid_ubre", "fixed", "aic"],
+                  "x-tools": {"mgcv": "method (\"GCV.Cp\" default; \"REML\", \"ML\"; bam \"fREML\")", "pyGAM": "gridsearch(objective = \"auto\": GCV when the scale is unknown, UBRE when known)", "statsmodels": "alpha fixed, or select_penweight (GCV/AIC)"}
+                },
+                "select": {"description": "Extra penalty that can shrink a smooth to zero.", "type": "boolean", "x-tools": {"mgcv": "select (FALSE)"}},
+                "gamma": {"description": "Inflation of the effective df in the smoothness criterion.", "type": "number", "x-tools": {"mgcv": "gamma (1)"}},
+                "lambda_grid": {"description": "Grid searched (pyGAM): the values, or {from, to, n, spacing}.", "type": ["array", "object"]}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"smooth": {"$ref": "#/$defs/smooth_row"}},
+            "if": {"required": ["smooth"]},
+            "then": {},
+            "else": {
+              "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+              "else": {"required": ["estimate", "std_error"]}
+            }
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "properties": {
+            "edf_total": {"type": ["number", "null"], "x-tools": {"mgcv": "sum(edf)", "pyGAM": "statistics_[\"edof\"]"}},
+            "deviance_explained": {"type": ["number", "null"], "x-tools": {"mgcv": "summary()$dev.expl", "pyGAM": "pseudo_r2[\"explained_deviance\"]"}},
+            "adj_r2": {"x-tools": {"mgcv": "summary()$r.sq"}},
+            "criterion": {"description": "Value of the smoothness criterion at the optimum; record {value, definition} (REML, GCV, UBRE).", "x-tools": {"mgcv": "gcv.ubre (with method)", "pyGAM": "statistics_[\"GCV\"] / [\"UBRE\"]"}},
+            "scale": {"x-tools": {"mgcv": "sig2 / scale", "pyGAM": "statistics_[\"scale\"]"}},
+            "log_lik": {"x-tools": {"mgcv": "logLik()", "pyGAM": "statistics_[\"loglikelihood\"]"}},
+            "aic": {"x-tools": {"mgcv": "AIC()", "pyGAM": "statistics_[\"AIC\"]"}}
+          }
+        },
+        "structures": {
+          "properties": {
+            "basis_check": {"description": "k-index check per smooth (mgcv gam.check / k.check): k', edf, k-index, p-value.", "type": "object"},
+            "concurvity": {"description": "mgcv concurvity(): worst, observed, estimate per smooth.", "type": "object"},
+            "numerics": {"x-tools": {"converged": {"mgcv": "converged", "pyGAM": "converged after max_iter (warning)"}, "iterations": {"mgcv": "outer.info$iter"}}}
+          }
+        }
+      }
+    },
+    "smooth_row": {
+      "description": "A smooth term's summary (its coefficients are per-basis and go in an attachment if kept).",
+      "type": "object",
+      "required": ["edf"],
+      "properties": {
+        "edf": {"type": "number", "x-tools": {"mgcv": "s.table edf", "pyGAM": "sum of edof_per_coef over the term"}},
+        "ref_df": {"type": ["number", "null"], "x-tools": {"mgcv": "s.table Ref.df"}},
+        "statistic": {"type": ["number", "null"], "x-tools": {"mgcv": "s.table F (or Chi.sq)"}},
+        "p_value": {"description": "Approximate; see the profile description.", "type": ["number", "null"], "x-tools": {"mgcv": "s.table p-value", "pyGAM": "statistics_[\"p_values\"]"}},
+        "smoothing_parameter": {"description": "lambda / sp as the tool scales it.", "type": ["number", "array", "null"], "x-tools": {"mgcv": "sp", "pyGAM": "term lam"}},
+        "k": {"type": ["integer", "null"]}
+      }
+    }
+  }
+}

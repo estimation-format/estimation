@@ -595,6 +595,8 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`meta-analysis/0.1`](profiles/meta-analysis.md) | standard | `meta.estimator.method`; `effect_measure`; pooled rows with `estimate`, `std_error`; `k`, `q`, `q_df`; random effects add `tau2_method`, `ci_method`, `tau2` |
 | [`predictive/0.1`](profiles/predictive.md) | standard | `meta.estimator.method`; `specification.task` and `validation`; `structures.hyperparameters` (resolved) and `evaluation` (metric, split, value) |
 | [`causal-ml/0.1`](profiles/causal-ml.md) | standard | `meta.estimator.method`; `specification.causal` (treatment, outcome, estimand), `learners`, `cross_fitting` (folds, repeats, seed); a row with a `causal` estimand, `estimate`, `std_error`; `nobs` |
+| [`gam/0.1`](profiles/gam.md) | standard | `specification.smooths` (basis, k); `options.smoothing_method`; `edf` on smooth rows; `estimate`, `std_error` on parametric rows; `nobs` |
+| [`bayesian/0.1`](profiles/bayesian.md) | standard | `meta.estimator.method`; every prior; chains, draws, warmup and seed for MCMC; a `posterior` object (point, sd, interval with probability and kind) on each row; `nobs` |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

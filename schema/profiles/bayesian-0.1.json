@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/bayesian-0.1.json",
+  "title": "bayesian/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for Bayesian models fit by MCMC or approximate inference: R brms, rstanarm and Stan interfaces (rstan, cmdstanr, CmdStanPy), Python PyMC and Bambi summarized with ArviZ, Stata bayes / bayesmh (survey 2026-10-25, spec/profiles/bayesian.md). Requires meta.estimator.method (nuts, mh, gibbs, advi, laplace, inla, ...); specification.priors (every prior in effect, defaults included); for sampling methods, specification.sampling with chains, draws, warmup, thinning and seed; a `posterior` object on every row that isn't dropped, with the point summary it uses, the posterior SD, and the credible interval with its probability and kind (equal-tailed or HPD); and metrics.nobs. Convergence (R-hat, bulk and tail ESS, MCSE) per row and sampler diagnostics (divergences, tree depth, E-BFMI) are expected for MCMC; LOO and WAIC are vocabulary. Does not build on inference/0.1: there are no p-values or sampling-theory standard errors.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "parameters"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "The model's family (linear, glm, mixed, ...); Bayesian is the inference, recorded in method.", "type": "string"},
+                "method": {"type": "string", "x-vocabulary": ["nuts", "hmc", "mh", "gibbs", "slice", "smc", "advi", "fullrank_advi", "pathfinder", "laplace", "inla"], "x-tools": {"brms / rstanarm / Stan": "algorithm (\"sampling\" = nuts; \"meanfield\", \"fullrank\", \"pathfinder\", \"laplace\")", "PyMC": "pm.sample step (NUTS for continuous), pm.fit (ADVI)", "Stata": "bayes / bayesmh (adaptive MH; Gibbs blocks)"}}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["priors"],
+          "properties": {
+            "priors": {
+              "description": "Every prior in effect, defaults included (brms prior_summary(), rstanarm prior_summary(), the PyMC model, Stata's displayed priors).",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["parameter", "distribution"],
+                "properties": {
+                  "parameter": {"description": "Parameter or class it applies to (b, Intercept, sigma, sd, b[GPA]).", "type": "string"},
+                  "distribution": {"description": "As written: normal(0, 10), student_t(3, 0, 2.5), flat.", "type": "string"},
+                  "default": {"description": "The tool's default rather than the user's choice.", "type": "boolean"},
+                  "data_dependent": {"description": "Scaled using the data (brms default intercept and sigma priors, rstanarm autoscale).", "type": "boolean"}
+                }
+              }
+            },
+            "sampling": {
+              "type": "object",
+              "required": ["chains", "draws", "warmup", "seed"],
+              "properties": {
+                "chains": {"type": "integer", "x-tools": {"brms / rstanarm": "chains (4)", "PyMC": "chains (max(2, min(4, CPU count)): depends on the machine)", "CmdStanPy": "chains (4)", "Stata": "nchains() (1)"}},
+                "draws": {"description": "Retained draws per chain, after warmup and thinning.", "type": "integer", "x-tools": {"brms / rstanarm": "iter - warmup (1000)", "PyMC": "draws (1000)", "CmdStanPy": "iter_sampling (1000)", "Stata": "mcmcsize() (10000)"}},
+                "warmup": {"type": "integer", "x-tools": {"brms / rstanarm": "warmup (iter / 2 = 1000)", "PyMC": "tune (1000 for NUTS)", "CmdStanPy": "iter_warmup (1000)", "Stata": "burnin() (2500)"}},
+                "thin": {"type": "integer", "x-tools": {"brms": "thin (1)", "Stata": "thinning() (1)"}},
+                "seed": {"description": "null records that none was set: brms, PyMC and Stata then draw one.", "type": ["integer", "string", "null"], "x-tools": {"brms": "seed (NA)", "PyMC": "random_seed (None)", "Stata": "rseed()"}},
+                "target_accept": {"type": ["number", "null"], "x-tools": {"brms": "control = list(adapt_delta = 0.8)", "PyMC": "target_accept (0.8)", "CmdStanPy": "adapt_delta (0.8)"}},
+                "max_treedepth": {"type": ["integer", "null"], "x-tools": {"brms": "control$max_treedepth (10)", "CmdStanPy": "max_treedepth (10)"}},
+                "backend": {"type": ["string", "null"], "x-tools": {"brms": "backend (\"rstan\"; \"cmdstanr\")", "PyMC": "nuts_sampler (\"pymc\"; \"nutpie\", \"numpyro\", \"blackjax\")"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"posterior": {"$ref": "#/$defs/posterior"}},
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "posterior"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs"],
+          "properties": {
+            "elpd_loo": {"description": "Record {value, se, p_loo, n_bad_pareto_k}.", "x-tools": {"brms": "loo()", "ArviZ": "loo()", "Stata": "bayesstats ic (DIC, log marginal likelihood)"}},
+            "waic": {"x-tools": {"brms": "waic()", "ArviZ": "waic()"}},
+            "dic": {"x-tools": {"Stata": "bayesstats ic: DIC"}},
+            "log_marginal_likelihood": {"x-tools": {"Stata": "bayesstats ic: log(ML)", "brms": "bridge_sampling()"}},
+            "bayes_r2": {"x-tools": {"brms / rstanarm": "bayes_R2()"}},
+            "acceptance_rate": {"x-tools": {"Stata": "e(arate)"}}
+          }
+        },
+        "structures": {
+          "properties": {
+            "numerics": {
+              "description": "Sampler diagnostics (expected for MCMC): n_divergent, n_max_treedepth, ebfmi_min, max_rhat, min_ess_bulk.",
+              "x-tools": {"n_divergent": {"brms": "nuts_params() divergent__", "PyMC": "sample_stats.diverging.sum()"}, "n_max_treedepth": {"brms": "treedepth__ at max_treedepth"}, "ebfmi_min": {"ArviZ": "bfmi()"}, "max_rhat": {"brms": "rhat()", "ArviZ": "rhat()"}, "converged": {"Stata": "bayesstats grubin (with several chains)"}}
+            }
+          }
+        }
+      },
+      "if": {"properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"enum": ["nuts", "hmc", "mh", "gibbs", "slice", "smc"]}}, "required": ["method"]}}}}, "required": ["meta"]},
+      "then": {"properties": {"specification": {"required": ["sampling"]}}}
+    },
+    "posterior": {
+      "description": "Posterior summaries. The row's estimate is the point summary named here; std_error, statistic and p_value are absent.",
+      "type": "object",
+      "required": ["point", "sd", "ci_low", "ci_high", "ci_prob", "ci_kind"],
+      "properties": {
+        "point": {"description": "What estimate is.", "type": "string", "x-vocabulary": ["mean", "median", "mode"], "x-tools": {"brms": "mean (summary Estimate)", "rstanarm": "median", "ArviZ": "mean", "Stata": "mean (median with the median option)"}},
+        "mean": {"type": ["number", "null"]},
+        "median": {"type": ["number", "null"]},
+        "sd": {"type": ["number", "null"], "x-tools": {"brms": "Est.Error", "rstanarm": "MAD_SD (median absolute deviation, rescaled) by default", "ArviZ": "sd", "Stata": "Std. dev."}},
+        "mad": {"type": ["number", "null"]},
+        "ci_low": {"type": ["number", "null"]},
+        "ci_high": {"type": ["number", "null"]},
+        "ci_prob": {"description": "Credible-interval probability. Defaults differ: brms and Stata 0.95; rstanarm summary 0.9; ArviZ 1.x 0.89 (0.x: 0.94).", "type": "number", "x-tools": {"brms": "prob (0.95)", "rstanarm": "probs (0.1, 0.9 in summary; posterior_interval prob 0.9)", "ArviZ": "rcParams stats.ci_prob (0.89)", "Stata": "clevel() (95)"}},
+        "ci_kind": {"description": "Equal-tailed or highest-density interval.", "type": "string", "x-vocabulary": ["eti", "hdi"], "x-tools": {"brms": "eti", "rstanarm": "eti", "ArviZ": "rcParams stats.ci_kind (eti in 1.x; hdi in 0.x)", "Stata": "eti (hpd option)"}},
+        "rhat": {"type": ["number", "null"], "x-tools": {"brms": "Rhat (rank-normalized)", "ArviZ": "r_hat", "Stata": "bayesstats grubin"}},
+        "ess_bulk": {"type": ["number", "null"], "x-tools": {"brms": "Bulk_ESS", "ArviZ": "ess_bulk", "Stata": "ESS"}},
+        "ess_tail": {"type": ["number", "null"], "x-tools": {"brms": "Tail_ESS", "ArviZ": "ess_tail"}},
+        "mcse_mean": {"type": ["number", "null"], "x-tools": {"ArviZ": "mcse_mean", "Stata": "MCSE"}},
+        "mcse_sd": {"type": ["number", "null"]},
+        "prob_positive": {"description": "Posterior probability that the parameter is above 0 (or a stated threshold).", "type": ["number", "null"]}
+      }
+    }
+  }
+}

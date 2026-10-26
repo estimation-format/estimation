@@ -216,6 +216,24 @@
       "maintainer": "jemather",
       "description": "Causal estimates with ML nuisance models (DoubleML, EconML, grf): treatment, outcome, estimand, nuisance learners, cross-fitting folds/repeats/aggregation/seed, nuisance losses, overlap, heterogeneity and sensitivity.",
       "examples": ["examples/causal-ml.estimation.json"]
+    },
+    {
+      "name": "gam/0.1",
+      "file": "profiles/gam-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Generalized additive models (mgcv, pyGAM, statsmodels GLMGam): smooth terms with basis and k, smoothing-parameter selection method, per-smooth edf and approximate tests, deviance explained, basis checks and concurvity.",
+      "examples": ["examples/gam.estimation.json"]
+    },
+    {
+      "name": "bayesian/0.1",
+      "file": "profiles/bayesian-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Bayesian models (brms, rstanarm, Stan, PyMC/Bambi with ArviZ, Stata bayes): algorithm, every prior, chains/draws/warmup/seed, posterior summaries with the point summary and credible-interval probability and kind, R-hat, ESS, MCSE, sampler diagnostics, LOO/WAIC.",
+      "examples": ["examples/bayesian.estimation.json"]
     }
   ]
 }
