@@ -85,6 +85,7 @@ and the outcome (`models[].estimator`), one or two mediators, and reports `nie` 
 |---|---|---|---|---|
 | `a`, `b` | X → M, M → Y paths | (in the models) | | `M ~ X`, `Y ~ M` |
 | `indirect` | a·b | | | `Indirect` |
+| `total_indirect` | sum of a predictor's indirect effects over mediators | | | |
 | `acme_control`, `acme_treated`, `acme_average` | average causal mediation effects | `d0`, `d1`, `d.avg` | `ACME (control)`, ... | |
 | `controlled_direct` | direct effect with the mediator fixed | | | |
 | `direct`, `ade_*` | direct effect | `z0`, `z1`, `z.avg` | `ADE (...)` | `Direct` |
@@ -94,6 +95,33 @@ and the outcome (`models[].estimator`), one or two mediators, and reports `nie` 
 
 `mediator` names which mediator a specific indirect effect goes through; `path` lists a serial
 path in order; `moderator_value` marks a conditional indirect effect.
+
+## `indirect_boot` (Stata)
+
+`indirect_boot` 1.0.1 (Matherly) bootstraps the effects of a parallel-mediation path model fit
+with `sem`, in the layout of PROCESS's parallel models. It reads the model from `e(b)`: a
+variable that is only a dependent variable is the outcome, one that is only a predictor is an
+exogenous predictor (minus `controls()`), and one that is both is a mediator. Serial models are
+refused. A record of an `indirect_boot` run:
+
+| Record | `indirect_boot` |
+|---|---|
+| `specification.mediation.treatment` | the inferred predictors (a list when there are several) |
+| `mediators`, `outcome`, `covariates` | the inferred mediators and outcome; `controls()` |
+| `structure` | `parallel` |
+| `models` | `"sem"`, with the `sem` command line (`e(cmdline)`) in `specification.call` |
+| `inference` | `method: "bootstrap"`, `reps` (`reps()`, 1000), `seed` (`seed()`, **12345**), `ci_type` (`cis()`, **bca**; `normal`, `percentile`, `bc`) |
+| Rows | `r(ind_X_M)` → `{effect: "indirect", treatment: X, mediator: M}`; `r(tot_ind_X)` → `{effect: "total_indirect", treatment: X}`; `r(direct_X)` → `{effect: "direct", treatment: X}` |
+| `estimate`, `std_error` | `_b` and the bootstrap SE of each statistic |
+| `conf_low`, `conf_high` | from `estat bootstrap`, of the type `ci_type` names |
+| `metrics.nobs` | the `sem` sample |
+
+Two defaults are worth recording explicitly: the seed is fixed at 12345 unless set, so two
+default runs give identical draws, and the default interval is BCa, where PROCESS defaults to
+percentile. The underlying `sem` fit can be written as its own `sem/0.1` record and linked with
+`meta.parent`.
+
+Two-stage DiD mediation with `med2s` has its own tool profile, [`med2s/0.1`](med2s.md).
 
 ## Example
 

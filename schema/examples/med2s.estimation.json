@@ -1,0 +1,181 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "d3f7b1a9-6e2c-4c58-a0d4-9b5e3f1c7a82",
+    "created": "2026-10-26T03:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "mediation", "method": "med2s"},
+    "responses": ["sales"],
+    "profiles": ["mediation/0.1", "med2s/0.1"],
+    "notes": "Shape example with illustrative numbers (the 'Store visits' row of the med2s reporting guide, r2.1); not output from a real run. med2s_diag, med2s_ci with saving(), then med2s_sens, for one mediator."
+  },
+  "specification": {
+    "call": "med2s_ci, outcome(sales) mediator(store_visits) absorb(county year) treatment(D) cluster(region) reps(1000) seed(12345) saving(draws_M1, replace)",
+    "weights": null,
+    "clusters": ["region"],
+    "did": {
+      "time": "year",
+      "unit": "county",
+      "treatment": "D",
+      "panel": true,
+      "comparison": "untreated",
+      "anticipation": 0
+    },
+    "mediation": {
+      "treatment": "D",
+      "mediators": ["store_visits"],
+      "outcome": "sales",
+      "covariates": [],
+      "structure": "simple",
+      "models": "two-stage DiD first stage (untreated rows), placebo-adjusted within b-path",
+      "inference": {"method": "bootstrap", "reps": 1000, "ci_type": "percentile", "seed": 12345}
+    },
+    "options": {
+      "absorb": ["county", "year"],
+      "adjust": "placebo",
+      "adjgap": 1,
+      "adjk": 3,
+      "version": "dev",
+      "sigcrit": 1.645,
+      "minsignal": 0
+    }
+  },
+  "metrics": {"nobs": 24000, "conf_level": 0.95},
+  "parameters": [
+    {
+      "term": "total",
+      "estimate": 1.45,
+      "std_error": 0.047,
+      "conf_low": 1.361,
+      "conf_high": 1.545,
+      "med2s": {"quantity": "total", "adjustment": "none", "n_valid": 1000, "naive_se": 0.045},
+      "mediation": {"effect": "total", "mediator": "store_visits", "treatment": "D"}
+    },
+    {
+      "term": "a",
+      "estimate": 0.7,
+      "std_error": 0.041,
+      "conf_low": 0.621,
+      "conf_high": 0.781,
+      "med2s": {"quantity": "a", "adjustment": "none", "n_valid": 1000},
+      "mediation": {"effect": "a", "mediator": "store_visits", "treatment": "D"}
+    },
+    {
+      "term": "b_dev",
+      "estimate": 0.76,
+      "std_error": 0.072,
+      "conf_low": 0.618,
+      "conf_high": 0.899,
+      "med2s": {"quantity": "b_dev", "adjustment": "placebo", "n_valid": 1000},
+      "mediation": {"effect": "b", "mediator": "store_visits", "treatment": "D"}
+    },
+    {
+      "term": "dev_nie",
+      "estimate": 0.532,
+      "std_error": 0.064,
+      "conf_low": 0.405,
+      "conf_high": 0.657,
+      "med2s": {"quantity": "dev_nie", "adjustment": "placebo", "n_valid": 1000},
+      "mediation": {"effect": "indirect", "mediator": "store_visits", "treatment": "D"}
+    },
+    {
+      "term": "dev_nde",
+      "estimate": 0.918,
+      "std_error": 0.088,
+      "conf_low": 0.776,
+      "conf_high": 1.121,
+      "med2s": {"quantity": "dev_nde", "adjustment": "placebo", "n_valid": 1000},
+      "mediation": {"effect": "direct", "mediator": "store_visits", "treatment": "D"}
+    },
+    {
+      "term": "b_dev_unadj",
+      "estimate": 0.59,
+      "std_error": 0.051,
+      "conf_low": 0.492,
+      "conf_high": 0.69,
+      "med2s": {"quantity": "b_dev_unadj", "adjustment": "unadjusted", "n_valid": 1000}
+    },
+    {
+      "term": "dev_nie_unadj",
+      "estimate": 0.413,
+      "std_error": 0.046,
+      "conf_low": 0.326,
+      "conf_high": 0.505,
+      "med2s": {"quantity": "dev_nie_unadj", "adjustment": "unadjusted", "n_valid": 1000}
+    },
+    {
+      "term": "sshare",
+      "estimate": 0.62,
+      "std_error": 0.05,
+      "conf_low": 0.52,
+      "conf_high": 0.71,
+      "med2s": {"quantity": "sshare", "adjustment": "placebo", "n_valid": 1000}
+    }
+  ],
+  "extensions": {
+    "med2s": {
+      "schema": "med2s/0.1",
+      "by": {"name": "med2s", "version": "4.1.1"},
+      "added": "2026-10-26T03:00:00Z",
+      "signal": {
+        "d": 0.214,
+        "se": 0.0228,
+        "t_d": 9.4,
+        "t_d_squared": 88.36,
+        "n_clusters": 48,
+        "flag": false,
+        "share": 0.62,
+        "boot_d": {
+          "std_error": 0.025,
+          "conf_low": 0.166,
+          "conf_high": 0.262,
+          "lower_one_sided": 0.173,
+          "n_valid": 1000
+        },
+        "boot_flag": false,
+        "se_ratio": 0.91
+      },
+      "moments": {"c1": 0.301, "v1": 0.345, "c0": 0.138, "v0": 0.131},
+      "placebo": {
+        "n_rows": 4100,
+        "mean_uY": 0.004,
+        "mean_uM": -0.002,
+        "slope": {"estimate": 0.41, "std_error": 0.06},
+        "composition": {
+          "placebo_adopt_idx": 0.48,
+          "treated_adopt_idx": 0.52,
+          "placebo_npre": 6.1,
+          "treated_npre": 6.4
+        }
+      },
+      "a_levels": {"a_raw": 0.735, "composition": 0.035},
+      "counts": {"n_treated_rows": 9600, "n_anticipation_removed": 0},
+      "diagnostics": {
+        "anticipation": {
+          "total": {"estimate": 0.011, "std_error": 0.019, "statistic": 0.58, "p_value": 0.56},
+          "a": {"estimate": -0.006, "std_error": 0.012, "statistic": -0.5, "p_value": 0.62},
+          "flag": false,
+          "n_rows": 3800,
+          "k": 2
+        },
+        "trend_d1": {
+          "reference": "t_cluster",
+          "m_p": 0.41,
+          "y_p": 0.37,
+          "n_clusters": 48,
+          "slope": 0.12,
+          "flag": false
+        },
+        "clusters": {
+          "G": 48,
+          "G_treated": 30,
+          "units": 1200,
+          "G_effective": 41.3,
+          "hhi": 0.0242,
+          "nested": true
+        }
+      },
+      "sensitivity": {"pi": 0, "breakdown_share": 0.91, "draws": null}
+    }
+  }
+}

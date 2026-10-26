@@ -26,6 +26,9 @@
   `mediate`.
 - Draft standard profile `survival/0.1` (R survival and cmprsk, lifelines, scikit-survival,
   statsmodels PHReg, Stata stcox/streg/stcrreg), with Efron and Breslow Cox examples and a page.
+- `mediation/0.1`: several predictors, `total_indirect`, and a mapping for `indirect_boot`.
+- Draft tool profile `med2s/0.1` (two-stage DiD mediation), with an `extensions.med2s` block,
+  a shape example and a page.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

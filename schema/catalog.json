@@ -180,6 +180,15 @@
       "maintainer": "jemather",
       "description": "Time-to-event regression (R survival and cmprsk, lifelines, scikit-survival, statsmodels PHReg, Stata stcox/streg/stcrreg): Cox ties method, parametric distribution and AFT/PH metric, Fine-Gray competing events, event counts, PH tests with their time transform, concordance.",
       "examples": ["examples/survival-cox-efron.estimation.json", "examples/survival-cox-breslow.estimation.json"]
+    },
+    {
+      "name": "med2s/0.1",
+      "file": "profiles/med2s-0.1.json",
+      "kind": "tool",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "med2s records (two-stage DiD mediation for staggered adoption): mediation plus the DiD design, placebo adjustment options, cluster-bootstrap percentile inference, and an extensions.med2s block with the signal test, moments, placebo composition, med2s_diag diagnostics and med2s_sens breakdown share.",
+      "examples": ["examples/med2s.estimation.json"]
     }
   ]
 }

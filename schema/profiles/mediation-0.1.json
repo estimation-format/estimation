@@ -44,7 +44,7 @@
       "type": "object",
       "required": ["treatment", "mediators", "outcome", "inference"],
       "properties": {
-        "treatment": {"description": "Treatment or focal predictor (X).", "type": "string", "x-tools": {"mediation": "treat", "pingouin": "x", "statsmodels": "exposure", "PROCESS": "x="}},
+        "treatment": {"description": "Treatment or focal predictor (X); a list when the model has several predictors of interest.", "anyOf": [{"type": "string"}, {"$ref": "../estimation-0.1.json#/$defs/strings"}], "x-tools": {"mediation": "treat", "pingouin": "x", "statsmodels": "exposure", "PROCESS": "x=", "indirect_boot": "inferred from the sem model: variables that are only predictors, minus controls()", "med2s": "treatment()"}},
         "mediators": {"description": "Mediator(s) (M); several for parallel or serial models.", "$ref": "../estimation-0.1.json#/$defs/strings", "minItems": 1, "x-tools": {"mediation": "mediator", "pingouin": "m (str or list)", "statsmodels": "mediator", "PROCESS": "m="}},
         "outcome": {"type": "string", "x-tools": {"pingouin": "y", "PROCESS": "y="}},
         "covariates": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"pingouin": "covar", "PROCESS": "cov=", "mediation": "terms in both models"}},
@@ -65,13 +65,13 @@
               "x-vocabulary": ["bootstrap", "quasi_bayesian", "delta", "aroian", "monte_carlo"],
               "x-tools": {"mediation": "boot (FALSE: quasi_bayesian simulation)", "statsmodels": "fit(method=) (\"parametric\" = quasi_bayesian, \"bootstrap\")", "pingouin": "bootstrap", "lavaan": "se (\"standard\" = delta for :=, \"bootstrap\")", "Stata": "estat teffects: delta; bootstrap prefix", "PROCESS": "bootstrap", "mediate_tsls": "boot (FALSE: aroian, Aroian 1947 product SE; TRUE: bootstrap)", "StataNow mediate": "vce() (delta method; bootstrap)"}
             },
-            "reps": {"description": "Bootstrap replications or simulation draws.", "type": ["integer", "null"], "x-tools": {"mediation": "sims (1000)", "mediate_tsls": "sims (1000, bootstrap only)", "statsmodels": "n_rep (1000)", "pingouin": "n_boot (500)", "lavaan": "bootstrap (1000)", "PROCESS": "boot= (5000)"}},
+            "reps": {"description": "Bootstrap replications or simulation draws.", "type": ["integer", "null"], "x-tools": {"mediation": "sims (1000)", "mediate_tsls": "sims (1000, bootstrap only)", "statsmodels": "n_rep (1000)", "pingouin": "n_boot (500)", "lavaan": "bootstrap (1000)", "PROCESS": "boot= (5000)", "indirect_boot": "reps() (1000)", "med2s": "med2s_ci reps() (1000)"}},
             "ci_type": {
               "type": "string",
               "x-vocabulary": ["percentile", "bc", "bca", "normal"],
-              "x-tools": {"mediation": "boot.ci.type (\"perc\"; \"bca\")", "pingouin": "bc (bias-corrected, not accelerated)", "lavaan": "parameterEstimates(boot.ci.type =) (\"perc\")", "PROCESS": "percentile (v3+)"}
+              "x-tools": {"mediation": "boot.ci.type (\"perc\"; \"bca\")", "pingouin": "bc (bias-corrected, not accelerated)", "lavaan": "parameterEstimates(boot.ci.type =) (\"perc\")", "PROCESS": "percentile (v3+)", "indirect_boot": "cis() (bca; normal, percentile, bc, all) via estat bootstrap", "med2s": "percentile"}
             },
-            "seed": {"type": ["integer", "string", "null"], "x-tools": {"pingouin": "seed (None)", "statsmodels": "rng", "PROCESS": "seed="}},
+            "seed": {"type": ["integer", "string", "null"], "x-tools": {"pingouin": "seed (None)", "statsmodels": "rng", "PROCESS": "seed=", "indirect_boot": "seed() (12345: the same seed every run unless set)", "med2s": "med2s_ci seed()"}},
             "robust": {"description": "Robust or clustered SEs in the underlying models.", "type": "boolean", "x-tools": {"mediation": "robustSE, cluster", "mediate_tsls": "always sandwich::vcovCL: with cluster = NULL each row is its own cluster (HC1-type), so robustSE has no effect"}}
           }
         }
@@ -84,10 +84,11 @@
       "properties": {
         "effect": {
           "type": "string",
-          "x-vocabulary": ["a", "b", "indirect", "direct", "controlled_direct", "total", "prop_mediated", "acme_control", "acme_treated", "acme_average", "ade_control", "ade_treated", "ade_average", "prop_mediated_control", "prop_mediated_treated", "index_moderated_mediation", "contrast"],
-          "x-tools": {"mediation": "d0, d1, d.avg (acme_*); z0, z1, z.avg (ade_*); tau.coef (total); n0, n1, n.avg (prop_mediated_*)", "statsmodels": "ACME (control/treated/average), ADE (...), Total effect, Prop. mediated (...)", "pingouin": "paths: \"M ~ X\" (a), \"Y ~ M\" (b), Total, Direct, Indirect", "lavaan": "user labels on := parameters", "Stata": "estat teffects: direct, indirect, total", "StataNow mediate": "nie (indirect), nde (direct), te (total), pm (prop_mediated), cde (controlled_direct)", "mediate_tsls": "d0 = d1 (indirect), z0 = z1 (direct), tau.coef (total), n0 (prop_mediated), each with .se", "ivmediate": "indirect, direct and total effects"}
+          "x-vocabulary": ["a", "b", "indirect", "total_indirect", "direct", "controlled_direct", "total", "prop_mediated", "acme_control", "acme_treated", "acme_average", "ade_control", "ade_treated", "ade_average", "prop_mediated_control", "prop_mediated_treated", "index_moderated_mediation", "contrast"],
+          "x-tools": {"mediation": "d0, d1, d.avg (acme_*); z0, z1, z.avg (ade_*); tau.coef (total); n0, n1, n.avg (prop_mediated_*)", "statsmodels": "ACME (control/treated/average), ADE (...), Total effect, Prop. mediated (...)", "pingouin": "paths: \"M ~ X\" (a), \"Y ~ M\" (b), Total, Direct, Indirect", "lavaan": "user labels on := parameters", "Stata": "estat teffects: direct, indirect, total", "StataNow mediate": "nie (indirect), nde (direct), te (total), pm (prop_mediated), cde (controlled_direct)", "mediate_tsls": "d0 = d1 (indirect), z0 = z1 (direct), tau.coef (total), n0 (prop_mediated), each with .se", "ivmediate": "indirect, direct and total effects", "indirect_boot": "r(ind_X_M) (indirect), r(tot_ind_X) (total_indirect), r(direct_X) (direct)", "med2s": "total, dev_nie (indirect), dev_nde (direct), a, b_dev (b)"}
         },
         "mediator": {"description": "Mediator this effect goes through (specific indirect effects).", "type": "string"},
+        "treatment": {"description": "Predictor the effect starts from, when the model has several.", "type": "string"},
         "path": {"description": "Serial paths: the variables in order.", "$ref": "../estimation-0.1.json#/$defs/strings"},
         "moderator_value": {"description": "Conditional indirect effect at this moderator value.", "type": ["number", "string"]}
       }

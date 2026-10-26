@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/med2s-0.1.json",
+  "title": "med2s/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Records of med2s (Matherly; Stata package 4.1.1, 2026-09-22): natural direct and indirect effects in staggered-adoption difference-in-differences, on the two-stage DiD first stage (Gardner 2021; see spec/profiles/med2s.md). Includes mediation/0.1, plus: meta.estimator.method \"med2s\"; specification.did as in did/0.1 (unit, time, treatment, comparison \"untreated\", anticipation); specification.clusters (the assignment level); specification.options adjust, adjgap, adjk, version, sigcrit; inference by cluster bootstrap with percentile intervals (med2s_ci); a `med2s` object on each med2s quantity row naming the quantity and its adjustment; and an extensions.med2s block (this file defines it) with the signal test and flag, the treated and placebo moments, the placebo rows and their composition, and, when run, the med2s_diag diagnostics and the med2s_sens breakdown analysis. A bare med2s run (no med2s_ci) has no inference for the adjusted quantities and does not meet mediation/0.1.",
+  "x-extends": ["mediation/0.1"],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "allOf": [{"$ref": "mediation-0.1.json#/$defs/rules"}],
+      "type": "object",
+      "required": ["meta", "specification", "extensions"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {"estimator": {"required": ["method"], "properties": {"method": {"const": "med2s"}}}}
+        },
+        "specification": {
+          "required": ["did", "clusters", "options"],
+          "properties": {
+            "did": {
+              "allOf": [{"$ref": "did-0.1.json#/$defs/design"}],
+              "required": ["unit", "treatment"],
+              "properties": {"comparison": {"const": "untreated"}, "anticipation": {"x-tools": {"med2s": "anticipation() (0)"}}}
+            },
+            "clusters": {"description": "cluster(): the level at which treatment is assigned.", "minItems": 1},
+            "mediation": {
+              "properties": {
+                "mediators": {"maxItems": 1, "description": "med2s estimates one mediator per run; med2s_report combines runs."},
+                "inference": {"properties": {"method": {"const": "bootstrap"}, "ci_type": {"const": "percentile"}}}
+              }
+            },
+            "options": {
+              "required": ["adjust", "adjgap", "adjk", "version", "sigcrit"],
+              "properties": {
+                "absorb": {"description": "First-stage fixed effects, unit first, time second.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                "adjust": {"description": "b-path adjustment.", "enum": ["placebo", "none"], "x-tools": {"med2s": "adjust() (placebo)"}},
+                "adjgap": {"description": "Periods between the placebo window and adoption.", "type": "integer", "x-tools": {"med2s": "adjgap() (1)"}},
+                "adjk": {"description": "Length of the placebo window.", "type": "integer", "x-tools": {"med2s": "adjk() (3)"}},
+                "version": {"enum": ["dev", "levels", "both"], "x-tools": {"med2s": "version() (dev)"}},
+                "sigcrit": {"description": "One-sided cutoff for t_d; null when off.", "type": ["number", "null"], "x-tools": {"med2s": "sigcrit() (1.645)"}},
+                "minsignal": {"type": "number", "x-tools": {"med2s": "minsignal() (0, off)"}},
+                "covars": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "covars()"}},
+                "covarsm": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "covarsm() (covars())"}},
+                "x": {"description": "Covariates in the a- and b-path regressions.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "x()"}},
+                "lean": {"type": "boolean"}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "properties": {"med2s": {"$ref": "#/$defs/row"}}
+          }
+        },
+        "extensions": {
+          "required": ["med2s"],
+          "properties": {"med2s": {"$ref": "#/$defs/extension"}}
+        }
+      }
+    },
+    "row": {
+      "description": "Which med2s quantity a row is.",
+      "type": "object",
+      "required": ["quantity", "adjustment"],
+      "properties": {
+        "quantity": {"description": "The r() name.", "type": "string", "x-vocabulary": ["total", "a", "b_dev", "dev_nie", "dev_nde", "b_dev_unadj", "dev_nie_unadj", "dev_nde_unadj", "b_lev", "lev_nie", "lev_nde", "sshare"]},
+        "adjustment": {"description": "placebo (the estimator), unadjusted (within b-path without the placebo correction), levels (comparison only), or none (total, a).", "type": "string", "x-vocabulary": ["placebo", "unadjusted", "levels", "none"]},
+        "n_valid": {"description": "Bootstrap replicates that produced the quantity.", "type": ["integer", "null"], "x-tools": {"med2s_ci": "r(s_nv)"}},
+        "naive_se": {"description": "Analytic SE, where one exists (only the total).", "type": ["number", "null"], "x-tools": {"med2s": "r(total_se)"}}
+      }
+    },
+    "test": {
+      "type": "object",
+      "properties": {
+        "estimate": {"type": ["number", "null"]},
+        "std_error": {"type": ["number", "null"]},
+        "statistic": {"type": ["number", "null"]},
+        "p_value": {"type": ["number", "null"]}
+      }
+    },
+    "extension": {
+      "description": "What only med2s has.",
+      "type": "object",
+      "required": ["schema", "signal"],
+      "properties": {
+        "schema": {"const": "med2s/0.1"},
+        "by": {"type": "object", "properties": {"name": {"type": "string"}, "version": {"type": "string"}}},
+        "added": {"type": "string", "format": "date-time"},
+        "signal": {
+          "description": "Identification of the adjusted b-path: treatment must add within-unit mediator variance, d = v1 - v0 > 0. The flag labels an estimate as not identified; it never drops it.",
+          "type": "object",
+          "required": ["d", "t_d", "flag"],
+          "properties": {
+            "d": {"type": ["number", "null"], "x-tools": {"med2s": "r(sig_d)"}},
+            "se": {"description": "Cluster-robust analytic SE of d (ignores first-stage error).", "type": ["number", "null"], "x-tools": {"med2s": "r(sig_se)"}},
+            "t_d": {"type": ["number", "null"], "x-tools": {"med2s": "r(sig_t)"}},
+            "t_d_squared": {"type": ["number", "null"], "x-tools": {"med2s": "r(sig_F)"}},
+            "n_clusters": {"type": ["integer", "null"], "x-tools": {"med2s": "r(sig_G)"}},
+            "flag": {"description": "Low signal: report the mediator as not identified.", "type": "boolean", "x-tools": {"med2s": "r(lowsignal)"}},
+            "share": {"description": "Signal share 1 - v0/v1 (a fragility descriptive).", "type": ["number", "null"], "x-tools": {"med2s": "r(sshare)"}},
+            "boot_d": {"description": "Bootstrap distribution of d.", "type": "object", "properties": {"std_error": {"type": ["number", "null"]}, "conf_low": {"type": ["number", "null"]}, "conf_high": {"type": ["number", "null"]}, "lower_one_sided": {"type": ["number", "null"]}, "n_valid": {"type": ["integer", "null"]}}, "x-tools": {"med2s_ci": "r(d_bse), r(d_lo), r(d_hi), r(d_lo1s), r(d_nv)"}},
+            "boot_flag": {"description": "Bootstrap signal flag (read below about 100 clusters).", "type": ["boolean", "null"], "x-tools": {"med2s_ci": "r(boot_lowsignal)"}},
+            "se_ratio": {"description": "Analytic over bootstrap SE of d.", "type": ["number", "null"], "x-tools": {"med2s_ci": "r(se_ratio)"}}
+          }
+        },
+        "moments": {
+          "description": "Within-unit covariances and variances of (uY, uM) on treated (1) and placebo (0) rows.",
+          "type": "object",
+          "properties": {"c1": {"type": ["number", "null"]}, "v1": {"type": ["number", "null"]}, "c0": {"type": ["number", "null"]}, "v0": {"type": ["number", "null"]}},
+          "x-tools": {"med2s": "r(mom_c1), r(mom_v1), r(mom_c0), r(mom_v0)"}
+        },
+        "placebo": {
+          "type": "object",
+          "properties": {
+            "n_rows": {"type": ["integer", "null"], "x-tools": {"med2s": "r(pl_n)"}},
+            "mean_uY": {"type": ["number", "null"], "x-tools": {"med2s": "r(pl_total)"}},
+            "mean_uM": {"type": ["number", "null"], "x-tools": {"med2s": "r(pl_a)"}},
+            "slope": {"$ref": "#/$defs/test", "x-tools": {"med2s": "r(b_pl), r(b_pl_se)"}},
+            "composition": {"description": "Placebo vs treated rows: adoption index and pre-periods.", "type": "object", "properties": {"placebo_adopt_idx": {"type": ["number", "null"]}, "treated_adopt_idx": {"type": ["number", "null"]}, "placebo_npre": {"type": ["number", "null"]}, "treated_npre": {"type": ["number", "null"]}}, "x-tools": {"med2s": "r(pl_adopt_idx), r(real_adopt_idx), r(pl_npre), r(real_npre)"}}
+          }
+        },
+        "a_levels": {"description": "Levels a-path contrast a_raw = a + composition.", "type": "object", "properties": {"a_raw": {"type": ["number", "null"]}, "composition": {"type": ["number", "null"]}}, "x-tools": {"med2s": "r(a_raw), r(composition)"}},
+        "counts": {"type": "object", "properties": {"n_treated_rows": {"type": ["integer", "null"]}, "n_anticipation_removed": {"type": ["integer", "null"]}}, "x-tools": {"med2s": "r(ntreat), r(antic_n)"}},
+        "diagnostics": {
+          "description": "med2s_diag, run with the same cluster(), anticipation() and covariates.",
+          "type": "object",
+          "properties": {
+            "anticipation": {"type": "object", "properties": {"total": {"$ref": "#/$defs/test"}, "a": {"$ref": "#/$defs/test"}, "flag": {"type": "boolean"}, "n_rows": {"type": ["integer", "null"]}, "k": {"type": ["integer", "null"]}}, "x-tools": {"med2s_diag": "r(ant_total*), r(ant_a*), r(ant_flag), r(ant_n), r(ant_k)"}},
+            "placebo_grid": {"description": "Adjusted b-path across placebo windows: a matrix structure with columns gap k N b_pl b_pl_se signal t_d b_adj nie adopt_idx npre.", "type": "object", "x-tools": {"med2s_diag": "r(placebo)"}},
+            "trend_d1": {"description": "Unit-specific linear trends in the untreated first-stage residuals (the gate is M).", "type": "object", "properties": {"m_share": {"type": ["number", "null"]}, "y_share": {"type": ["number", "null"]}, "m_stat": {"type": ["number", "null"]}, "y_stat": {"type": ["number", "null"]}, "m_p": {"type": ["number", "null"]}, "y_p": {"type": ["number", "null"]}, "reference": {"description": "F (one unit per cluster) or cluster-robust t(G - 1).", "type": "string", "x-vocabulary": ["F", "t_cluster"]}, "n_clusters": {"type": ["integer", "null"]}, "corr": {"type": ["number", "null"]}, "slope": {"description": "beta: slope of units' Y trends on their M trends.", "type": ["number", "null"]}, "n_units": {"type": ["integer", "null"]}, "flag": {"type": "boolean"}}, "x-tools": {"med2s_diag": "r(d1_m_share), r(d1_y_share), r(d1_m_f)/r(d1_m_t), r(d1_y_f)/r(d1_y_t), r(d1_m_p), r(d1_y_p), r(d1_ref), r(d1_G), r(d1_corr), r(d1_slope), r(d1_nunits), r(d1_flag)"}},
+            "trend_d4": {"description": "Event-time profiles of the a-path and the direct effect (descriptive).", "type": "object", "properties": {"n_event_times": {"type": ["integer", "null"]}, "a_slope": {"type": ["number", "null"]}, "nde_slope": {"type": ["number", "null"]}, "a_growth": {"type": ["number", "null"]}, "nde_growth": {"type": ["number", "null"]}, "a_mean": {"type": ["number", "null"]}, "nde_mean": {"type": ["number", "null"]}}, "x-tools": {"med2s_diag": "r(d4_ne), r(d4_a_slope), r(d4_nde_slope), r(d4_a_growth), r(d4_nde_growth), r(d4_a_mean), r(d4_nde_mean)"}},
+            "clusters": {"type": "object", "properties": {"G": {"type": ["integer", "null"]}, "G_treated": {"type": ["integer", "null"]}, "units": {"type": ["integer", "null"]}, "G_effective": {"type": ["number", "null"]}, "hhi": {"type": ["number", "null"]}, "nested": {"type": ["boolean", "null"]}}, "x-tools": {"med2s_diag": "r(cl_G), r(cl_G_treated), r(cl_units), r(cl_G_eff), r(cl_hhi), r(cl_nested)"}}
+          }
+        },
+        "sensitivity": {
+          "description": "med2s_sens from the saved draws: treatment-induced M-Y confounding.",
+          "type": "object",
+          "properties": {
+            "pi": {"description": "Share of the measured mediator response that does not transmit (0 = conservative).", "type": ["number", "null"]},
+            "breakdown_share": {"description": "Confounding share at which the NIE interval first includes zero; null when the mediator is flagged and not forced.", "type": ["number", "null"], "x-tools": {"med2s_sens": "r(breakdown_share), r(breakdown)"}},
+            "grid": {"description": "NIE and NDE with intervals across shares: a matrix structure.", "type": "object", "x-tools": {"med2s_sens": "r(sens)"}},
+            "draws": {"description": "Attachment id of the med2s_ci draws file (saving()).", "type": ["string", "null"]}
+          }
+        }
+      }
+    }
+  }
+}

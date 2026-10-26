@@ -591,6 +591,7 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`multiple-testing/0.1`](profiles/multiple-testing.md) | standard | `specification.multiple_testing` (method, error rate, `n_tests`); `p_value_adjusted` on the tested rows |
 | [`resampling/0.1`](profiles/resampling.md) | standard | `specification.resampling` (method, `reps`); a row with a `resampling` p-value or interval |
 | [`survival/0.1`](profiles/survival.md) | standard | `meta.estimator.method`; `specification.survival` (time, event); `estimate`, `std_error`; `nobs`, `n_events`; a default `vcov` with `type`; `ties` for Cox/Fine-Gray; distribution and AFT/PH metric for parametric; competing events for Fine-Gray |
+| [`med2s/0.1`](profiles/med2s.md) | tool | `mediation` plus the DiD design, cluster, placebo-adjustment options, bootstrap percentile inference, and `extensions.med2s` (signal test, moments, placebo composition, diagnostics, sensitivity) |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).
