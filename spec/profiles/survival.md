@@ -6,9 +6,9 @@ Kind: standard. Builds on the core only.
 Time-to-event regression: Cox proportional hazards, parametric models (AFT or PH metric), and
 Fine-Gray competing risks. Surveyed 2026-10-25: from source, R survival 3.8-13 (therneau/survival
 @ b76de62: `coxph`, `survreg`, `cox.zph`, `concordance`), lifelines 0.30.3, scikit-survival
-0.28.0 and statsmodels 0.15 `PHReg`; Stata `stcox` and `streg` from their help files; Stata
-`stcrreg`, `estat phtest` and `estat concordance`, and R cmprsk `crr`, from documentation. Multi-state models, frailty and
-Bayesian survival were not surveyed.
+0.28.0, statsmodels 0.15 `PHReg` and R cmprsk 2.2-12 `crr` (cran/cmprsk); Stata `stcox`,
+`streg`, `stcrreg`, `estat concordance` and `estat phtest` from their help files. Multi-state
+models, frailty and Bayesian survival were not surveyed.
 
 ## Requirements
 
@@ -28,6 +28,11 @@ Conditional requirements:
 Rows are on the estimation scale (log hazard, or log time for AFT models) unless they set the
 core's `scale: "exponentiated"` with `measure: "hazard_ratio"` (or `subhazard_ratio` for
 Fine-Gray).
+
+Stata's `stcrreg` has no `ties()` option, and its help file doesn't say how tied times are
+handled, so a writer fills `ties` from the manual's methods section rather than from `e()`. `stcrreg` always reports robust standard errors (`vce(robust)`, or
+`vce(cluster` *id*`)` with multiple records per subject) and displays subhazard ratios unless
+`noshr` is given.
 
 ## Defaults that change results
 
@@ -61,7 +66,7 @@ on the coefficient scale.
 | `time` | `Surv(time, ...)` | timevar | `duration_col` | `endog` |
 | `start` | `Surv(start, stop, ...)` | `enter()`, `origin()` | `entry_col` | `entry` |
 | `event`, `event_codes` | `Surv(..., event)` | `failure(var==codes)` | `event_col` | `status` |
-| `competing_event_codes` | cmprsk `failcode`/`cencode`; `finegray()` | `stcrreg, compete()` | | |
+| `competing_event_codes` | cmprsk `failcode`/`cencode`; `finegray()` | `stcrreg, compete()`; `e(N_compete)` | | |
 | `id` | `id` | `id()` | `id_col` | |
 | `strata` | `strata()` | `strata()` | `strata` | `strata` |
 | `time_varying` | `tt()` | `tvc()`, `texp()` | `CoxTimeVaryingFitter` | |
@@ -76,13 +81,14 @@ on the coefficient scale.
 | `time_at_risk` | | `e(risk)` | | |
 | `log_lik`, `log_lik_null` | `loglik[2]`, `loglik[1]` | `e(ll)`, `e(ll_0)` | `log_likelihood_` | `llf` |
 | `lr_test` | `logtest` | `e(chi2)` (LR) | `log_likelihood_ratio_test()` | |
-| `concordance` | `concordance` | `estat concordance` | `concordance_index_` | |
+| `concordance` | `concordance` | `estat concordance`: `r(C)` (Harrell), `r(K)` (`gheller`) | `concordance_index_` | |
 | `aic` (partial) | `AIC()` | `estat ic` | `AIC_partial_` | |
 | vcov `type` | `var` (`oim`; robust with `cluster()`, model-based in `naive.var`) | `e(vce)` | `variance_matrix_` (`robust=True`) | `cov_params()` |
 
 `structures.ph_test` is `{kind: "object", transform, global, per_term}`, each test
 `{statistic, df, p_value}` (`cox.zph` table; Stata `estat phtest` `r(chi2)`, `r(df)`, `r(p)`,
-and `detail` per term).
+and `detail` per term in the `r(phtest)` matrix). `estat phtest` tests against analysis time
+unless `log`, `km`, `rank` or `time()` is given.
 
 Convergence: Stata stores `e(converged)`; `coxph` and lifelines only warn.
 

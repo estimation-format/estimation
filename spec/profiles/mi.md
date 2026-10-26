@@ -4,8 +4,7 @@ Status: draft. Schema: [`schema/profiles/mi-0.1.json`](../../schema/profiles/mi-
 Kind: standard. Builds on the core only.
 
 Results pooled over multiply imputed data sets with Rubin's rules. Surveyed 2026-10-25: from
-source, R mice 3.19.10 (amices/mice @ 61083e6) and statsmodels 0.15 `MICE`; Stata
-`mi impute` / `mi estimate` from documentation. Amelia, jomo and Blimp were not surveyed.
+source, R mice 3.19.10 (amices/mice @ 61083e6) and statsmodels 0.15 `MICE`; Stata `mi estimate` from its help file and `mi impute` from documentation. Amelia, jomo and Blimp were not surveyed.
 
 A pooled record also claims the analysis model's profile (`glm/0.1`, `linear-fe/0.1`, ...)
 where that profile's requirements make sense for pooled results; metrics such as R² or
@@ -37,7 +36,7 @@ log-likelihood are not pooled by Rubin's rules and are usually absent.
 | `ubar` | mean within-imputation variance | `ubar` | `e(W_mi)` | (per-imputation fits) |
 | `b` | between-imputation variance | `b` | `e(B_mi)` | (per-imputation fits) |
 | `t` | total variance | `t` | | `bse²` |
-| `riv` | (1 + 1/m) B / Ū | `riv` | `e(riv_mi)` | |
+| `riv` | (1 + 1/m) B / Ū | `riv` | `e(rvi_mi)` (Stata calls it RVI) | |
 | `lambda` | (1 + 1/m) B / T | `lambda` | | `frac_miss_info` |
 | `fmi` | (riv + 2/(df + 3)) / (1 + riv) | `fmi` | `e(fmi_mi)` | |
 | `df` | pooled-test df | `df` | `e(df_mi)` | |

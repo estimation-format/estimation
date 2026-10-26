@@ -5,7 +5,7 @@ Kind: standard. Builds on the core only.
 
 Meta-analyses and meta-regressions of study-level effect sizes. Surveyed 2026-10-25: from
 source, R metafor 5.3-1 (wviechtb/metafor @ bc2016e), R meta 9.0-0 (guido-s/meta @ d100dde)
-and statsmodels 0.15 `combine_effects`; Stata `meta` from documentation. Network meta-analysis,
+and statsmodels 0.15 `combine_effects`; Stata `meta summarize` from its help file and the rest of `meta` from documentation. Network meta-analysis,
 individual-participant-data models and Bayesian meta-analysis (bayesmeta, brms) were not
 surveyed.
 
@@ -55,6 +55,7 @@ Vocabulary for `effect_measure`: `log_rr`, `log_or`, `rd`, `log_hr`, `smd_hedges
 | Name | metafor | meta | statsmodels | Stata |
 |---|---|---|---|---|
 | `k` | `k` | `k` | `k` | `r(N)` |
+| pooled estimate, SE, CI | `b`, `se`, `ci.lb`/`ci.ub` | `TE.random`, `seTE.random` | `summary_frame()` | `r(theta)`, `r(se)`, `r(ci_lb)`, `r(ci_ub)` |
 | `q`, `q_df`, `q_p` | `QE`, k − p, `QEp` | `Q`, `df.Q`, `pval.Q` | `q` | `r(Q)`, `r(df_Q)`, `r(p_Q)` |
 | `tau2`, `tau2_se`, `tau2_ci` | `tau2`, `se.tau2`, `confint()` | `tau2`, `se.tau2`, `lower.tau2`/`upper.tau2` | `tau2` | `r(tau2)` |
 | `i2`, `h2` | `I2` / 100, `H2` | `I2`, `H^2` | `i2`, `h2` | `r(I2)` / 100, `r(H2)` |

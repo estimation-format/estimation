@@ -6,8 +6,8 @@ Kind: standard. Builds on the core only.
 Inference by resampling: wild (cluster) bootstrap, pairs and cluster bootstrap, jackknife,
 permutation and randomization inference. Surveyed 2026-10-25: from source, Stata `boottest`
 (droodman/boottest @ ab5e99a), R fwildclusterboot 0.14.3 and Python wildboottest 0.3.2 (as
-called by pyfixest); Stata's `bootstrap` and `jackknife` prefixes, `ritest` and R `ri2` from
-documentation.
+called by pyfixest); R ri2 0.5.0 (cran/ri2; `conduct_ri()` defaults to 1,000 simulations, two-tailed);
+Stata's `bootstrap` prefix from its help file; `jackknife` and `ritest` from documentation.
 
 The record also claims the model's own profile. The core columns (`std_error`, `p_value`,
 `conf_low`, `conf_high`) keep the analytic results; resampled ones go in each row's
@@ -23,7 +23,7 @@ The record also claims the model's own profile. The core columns (`std_error`, `
 | Name | boottest | fwildclusterboot | wildboottest / pyfixest | Stata `bootstrap` |
 |---|---|---|---|---|
 | `reps` | `reps()` (999) | `B` (required) | `reps` (required) | `reps()` (50) |
-| `seed` | `seed()` | `seed` | `seed` | `seed()` |
+| `seed` | `seed()` | `seed` | `seed` | `rseed()`; `e(rngstate)` |
 | `cluster` | `bootcluster()` (the model's clusters) | `bootcluster` (`"max"`) | `cluster` | `cluster()` |
 | `weights` | `weighttype()` (rademacher) | `type` (`"rademacher"`) | `weights_type` (`"rademacher"`) | — |
 | `impose_null` | yes unless `nonull` | `impose_param_null` (TRUE) | `impose_null` (True) | — |
@@ -34,7 +34,7 @@ The record also claims the model's own profile. The core columns (`std_error`, `
 
 Per row: `statistic`, `p_value`, `conf_low`, `conf_high`, `std_error` (when the method gives
 one) and `null_value`. A resampled p-value of 0 means no replication was as extreme; its
-resolution is about 1/reps. `metrics.n_reps_failed` records Stata's `e(N_misreps)`.
+resolution is about 1/reps. `metrics.n_reps_failed` records Stata's `e(N_misreps)` (`e(N_reps)` counts the complete ones).
 
 ## Example
 

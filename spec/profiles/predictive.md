@@ -5,7 +5,10 @@ Kind: standard. Builds on the core only.
 
 Predictive (machine-learning) models, judged by out-of-sample performance rather than by
 coefficients and standard errors. Surveyed 2026-10-25: from source, scikit-learn 1.9.1, XGBoost
-3.4.1 and R ranger 0.18.0; tidymodels, mlr3, caret and LightGBM from documentation. Deep
+3.4.1 and R ranger 0.18.0, tidymodels (rsample @ 3f43187, tune @ d047fc3, workflows @ 21ef53f), mlr3
+(@ c7eeaf9, mlr3tuning @ 9220c89, mlr3mbo @ 17b27cd, mlr3pipelines @ 936c4ae) and caret 7.0-1
+(cran/caret); LightGBM from documentation. caret's `trainControl()` defaults to the bootstrap
+(25 resamples), not cross-validation. Deep
 learning fits the same layout; framework-specific training logs were not surveyed.
 
 The core already has `parameters[*].importance` and `rank`, the `hyperparameters` and `tree`

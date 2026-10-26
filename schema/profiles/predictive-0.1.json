@@ -45,7 +45,7 @@
               "type": "object",
               "required": ["scheme"],
               "properties": {
-                "scheme": {"type": "string", "x-vocabulary": ["holdout", "kfold", "stratified_kfold", "repeated_kfold", "group_kfold", "time_series_split", "nested_cv", "loo", "bootstrap", "oob", "none"], "x-tools": {"scikit-learn": "train_test_split, KFold, StratifiedKFold, GroupKFold, TimeSeriesSplit, RepeatedKFold", "tidymodels": "rsample: initial_split, vfold_cv, group_vfold_cv, rolling_origin, bootstraps", "mlr3": "rsmp(\"cv\"), rsmp(\"holdout\"), ...", "caret": "trainControl(method =)"}},
+                "scheme": {"type": "string", "x-vocabulary": ["holdout", "kfold", "stratified_kfold", "repeated_kfold", "group_kfold", "time_series_split", "nested_cv", "loo", "bootstrap", "oob", "none"], "x-tools": {"scikit-learn": "train_test_split, KFold, StratifiedKFold, GroupKFold, TimeSeriesSplit, RepeatedKFold", "tidymodels": "rsample: initial_split, vfold_cv (v = 10), group_vfold_cv, rolling_origin, bootstraps (times = 25)", "mlr3": "rsmp(\"cv\"), rsmp(\"repeated_cv\"), rsmp(\"holdout\"), rsmp(\"bootstrap\"), rsmp(\"loo\"), ...", "caret": "trainControl(method =) (\"boot\", number = 25; 10 for cv methods)"}},
                 "test_size": {"description": "Held-out share or count.", "type": ["number", "null"]},
                 "n_folds": {"type": ["integer", "null"]},
                 "n_repeats": {"type": ["integer", "null"]},

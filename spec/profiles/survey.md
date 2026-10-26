@@ -5,7 +5,7 @@ Kind: standard. Builds on the core only.
 
 Estimates from complex survey designs. Surveyed 2026-10-25: from source, R survey 4.5
 (cran/survey @ 4834b8b) and Python samplics 0.6.1 (archived by its authors in favor of `svy`);
-Stata `svyset` / `svy:` from documentation. Combines with the analysis model's profile.
+Stata `svyset` / `svy:` from their help files. Combines with the analysis model's profile.
 
 ## Requirements
 

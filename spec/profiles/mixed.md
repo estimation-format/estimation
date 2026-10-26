@@ -6,7 +6,7 @@ Kind: standard. Builds on the core only.
 Linear and generalized linear mixed (multilevel) models. Surveyed 2026-10-25: from source,
 lme4 2.1-1 (lme4/lme4 @ 808a76d), lmerTest 3.2-1 (@ 282b9e9), glmmTMB 1.1.15.9000
 (@ 1db3b46), MixedModels.jl (@ 492680d) and statsmodels 0.15.0 `MixedLM`; from their
-documentation, Stata `melogit`/`mepoisson`/`meglm`; Stata `mixed` from its help file (StataNow, 28 July 2026). nlme, brms and
+documentation, Stata `mepoisson`; Stata `mixed`, `melogit` and `meglm` from their help files. nlme, brms and
 Bayesian fits were not surveyed.
 
 ## Requirements
@@ -34,9 +34,12 @@ Bayesian fits were not surveyed.
 | `lme4::glmer` | Laplace (`nAGQ = 1`) | `bobyqa`, then `Nelder_Mead` | z |
 | glmmTMB | ML (`REML = FALSE`) | `nlminb` | z |
 | Stata `mixed` | **ML** (`reml` option); `e(method)` | `technique()` (`nr`), after 20 EM iterations | z; `dfmethod()` for small-sample df (Satterthwaite and Kenward-Roger need REML) |
-| Stata `me*` | adaptive quadrature, 7 points | | z |
+| Stata `me*` | adaptive quadrature, `intpoints(7)`; `e(intmethod)`, `e(n_quad)` | | z |
 | statsmodels `MixedLM` | REML | `fit(method=)` | z |
 | MixedModels.jl | **ML** (`REML = false`) | `:LN_NEWUOA` | z |
+
+Stata's `me*` commands store `e(cmd)` as `meglm` (`melogit`) or `gsem` (`meglm`); `e(cmd2)` names
+the command typed.
 
 The same model in `lmer` and Stata `mixed` gives different variance components unless one of
 them is told to switch, which is why `method` is required. `specification.options` records

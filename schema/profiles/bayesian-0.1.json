@@ -22,7 +22,7 @@
               "required": ["method"],
               "properties": {
                 "family": {"description": "The model's family (linear, glm, mixed, ...); Bayesian is the inference, recorded in method.", "type": "string"},
-                "method": {"type": "string", "x-vocabulary": ["nuts", "hmc", "mh", "gibbs", "slice", "smc", "advi", "fullrank_advi", "pathfinder", "laplace", "inla"], "x-tools": {"brms / rstanarm / Stan": "algorithm (\"sampling\" = nuts; \"meanfield\", \"fullrank\", \"pathfinder\", \"laplace\")", "PyMC": "pm.sample step (NUTS for continuous), pm.fit (ADVI)", "Stata": "bayes / bayesmh (adaptive MH; Gibbs blocks)"}}
+                "method": {"type": "string", "x-vocabulary": ["nuts", "hmc", "mh", "gibbs", "slice", "smc", "advi", "fullrank_advi", "pathfinder", "laplace", "inla"], "x-tools": {"brms / Stan": "algorithm (\"sampling\" = nuts; \"meanfield\", \"fullrank\", \"pathfinder\", \"laplace\")", "rstanarm": "algorithm (\"sampling\" = nuts; \"meanfield\", \"fullrank\"; \"optimizing\" = laplace, with importance resampling)", "PyMC": "pm.sample step (NUTS for continuous), pm.fit (ADVI)", "Stata": "bayes / bayesmh (adaptive MH; Gibbs blocks)"}}
               }
             }
           }
@@ -49,12 +49,12 @@
               "type": "object",
               "required": ["chains", "draws", "warmup", "seed"],
               "properties": {
-                "chains": {"type": "integer", "x-tools": {"brms / rstanarm": "chains (4)", "PyMC": "chains (max(2, min(4, CPU count)): depends on the machine)", "CmdStanPy": "chains (4)", "Stata": "nchains() (1)"}},
-                "draws": {"description": "Retained draws per chain, after warmup and thinning.", "type": "integer", "x-tools": {"brms / rstanarm": "iter - warmup (1000)", "PyMC": "draws (1000)", "CmdStanPy": "iter_sampling (1000)", "Stata": "mcmcsize() (10000)"}},
-                "warmup": {"type": "integer", "x-tools": {"brms / rstanarm": "warmup (iter / 2 = 1000)", "PyMC": "tune (1000 for NUTS)", "CmdStanPy": "iter_warmup (1000)", "Stata": "burnin() (2500)"}},
-                "thin": {"type": "integer", "x-tools": {"brms": "thin (1)", "Stata": "thinning() (1)"}},
+                "chains": {"type": "integer", "x-tools": {"brms / rstanarm": "chains (4)", "PyMC": "chains (max(2, min(4, CPU count)): depends on the machine)", "CmdStanPy": "chains (4)", "Stata": "nchains() (1), e(nchains)"}},
+                "draws": {"description": "Retained draws per chain, after warmup and thinning.", "type": "integer", "x-tools": {"brms / rstanarm": "iter - warmup (1000)", "PyMC": "draws (1000)", "CmdStanPy": "iter_sampling (1000)", "Stata": "mcmcsize() (10000), e(mcmcsize)"}},
+                "warmup": {"type": "integer", "x-tools": {"brms / rstanarm": "warmup (iter / 2 = 1000)", "PyMC": "tune (1000 for NUTS)", "CmdStanPy": "iter_warmup (1000)", "Stata": "burnin() (2500), e(burnin)"}},
+                "thin": {"type": "integer", "x-tools": {"brms": "thin (1)", "Stata": "thinning() (1), e(thinning)"}},
                 "seed": {"description": "null records that none was set: brms, PyMC and Stata then draw one.", "type": ["integer", "string", "null"], "x-tools": {"brms": "seed (NA)", "PyMC": "random_seed (None)", "Stata": "rseed()"}},
-                "target_accept": {"type": ["number", "null"], "x-tools": {"brms": "control = list(adapt_delta = 0.8)", "PyMC": "target_accept (0.8)", "CmdStanPy": "adapt_delta (0.8)"}},
+                "target_accept": {"type": ["number", "null"], "x-tools": {"brms": "control = list(adapt_delta = 0.8)", "PyMC": "target_accept (0.8)", "CmdStanPy": "adapt_delta (0.8)", "rstanarm": "adapt_delta (0.95; 0.99 with R2, hs, hs_plus, lasso and product_normal priors)"}},
                 "max_treedepth": {"type": ["integer", "null"], "x-tools": {"brms": "control$max_treedepth (10)", "CmdStanPy": "max_treedepth (10)"}},
                 "backend": {"type": ["string", "null"], "x-tools": {"brms": "backend (\"rstan\"; \"cmdstanr\")", "PyMC": "nuts_sampler (\"pymc\"; \"nutpie\", \"numpyro\", \"blackjax\")"}}
               }
@@ -73,8 +73,8 @@
           "properties": {
             "elpd_loo": {"description": "Record {value, se, p_loo, n_bad_pareto_k}.", "x-tools": {"brms": "loo()", "ArviZ": "loo()", "Stata": "bayesstats ic (DIC, log marginal likelihood)"}},
             "waic": {"x-tools": {"brms": "waic()", "ArviZ": "waic()"}},
-            "dic": {"x-tools": {"Stata": "bayesstats ic: DIC"}},
-            "log_marginal_likelihood": {"x-tools": {"Stata": "bayesstats ic: log(ML)", "brms": "bridge_sampling()"}},
+            "dic": {"x-tools": {"Stata": "e(dic); bayesstats ic: DIC"}},
+            "log_marginal_likelihood": {"x-tools": {"Stata": "e(lml_lm) (Laplace-Metropolis); bayesstats ic: log(ML)", "brms": "bridge_sampling()"}},
             "bayes_r2": {"x-tools": {"brms / rstanarm": "bayes_R2()"}},
             "acceptance_rate": {"x-tools": {"Stata": "e(arate)"}}
           }
@@ -96,17 +96,17 @@
       "type": "object",
       "required": ["point", "sd", "ci_low", "ci_high", "ci_prob", "ci_kind"],
       "properties": {
-        "point": {"description": "What estimate is.", "type": "string", "x-vocabulary": ["mean", "median", "mode"], "x-tools": {"brms": "mean (summary Estimate)", "rstanarm": "median", "ArviZ": "mean", "Stata": "mean (median with the median option)"}},
+        "point": {"description": "What estimate is.", "type": "string", "x-vocabulary": ["mean", "median", "mode"], "x-tools": {"brms": "mean (summary Estimate)", "rstanarm": "median in print(); summary() reports the mean", "ArviZ": "mean", "Stata": "mean (median with the median option)"}},
         "mean": {"type": ["number", "null"]},
         "median": {"type": ["number", "null"]},
-        "sd": {"type": ["number", "null"], "x-tools": {"brms": "Est.Error", "rstanarm": "MAD_SD (median absolute deviation, rescaled) by default", "ArviZ": "sd", "Stata": "Std. dev."}},
+        "sd": {"type": ["number", "null"], "x-tools": {"brms": "Est.Error", "rstanarm": "MAD_SD (median absolute deviation, rescaled) in print(); sd in summary()", "ArviZ": "sd", "Stata": "Std. dev."}},
         "mad": {"type": ["number", "null"]},
         "ci_low": {"type": ["number", "null"]},
         "ci_high": {"type": ["number", "null"]},
-        "ci_prob": {"description": "Credible-interval probability. Defaults differ: brms and Stata 0.95; rstanarm summary 0.9; ArviZ 1.x 0.89 (0.x: 0.94).", "type": "number", "x-tools": {"brms": "prob (0.95)", "rstanarm": "probs (0.1, 0.9 in summary; posterior_interval prob 0.9)", "ArviZ": "rcParams stats.ci_prob (0.89)", "Stata": "clevel() (95)"}},
+        "ci_prob": {"description": "Credible-interval probability. Defaults differ: brms and Stata 0.95; rstanarm summary 0.9; ArviZ 1.x 0.89 (0.x: 0.94).", "type": "number", "x-tools": {"brms": "prob (0.95)", "rstanarm": "summary() probs (0.1, 0.5, 0.9): an 80% interval; posterior_interval() prob 0.9", "ArviZ": "rcParams stats.ci_prob (0.89)", "Stata": "clevel() (95)"}},
         "ci_kind": {"description": "Equal-tailed or highest-density interval.", "type": "string", "x-vocabulary": ["eti", "hdi"], "x-tools": {"brms": "eti", "rstanarm": "eti", "ArviZ": "rcParams stats.ci_kind (eti in 1.x; hdi in 0.x)", "Stata": "eti (hpd option)"}},
-        "rhat": {"type": ["number", "null"], "x-tools": {"brms": "Rhat (rank-normalized)", "ArviZ": "r_hat", "Stata": "bayesstats grubin"}},
-        "ess_bulk": {"type": ["number", "null"], "x-tools": {"brms": "Bulk_ESS", "ArviZ": "ess_bulk", "Stata": "ESS"}},
+        "rhat": {"type": ["number", "null"], "x-tools": {"brms": "Rhat (rank-normalized)", "ArviZ": "r_hat", "Stata": "bayesstats grubin r(Rc) (two or more chains); e(Rc_max)"}},
+        "ess_bulk": {"type": ["number", "null"], "x-tools": {"brms": "Bulk_ESS", "ArviZ": "ess_bulk", "Stata": "ESS, e(ess) (not rank-normalized)"}},
         "ess_tail": {"type": ["number", "null"], "x-tools": {"brms": "Tail_ESS", "ArviZ": "ess_tail"}},
         "mcse_mean": {"type": ["number", "null"], "x-tools": {"ArviZ": "mcse_mean", "Stata": "MCSE"}},
         "mcse_sd": {"type": ["number", "null"]},

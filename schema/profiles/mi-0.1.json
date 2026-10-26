@@ -91,7 +91,7 @@
         "ubar": {"description": "Mean within-imputation variance.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "ubar", "Stata": "diag(e(W_mi))"}},
         "b": {"description": "Between-imputation variance.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "b", "Stata": "diag(e(B_mi))"}},
         "t": {"description": "Total variance Ubar + (1 + 1/m) B.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "t"}},
-        "riv": {"description": "Relative increase in variance (1 + 1/m) B / Ubar.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "riv", "Stata": "e(riv_mi)"}},
+        "riv": {"description": "Relative increase in variance (1 + 1/m) B / Ubar.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "riv", "Stata": "e(rvi_mi)"}},
         "lambda": {"description": "Share of total variance due to missingness, (1 + 1/m) B / T.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "lambda", "statsmodels": "frac_miss_info (\"FMI\" in the summary)"}},
         "fmi": {"description": "Fraction of missing information, df-adjusted: (riv + 2 / (df + 3)) / (1 + riv).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "fmi", "Stata": "e(fmi_mi)"}},
         "df": {"description": "Degrees of freedom of the pooled test.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"mice": "df", "Stata": "e(df_mi)"}}

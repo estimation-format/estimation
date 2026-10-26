@@ -4,8 +4,7 @@ Status: draft. Schema: [`schema/profiles/multiple-testing-0.1.json`](../../schem
 Kind: standard. Builds on the core only.
 
 p-values adjusted for a family of hypotheses. Surveyed 2026-10-25: from source, statsmodels
-`multipletests` and pyfixest 0.60.0 `bonferroni`, `rwolf`, `wyoung`; R `p.adjust` and Stata
-`rwolf`, `wyoung` and `qqvalue` from documentation.
+`multipletests` and pyfixest 0.60.0 `bonferroni`, `rwolf`, `wyoung`; R `p.adjust` (wch/r-source, `stats/R/p.adjust.R`; `"fdr"` is an alias of `"BH"`); Stata `rwolf`, `wyoung` and `qqvalue` from documentation.
 
 ## Requirements
 

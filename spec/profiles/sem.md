@@ -5,7 +5,7 @@ Kind: standard. Builds on the core only.
 
 Structural equation models: confirmatory factor analysis, path models and full SEMs, single-
 or multi-group. Surveyed 2026-10-25: from source, lavaan 0.7-3.3357 (yrosseel/lavaan @
-08683ee) and semopy 2.3.11; Stata `sem` and `estat gof` from documentation. Mplus, OpenMx,
+08683ee) and semopy 2.3.11; Stata `sem` and `estat gof` from their help files. Mplus, OpenMx,
 `gsem` and Bayesian SEM (blavaan) were not surveyed. Indirect effects defined in a model are
 also described by [`mediation/0.1`](mediation.md).
 
@@ -59,7 +59,7 @@ names.
 | `npar` | `npar` | `len(param_vals)` | |
 | `chisq`, `chisq_df`, `chisq_p` | `chisq`, `df`, `pvalue` | `chi2`, `DoF`, `chi2 p-value` | `e(chi2_ms)`, `e(df_ms)`, `e(p_ms)` |
 | `chisq_baseline`, `chisq_baseline_df` | `baseline.chisq`, `baseline.df` | `chi2 Baseline`, `DoF Baseline` | `e(chi2_bs)`, `e(df_bs)` |
-| `cfi`, `tli` | `cfi`, `tli` | `CFI`, `TLI` | `estat gof`: `r(cfi)`, `r(tli)` |
+| `cfi`, `tli` | `cfi`, `tli` | `CFI`, `TLI` | `estat gof`: `r(cfi)`, `r(tli)` (with `vce(sbentler)` also `r(cfi_sb)`, `r(tli_sb)`, `r(rmsea_sb)` and `e(chi2sb_ms)`) |
 | `rmsea`, `rmsea_ci_low`, `rmsea_ci_high`, `rmsea_pclose` | `rmsea`, `rmsea.ci.lower`, `rmsea.ci.upper`, `rmsea.pvalue` | `RMSEA` | `r(rmsea)`, `r(lb90_rmsea)`, `r(ub90_rmsea)`, `r(pclose)` |
 | `srmr` | `srmr` | — | `r(srmr)` |
 | `gfi` | `gfi` | `GFI` | |

@@ -105,7 +105,7 @@
           "description": "Handling of strata with a single PSU. Defaults differ: R survey fails (options(survey.lonely.psu = \"fail\")), Stata reports missing SEs (singleunit(missing)), samplics raises an error.",
           "type": "string",
           "x-vocabulary": ["fail", "missing", "remove", "certainty", "adjust", "average", "scaled", "centered", "combine"],
-          "x-tools": {"R survey": "options(survey.lonely.psu) (\"fail\"; remove, adjust, average, certainty)", "Stata": "singleunit() (missing; certainty, scaled, centered)", "samplics": "single_psu (error; skip, certainty, combine)"}
+          "x-tools": {"R survey": "options(survey.lonely.psu) (\"fail\"; remove, adjust, average, certainty)", "Stata": "singleunit() (missing; certainty, scaled, centered), e(singleunit)", "samplics": "single_psu (error; skip, certainty, combine)"}
         },
         "subpopulation": {"description": "Domain estimation: the subpopulation condition, estimated with the full design (not by dropping rows).", "type": ["string", "null"], "x-tools": {"R survey": "subset(design, ...)", "Stata": "svy, subpop()", "samplics": "domain"}},
         "calibration": {"description": "Post-stratification, raking or calibration applied to the weights.", "type": ["string", "object", "null"], "x-tools": {"R survey": "postStratify, rake, calibrate", "Stata": "svyset poststrata(), rake()"}}

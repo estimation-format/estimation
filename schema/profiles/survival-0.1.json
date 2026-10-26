@@ -39,9 +39,9 @@
                   "description": "Handling of tied event times in the partial likelihood.",
                   "type": "string",
                   "x-vocabulary": ["efron", "breslow", "exact", "exact_marginal", "exact_partial"],
-                  "x-tools": {"coxph": "ties (\"efron\")", "lifelines": "efron (fixed)", "Stata stcox": "breslow (default), efron, exactm, exactp; e(ties)", "statsmodels PHReg": "ties (\"breslow\"; \"efron\")", "scikit-survival": "ties (\"breslow\"; \"efron\")"}
+                  "x-tools": {"coxph": "ties (\"efron\")", "lifelines": "efron (fixed)", "Stata stcox": "breslow (default), efron, exactm, exactp; e(ties)", "Stata stcrreg": "no ties() option; its help file does not say how ties are handled", "statsmodels PHReg": "ties (\"breslow\"; \"efron\")", "scikit-survival": "ties (\"breslow\"; \"efron\")"}
                 },
-                "robust": {"description": "Robust (Lin-Wei) variance requested.", "type": "boolean", "x-tools": {"coxph": "robust / cluster()", "lifelines": "robust, cluster_col", "Stata": "vce(robust), vce(cluster)"}},
+                "robust": {"description": "Robust (Lin-Wei) variance requested.", "type": "boolean", "x-tools": {"coxph": "robust / cluster()", "lifelines": "robust, cluster_col", "Stata": "vce(robust), vce(cluster); stcrreg: always (vce(robust) by default, vce(cluster idvar) with multiple records; oim not allowed)"}},
                 "penalizer": {"type": ["number", "null"], "x-tools": {"lifelines": "penalizer (0), l1_ratio", "scikit-survival": "alpha (0)"}}
               }
             }
@@ -114,8 +114,8 @@
         "time": {"description": "Exit (or survival) time variable.", "type": "string", "x-tools": {"R": "Surv(time, event) / Surv(start, stop, event)", "Stata": "stset timevar", "lifelines": "duration_col", "statsmodels": "endog"}},
         "start": {"description": "Entry time for counting-process or delayed-entry data, or null.", "type": ["string", "null"], "x-tools": {"Stata": "stset enter() / origin()", "lifelines": "entry_col (CoxTimeVaryingFitter: start_col)"}},
         "event": {"description": "Event / status variable.", "type": "string", "x-tools": {"Stata": "stset failure()", "lifelines": "event_col", "statsmodels": "status"}},
-        "event_codes": {"description": "Values of event that count as the event modeled.", "type": "array", "x-tools": {"Stata": "failure(var==codes)", "cmprsk": "failcode"}},
-        "censor_codes": {"type": "array", "x-tools": {"cmprsk": "cencode"}},
+        "event_codes": {"description": "Values of event that count as the event modeled.", "type": "array", "x-tools": {"Stata": "failure(var==codes)", "cmprsk": "failcode (1)"}},
+        "censor_codes": {"type": "array", "x-tools": {"cmprsk": "cencode (0)"}},
         "competing_event_codes": {"description": "Fine-Gray: values marking competing events.", "type": "array", "x-tools": {"Stata stcrreg": "compete()", "cmprsk": "other values of fstatus"}},
         "id": {"description": "Subject id for multiple-record data.", "type": ["string", "null"], "x-tools": {"Stata": "stset id()", "coxph": "id", "lifelines": "id_col"}},
         "strata": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"coxph": "strata()", "Stata": "strata()", "lifelines": "strata", "statsmodels": "strata"}},
@@ -133,10 +133,10 @@
           "description": "Time transform the residuals are tested against. Defaults differ: R cox.zph km, lifelines rank, Stata estat phtest analysis time.",
           "type": "string",
           "x-vocabulary": ["km", "rank", "identity", "log"],
-          "x-tools": {"cox.zph": "transform (\"km\")", "lifelines": "proportional_hazard_test(time_transform=) (\"rank\"); check_assumptions", "Stata estat phtest": "time() (analysis time)"}
+          "x-tools": {"cox.zph": "transform (\"km\")", "lifelines": "proportional_hazard_test(time_transform=) (\"rank\"); check_assumptions", "Stata estat phtest": "analysis time (default); log, km (1 - KM), rank, time(varname)"}
         },
         "global": {"type": "object", "properties": {"statistic": {"type": "number"}, "df": {"type": "number"}, "p_value": {"type": "number"}}, "x-tools": {"cox.zph": "table[\"GLOBAL\", ]", "Stata": "estat phtest: r(chi2), r(df), r(p)"}},
-        "per_term": {"type": "array", "items": {"type": "object", "required": ["term"], "properties": {"term": {"type": "string"}, "statistic": {"type": "number"}, "df": {"type": "number"}, "p_value": {"type": "number"}}}, "x-tools": {"cox.zph": "table rows", "lifelines": "summary", "Stata": "estat phtest, detail"}}
+        "per_term": {"type": "array", "items": {"type": "object", "required": ["term"], "properties": {"term": {"type": "string"}, "statistic": {"type": "number"}, "df": {"type": "number"}, "p_value": {"type": "number"}}}, "x-tools": {"cox.zph": "table rows", "lifelines": "summary", "Stata": "estat phtest, detail: r(phtest) matrix"}}
       }
     }
   }

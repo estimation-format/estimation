@@ -4,8 +4,10 @@ Status: draft. Schema: [`schema/profiles/bayesian-0.1.json`](../../schema/profil
 Kind: standard. Builds on the core only.
 
 Bayesian models fit by MCMC or approximate inference. Surveyed 2026-10-25: from source, brms
-2.23.2 (paul-buerkner/brms @ e5f1966), PyMC 6.3.2 and ArviZ 1.3.0; rstanarm, CmdStanPy, Bambi
-and Stata `bayesmh` from documentation; the Stata `bayes` prefix from its help file. The model's own structure is described by its
+2.23.2 (paul-buerkner/brms @ e5f1966), PyMC 6.3.2, ArviZ 1.3.0 and rstanarm 2.32.2
+(cran/rstanarm; chains, iterations and warmup come from rstan 2.32.7's `sampling()`); CmdStanPy
+and Bambi from documentation; Stata `bayes`, `bayesmh` and `bayesstats grubin` from their help
+files. The model's own structure is described by its
 other profile where one fits (a Bayesian mixed model also claims [`mixed/0.1`](mixed.md) if it
 meets it); this profile covers what Bayesian inference adds.
 
@@ -32,9 +34,9 @@ The rows carry no `std_error`, `statistic` or `p_value`.
 | Draws per chain (after warmup) | 1000 (`iter` 2000) | 1000 | 1000 | | 10000 |
 | Warmup | 1000 | 1000 | 1000 (`tune`) | | 2500 (`burnin`) |
 | Seed | random (`seed = NA`) | random | random (`random_seed = None`) | | random |
-| `target_accept` / `adapt_delta` | 0.8 | varies by model | 0.8 | | — |
+| `target_accept` / `adapt_delta` | 0.8 | 0.95 (0.99 with `R2`, `hs`, `hs_plus`, `lasso`, `product_normal` priors) | 0.8 | | — |
 | Point summary | mean | **median** (`MAD_SD` as its SD) | | mean | mean |
-| Interval | 95% equal-tailed | 90% (`posterior_interval`) | | **89% equal-tailed** (1.x; 94% HDI in 0.x) | 95% equal-tailed (`hpd`) |
+| Interval | 95% equal-tailed | 90% (`posterior_interval`); 80% in `summary()` | | **89% equal-tailed** (1.x; 94% HDI in 0.x) | 95% equal-tailed (`hpd`) |
 
 Stata's `bayes` prefix assigns default priors: normal(0, 100²) for coefficients and other real
 scalars (`normalprior(100)` is the SD) and inverse-gamma(0.01, 0.01) for variances

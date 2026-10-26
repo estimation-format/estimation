@@ -6,8 +6,8 @@ Kind: standard. Builds on the core only (see "Why not `inference/0.1`" below).
 Generalized linear models (logit, probit, Poisson, gamma, ...), with or without absorbed fixed
 effects. Surveyed 2026-10-25: from source, ppmlhdfe 2.3.4 (sergiocorreia/ppmlhdfe @ b85665d),
 fixest 0.14.2 `feglm`/`fepois` (lrberge/fixest @ 789f888) and pyfixest 0.60.0
-`feglm`/`fepois`; Stata `glm` from its help file; from their
-documentation, Stata `logit`, `probit` and `poisson`, R `glm` and statsmodels 0.15 `GLM`/`Logit`/`Poisson`.
+`feglm`/`fepois`; R `glm` from source (wch/r-source, `stats/R/glm.R`); Stata `glm` and `logit` from their help files;
+from their documentation, Stata `probit` and `poisson` and statsmodels 0.15 `GLM`/`Logit`/`Poisson`.
 
 Tool profile: [`ppmlhdfe/0.1`](ppmlhdfe.md). Conditional (fixed-effects) logit — `clogit`,
 `xtlogit, fe`, `fixest::feglm` is not this — and negative binomial dispersion models were not

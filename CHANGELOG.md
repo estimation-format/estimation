@@ -44,6 +44,14 @@
   integration defaults (Hammersley points, a sample-size-dependent count) are now mapped.
   `mixed/0.1`: `e(N_g)` and `e(g_*)` are matrices by level. `survival/0.1`: `streg`'s
   ancillary parameters and `e(frm2)`, and `stcox`/`streg` `e(cmd)` vs `e(cmd2)`.
+- Second help-file pass (`logit`, `melogit`, `meglm`, `mi estimate`, `svy`, `svyset`, `sem`,
+  `estat gof`, `bootstrap`, `meta summarize`, `stcrreg`, `stcox` postestimation, `bayesmh`,
+  `bayesstats grubin`): `mi/0.1` maps RVI to `e(rvi_mi)`, not `e(riv_mi)`; Stata `bootstrap`
+  seeds with `rseed()`; `estat phtest` per-term results are the `r(phtest)` matrix; `stcrreg` has no `ties()` option and always reports robust SEs; added
+  `bayesmh` and `meta summarize` stored results. Documentation-only R mappings checked against
+  source on GitHub (base R `glm` and `p.adjust`, rstanarm/rstan, cmprsk, ri2, caret, tidymodels,
+  mlr3): rstanarm has no pathfinder, its `adapt_delta` default is 0.95, and caret's
+  `trainControl()` defaults to 25 bootstrap resamples.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own
