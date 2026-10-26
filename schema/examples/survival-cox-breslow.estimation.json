@@ -1,0 +1,125 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "b6d0f4a8-2c5e-4a13-9f87-3e1c7a5d9b26",
+    "created": "2026-10-26T02:00:00Z",
+    "status": "ok",
+    "estimator": {"family": "survival", "method": "cox"},
+    "responses": ["week"],
+    "profiles": ["survival/0.1"],
+    "notes": "Real run: statsmodels 0.15.0 PHReg on the same Rossi data with its default Breslow ties. Compare with the lifelines (Efron) example: fin -0.3790 vs -0.3794, log-likelihood -659.12 vs -658.75. Stata's stcox also defaults to Breslow."
+  },
+  "specification": {
+    "call": "sm.PHReg(rossi[\"week\"], X, status=rossi[\"arrest\"]).fit()",
+    "terms": ["fin", "age", "race", "wexp", "mar", "paro", "prio"],
+    "weights": null,
+    "survival": {
+      "time": "week",
+      "event": "arrest",
+      "event_codes": [1],
+      "start": null,
+      "id": null,
+      "strata": [],
+      "time_scale": "weeks since release"
+    },
+    "options": {"ties": "breslow", "robust": false}
+  },
+  "metrics": {"nobs": 432, "n_events": 114, "log_lik": -659.1206056773283},
+  "parameters": [
+    {
+      "term": "fin",
+      "estimate": -0.3790218877950281,
+      "std_error": 0.19136442585901942,
+      "statistic": -1.9806287720072815,
+      "p_value": 0.047632919875843505
+    },
+    {
+      "term": "age",
+      "estimate": -0.05724592536355606,
+      "std_error": 0.021983185751471353,
+      "statistic": -2.6040777715634116,
+      "p_value": 0.009212185028378412
+    },
+    {
+      "term": "race",
+      "estimate": 0.31412976506824797,
+      "std_error": 0.308017279578757,
+      "statistic": 1.0198446187754477,
+      "p_value": 0.30780215829130897
+    },
+    {
+      "term": "wexp",
+      "estimate": -0.1511145996274607,
+      "std_error": 0.21212316079631963,
+      "statistic": -0.7123908537859321,
+      "p_value": 0.4762227776434914
+    },
+    {
+      "term": "mar",
+      "estimate": -0.4327825725490526,
+      "std_error": 0.38179493506430984,
+      "statistic": -1.1335471814893363,
+      "p_value": 0.2569845394020681
+    },
+    {
+      "term": "paro",
+      "estimate": -0.08498283575160553,
+      "std_error": 0.19574820732321205,
+      "statistic": -0.43414362212413565,
+      "p_value": 0.664184150039923
+    },
+    {
+      "term": "prio",
+      "estimate": 0.09111154050046535,
+      "std_error": 0.028631253066824815,
+      "statistic": 3.1822407593482795,
+      "p_value": 0.0014614027990257792
+    }
+  ],
+  "structures": {
+    "vcov": [
+      {
+        "kind": "matrix",
+        "labels": ["fin", "age", "race", "wexp", "mar", "paro", "prio"],
+        "data": [
+          [0.03662034348435214, -0.0002569144066868634, -0.003759761577728779, 6.924913447021415e-05, 0.0018925783778085254, 0.0026455482367350376, -0.0001983807303901694],
+          [-0.00025691440668686334, 0.00048326045578369313, -0.00030392817214326744, -0.0014337339311057933, -0.001017851181039736, 0.00047332003491816775, -1.905929026654255e-05],
+          [-0.003759761577728779, -0.00030392817214326733, 0.09487464451909816, 0.0019438854707163335, 0.010429333972275922, -0.0019424102364472104, 0.0005079261887714767],
+          [6.924913447021358e-05, -0.0014337339311057933, 0.001943885470716337, 0.044996235346221276, -0.01457236332652532, -0.0016250860888614798, 0.0016948870918244336],
+          [0.0018925783778085254, -0.0010178511810397361, 0.010429333972275918, -0.014572363326525319, 0.14576737244076057, -0.00444579662803896, -0.00048034355928889134],
+          [0.002645548236735037, 0.0004733200349181679, -0.0019424102364472102, -0.0016250860888614835, -0.0044457966280389595, 0.03831736067025121, 0.0008419828656400752],
+          [-0.00019838073039016944, -1.9059290266542364e-05, 0.0005079261887714765, 0.0016948870918244282, -0.00048034355928889026, 0.0008419828656400752, 0.0008197486521765655]
+        ],
+        "type": "oim",
+        "ssc": {"convention": "statsmodels", "formula": "none"},
+        "default": true
+      }
+    ]
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "statsmodels",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/statsmodels@0.15.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "rossi",
+        "location": "lifelines datasets/rossi.csv",
+        "rows": 432,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "0214400170e07f3015a285edca2014cac0dae8aac125fcbaad642490e05f892c",
+          "of": "file"
+        },
+        "source": "Rossi, Berk and Lenihan (1980) recidivism data, as distributed with lifelines (also R carData::Rossi)"
+      }
+    ]
+  }
+}

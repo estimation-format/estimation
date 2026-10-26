@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/survival-0.1.json",
+  "title": "survival/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for time-to-event regression: Cox proportional hazards, parametric (AFT or PH) models, and Fine-Gray competing risks. R survival (coxph, survreg, cox.zph, finegray) and cmprsk; Python lifelines, scikit-survival, statsmodels PHReg; Stata stcox, streg, stcrreg (survey 2026-10-25, spec/profiles/survival.md). Requires meta.estimator.method; specification.survival with the time and event variables; estimate and std_error on every row that isn't dropped (on the estimation scale, or exponentiated with the core's scale field); metrics.nobs and n_events; and a default vcov with type. Cox and Fine-Gray models also require specification.options.ties (defaults differ: Efron in R and lifelines, Breslow in Stata, statsmodels and scikit-survival); parametric models require meta.estimator.distribution and metric (Stata streg's default PH metric vs survreg's AFT changes the coefficients' sign and scale). structures.ph_test (with the time transform) and concordance (with its definition) are vocabulary.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "structures"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"survival\" is recommended.", "type": "string"},
+                "method": {"type": "string", "x-vocabulary": ["cox", "parametric", "fine_gray", "cause_specific_cox", "piecewise_exponential", "aalen_additive"], "x-tools": {"R survival": "coxph, survreg, finegray + coxph", "cmprsk": "crr (fine_gray)", "lifelines": "CoxPHFitter; WeibullAFTFitter, LogNormalAFTFitter, ...", "scikit-survival": "CoxPHSurvivalAnalysis", "statsmodels": "PHReg", "Stata": "stcox, streg, stcrreg"}},
+                "distribution": {"description": "Parametric models.", "type": "string", "x-vocabulary": ["weibull", "exponential", "lognormal", "loglogistic", "gompertz", "gamma", "generalized_gamma"], "x-tools": {"survreg": "dist (\"weibull\")", "Stata streg": "distribution() (required)", "lifelines": "fitter class"}},
+                "metric": {"description": "Parametric models: accelerated failure time or proportional hazards parameterization.", "type": "string", "x-vocabulary": ["aft", "ph"], "x-tools": {"survreg": "aft", "Stata streg": "ph for weibull/exponential/gompertz unless time; aft for lognormal, loglogistic, gamma", "lifelines": "aft (*AFTFitter)"}}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["survival"],
+          "properties": {
+            "survival": {"$ref": "#/$defs/design"},
+            "options": {
+              "properties": {
+                "ties": {
+                  "description": "Handling of tied event times in the partial likelihood.",
+                  "type": "string",
+                  "x-vocabulary": ["efron", "breslow", "exact", "exact_marginal", "exact_partial"],
+                  "x-tools": {"coxph": "ties (\"efron\")", "lifelines": "efron (fixed)", "Stata stcox": "breslow (default), efron, exactm, exactp; e(ties)", "statsmodels PHReg": "ties (\"breslow\"; \"efron\")", "scikit-survival": "ties (\"breslow\"; \"efron\")"}
+                },
+                "robust": {"description": "Robust (Lin-Wei) variance requested.", "type": "boolean", "x-tools": {"coxph": "robust / cluster()", "lifelines": "robust, cluster_col", "Stata": "vce(robust), vce(cluster)"}},
+                "penalizer": {"type": ["number", "null"], "x-tools": {"lifelines": "penalizer (0), l1_ratio", "scikit-survival": "alpha (0)"}}
+              }
+            }
+          }
+        },
+        "parameters": {
+          "items": {
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["nobs", "n_events"],
+          "properties": {
+            "nobs": {"description": "Rows used (episodes, with counting-process data).", "x-tools": {"coxph": "n", "Stata": "e(N)", "lifelines": "_n_examples", "statsmodels": "nobs"}},
+            "n_events": {"description": "Events (failures) of the type modeled.", "type": "integer", "x-tools": {"coxph": "nevent", "Stata": "e(N_fail)", "lifelines": "event_observed.sum()"}},
+            "n_subjects": {"description": "Subjects, when rows are episodes.", "type": ["integer", "null"], "x-tools": {"Stata": "e(N_sub)", "coxph": "n with id"}},
+            "n_competing": {"description": "Competing events (Fine-Gray).", "type": ["integer", "null"]},
+            "time_at_risk": {"type": ["number", "null"], "x-tools": {"Stata": "e(risk)"}},
+            "log_lik": {"description": "Partial log-likelihood for Cox and Fine-Gray models; full for parametric ones.", "x-tools": {"coxph": "loglik[2]", "Stata": "e(ll)", "lifelines": "log_likelihood_", "statsmodels": "llf", "survreg": "loglik[2]"}},
+            "log_lik_null": {"x-tools": {"coxph": "loglik[1]", "Stata": "e(ll_0)", "lifelines": "log_likelihood_ratio_test() null"}},
+            "lr_test": {"description": "Likelihood-ratio test of all coefficients; use {value, definition} or a test object.", "x-tools": {"coxph": "summary(): logtest", "lifelines": "log_likelihood_ratio_test()", "Stata": "e(chi2) with e(chi2type) LR"}},
+            "concordance": {
+              "description": "Harrell's C unless the definition says otherwise (Uno's, time-weighted).",
+              "x-tools": {"coxph": "concordance (timewt \"n\")", "lifelines": "concordance_index_ (Harrell)", "Stata": "estat concordance (Harrell; gheller for Gonen-Heller)", "scikit-survival": "concordance_index_censored (Harrell), concordance_index_ipcw (Uno)"}
+            },
+            "aic": {"description": "Partial AIC for Cox models.", "x-tools": {"coxph": "AIC()", "lifelines": "AIC_partial_", "Stata": "estat ic"}},
+            "scale": {"description": "Parametric scale parameter (sigma) in the AFT metric.", "x-tools": {"survreg": "scale", "Stata streg": "sigma / 1/p (weibull)"}},
+            "shape": {"x-tools": {"Stata streg weibull": "p (ancillary)", "lifelines": "rho_"}}
+          }
+        },
+        "structures": {
+          "required": ["vcov"],
+          "properties": {
+            "vcov": {
+              "description": "At most one default; the default (or a lone vcov) needs type.",
+              "contains": {"properties": {"default": {"const": true}}, "required": ["default"]},
+              "minContains": 0,
+              "maxContains": 1,
+              "anyOf": [
+                {"contains": {"required": ["default", "type"], "properties": {"default": {"const": true}}}},
+                {"maxItems": 1, "items": {"required": ["type"]}}
+              ],
+              "items": {"properties": {"type": {"x-vocabulary": ["oim", "robust", "cluster"], "x-tools": {"coxph": "var (oim); with robust/cluster var is robust and naive.var the model-based", "lifelines": "variance_matrix_", "Stata": "e(vce)"}}}}
+            },
+            "ph_test": {"$ref": "#/$defs/ph_test"},
+            "numerics": {"x-tools": {"converged": {"Stata": "e(converged)", "coxph": "warning only (\"Ran out of iterations\")", "lifelines": "ConvergenceWarning"}, "iterations": {"coxph": "iter", "Stata": "e(ic)"}}}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"enum": ["cox", "fine_gray", "cause_specific_cox"]}}, "required": ["method"]}}}}, "required": ["meta"]},
+          "then": {"properties": {"specification": {"required": ["options"], "properties": {"options": {"required": ["ties"]}}}}}
+        },
+        {
+          "if": {"properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"const": "parametric"}}, "required": ["method"]}}}}, "required": ["meta"]},
+          "then": {"properties": {"meta": {"properties": {"estimator": {"required": ["distribution", "metric"]}}}}}
+        },
+        {
+          "if": {"properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"const": "fine_gray"}}, "required": ["method"]}}}}, "required": ["meta"]},
+          "then": {"properties": {"specification": {"properties": {"survival": {"required": ["competing_event_codes"]}}}}}
+        }
+      ]
+    },
+    "design": {
+      "type": "object",
+      "required": ["time", "event"],
+      "properties": {
+        "time": {"description": "Exit (or survival) time variable.", "type": "string", "x-tools": {"R": "Surv(time, event) / Surv(start, stop, event)", "Stata": "stset timevar", "lifelines": "duration_col", "statsmodels": "endog"}},
+        "start": {"description": "Entry time for counting-process or delayed-entry data, or null.", "type": ["string", "null"], "x-tools": {"Stata": "stset enter() / origin()", "lifelines": "entry_col (CoxTimeVaryingFitter: start_col)"}},
+        "event": {"description": "Event / status variable.", "type": "string", "x-tools": {"Stata": "stset failure()", "lifelines": "event_col", "statsmodels": "status"}},
+        "event_codes": {"description": "Values of event that count as the event modeled.", "type": "array", "x-tools": {"Stata": "failure(var==codes)", "cmprsk": "failcode"}},
+        "censor_codes": {"type": "array", "x-tools": {"cmprsk": "cencode"}},
+        "competing_event_codes": {"description": "Fine-Gray: values marking competing events.", "type": "array", "x-tools": {"Stata stcrreg": "compete()", "cmprsk": "other values of fstatus"}},
+        "id": {"description": "Subject id for multiple-record data.", "type": ["string", "null"], "x-tools": {"Stata": "stset id()", "coxph": "id", "lifelines": "id_col"}},
+        "strata": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"coxph": "strata()", "Stata": "strata()", "lifelines": "strata", "statsmodels": "strata"}},
+        "time_scale": {"description": "What time measures (time since entry, age, calendar time).", "type": "string"},
+        "time_varying": {"description": "Time-varying covariates or coefficients (tt(), tvc()).", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"coxph": "tt()", "Stata stcox": "tvc(), texp()"}}
+      }
+    },
+    "ph_test": {
+      "description": "Test of proportional hazards based on scaled Schoenfeld residuals.",
+      "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+      "required": ["kind", "transform"],
+      "properties": {
+        "kind": {"const": "object"},
+        "transform": {
+          "description": "Time transform the residuals are tested against. Defaults differ: R cox.zph km, lifelines rank, Stata estat phtest analysis time.",
+          "type": "string",
+          "x-vocabulary": ["km", "rank", "identity", "log"],
+          "x-tools": {"cox.zph": "transform (\"km\")", "lifelines": "proportional_hazard_test(time_transform=) (\"rank\"); check_assumptions", "Stata estat phtest": "time() (analysis time)"}
+        },
+        "global": {"type": "object", "properties": {"statistic": {"type": "number"}, "df": {"type": "number"}, "p_value": {"type": "number"}}, "x-tools": {"cox.zph": "table[\"GLOBAL\", ]", "Stata": "estat phtest: r(chi2), r(df), r(p)"}},
+        "per_term": {"type": "array", "items": {"type": "object", "required": ["term"], "properties": {"term": {"type": "string"}, "statistic": {"type": "number"}, "df": {"type": "number"}, "p_value": {"type": "number"}}}, "x-tools": {"cox.zph": "table rows", "lifelines": "summary", "Stata": "estat phtest, detail"}}
+      }
+    }
+  }
+}
