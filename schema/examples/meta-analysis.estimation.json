@@ -1,0 +1,105 @@
+{
+  "schema": "estimation/0.1",
+  "meta": {
+    "id": "9e3b7d1f-5a2c-4f86-b0e9-4c6a8d2f1b73",
+    "created": "2026-10-26T03:30:00Z",
+    "status": "ok",
+    "estimator": {"family": "meta_analysis", "method": "random_effects"},
+    "profiles": ["meta-analysis/0.1"],
+    "notes": "Real run: statsmodels 0.15.0 combine_effects on the 13 BCG vaccine trials (metadat dat.bcg), log risk ratios computed as metafor's escalc(measure = \"RR\") does, DerSimonian-Laird tau2, z intervals. Matches metafor rma(yi, vi, method = \"DL\"): -0.7141 (SE 0.1787), tau2 0.3088, Q 152.23 on 12 df, I2 92.12%. Rows are on the log scale; exp gives risk ratios. statsmodels' default (\"iterated\", Paule-Mandel) and metafor's (REML) would give different tau2."
+  },
+  "specification": {
+    "call": "combine_effects(yi, vi, method_re=\"chi2\", use_t=False)",
+    "weights": null,
+    "meta_analysis": {
+      "effect_measure": "log_rr",
+      "tau2_method": "dl",
+      "ci_method": "z",
+      "prediction_interval": false,
+      "pooling": "inverse_variance",
+      "k": 13,
+      "study_label": "author year",
+      "level": 0.95
+    }
+  },
+  "metrics": {
+    "nobs": 13,
+    "k": 13,
+    "q": 152.23300808237337,
+    "q_df": 12,
+    "q_p": 1.996764590845891e-26,
+    "tau2": 0.30876026286237634,
+    "i2": 0.9211734685456205,
+    "h2": 12.686084006864448,
+    "conf_level": 0.95
+  },
+  "parameters": [
+    {
+      "term": "random effect",
+      "estimate": -0.7141172220732269,
+      "std_error": 0.17874208953540316,
+      "statistic": -3.9952381888865793,
+      "conf_low": -1.0644452800840507,
+      "conf_high": -0.363789164062403,
+      "p_value": 6.462924304704025e-05,
+      "meta_analysis": {"model": "random"}
+    },
+    {
+      "term": "fixed effect",
+      "estimate": -0.43028516365409053,
+      "std_error": 0.04049875171086381,
+      "statistic": -10.624652501046503,
+      "conf_low": -0.5096612584262135,
+      "conf_high": -0.35090906888196755,
+      "p_value": 2.2886293069734506e-26,
+      "meta_analysis": {"model": "common"}
+    }
+  ],
+  "structures": {
+    "studies": {
+      "kind": "table",
+      "columns": ["study", "yi", "vi", "weight_common", "weight_random"],
+      "rows": [
+        ["Aronson 1948", -0.8893113339202054, 0.3255847650039613, 0.005037548025683078, 0.05036491683231727],
+        ["Ferguson & Simes 1949", -1.5853886572014306, 0.19458112139814382, 0.00842912651727497, 0.06347329182641974],
+        ["Rosenthal et al 1960", -1.348073148299693, 0.4153679653679654, 0.003948664863177935, 0.04412027224730609],
+        ["Hart & Sutherland 1977", -1.4415511900213054, 0.020010031902247573, 0.0819663305961031, 0.09717646356814288],
+        ["Frimodt-Moller et al 1973", -0.2175473222112957, 0.05121017216963086, 0.032027794882338846, 0.08875377381656722],
+        ["Stein & Aronson 1953", -0.786115585818864, 0.006905618455908758, 0.23750934121400946, 0.10121060419345178],
+        ["Vandiviere et al 1973", -1.6208982235983924, 0.22301724757231517, 0.007354358947535493, 0.06007913825721246],
+        ["TPT Madras 1980", 0.011952333523841173, 0.0039615792978177295, 0.41401389870996264, 0.10216342533284294],
+        ["Coetzee & Berjak 1968", -0.4694176487381487, 0.056434210463248966, 0.029063025364841254, 0.08748416776558121],
+        ["Rosenthal et al 1961", -1.3713448034727846, 0.07302479361302892, 0.02246016467817258, 0.08368251724263133],
+        ["Comstock et al 1974", -0.33935882833839015, 0.01241221397155972, 0.13213991427285177, 0.09947531895144719],
+        ["Comstock & Webster 1969", 0.4459134005713783, 0.5325058452001528, 0.003080058002972178, 0.037976966224232356],
+        ["Comstock et al 1976", -0.017313948216879493, 0.0714046596839863, 0.022969773925076566, 0.08403914374184747]
+      ]
+    }
+  },
+  "provenance": {
+    "software": [
+      {
+        "name": "statsmodels",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/statsmodels@0.15.0",
+        "role": "estimator",
+        "source": "PyPI"
+      },
+      {"name": "python", "version": "3.13.17", "role": "language"}
+    ],
+    "data": [
+      {
+        "role": "input",
+        "name": "dat.bcg",
+        "location": "metadat data/dat.bcg.rda",
+        "rows": 13,
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "8508024604252ddecbbba88a5ebbbf76ddec7d32f9e5df56521f602ce5398fdb",
+          "of": "file"
+        },
+        "source": "Colditz et al. (1994) BCG vaccine trials, metadat (wviechtb/metadat @ 0cb96ce)"
+      }
+    ]
+  }
+}

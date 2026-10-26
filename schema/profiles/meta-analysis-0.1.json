@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/meta-analysis-0.1.json",
+  "title": "meta-analysis/0.1",
+  "x-license": "CC0-1.0",
+  "description": "Profile for meta-analyses and meta-regressions of study-level effect sizes: R metafor (rma) and meta (metagen, metabin, ...); Python statsmodels combine_effects; Stata meta (survey 2026-10-25, spec/profiles/meta-analysis.md). Requires specification.meta_analysis with the effect measure and the number of studies, and, for random-effects models, the between-study variance estimator and the interval method (z, Hartung-Knapp, t), whose defaults differ across tools; pooled rows with estimate, std_error and a `meta_analysis` object naming the model; metrics.k and the heterogeneity statistics Q (with df) and, for random-effects models, tau2. I2 is recorded as a proportion. Study inputs and weights go in structures.studies; small-study tests and trim-and-fill are vocabulary.",
+  "x-extends": [],
+  "x-deviations": [],
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "rules": {
+      "type": "object",
+      "required": ["meta", "specification", "metrics", "parameters"],
+      "properties": {
+        "meta": {
+          "required": ["estimator"],
+          "properties": {
+            "estimator": {
+              "required": ["method"],
+              "properties": {
+                "family": {"description": "\"meta_analysis\" is recommended.", "type": "string"},
+                "method": {"type": "string", "x-vocabulary": ["random_effects", "common_effect", "meta_regression", "multilevel", "bayesian"], "x-tools": {"metafor": "rma(method = \"FE\"/\"EE\"/\"CE\": common; else random); rma.mv (multilevel)", "meta": "common, random (both TRUE by default)", "statsmodels": "both effects returned", "Stata": "meta summarize, random()/common/fixed; meta regress"}}
+              }
+            }
+          }
+        },
+        "specification": {
+          "required": ["meta_analysis"],
+          "properties": {"meta_analysis": {"$ref": "#/$defs/design"}}
+        },
+        "parameters": {
+          "contains": {"required": ["meta_analysis"]},
+          "items": {
+            "properties": {"meta_analysis": {"$ref": "#/$defs/row"}},
+            "if": {"required": ["meta_analysis"]},
+            "then": {"required": ["estimate", "std_error"]}
+          }
+        },
+        "metrics": {
+          "required": ["k", "q", "q_df"],
+          "properties": {
+            "k": {"description": "Studies (effect sizes) pooled.", "type": "integer", "x-tools": {"metafor": "k", "meta": "k", "statsmodels": "k", "Stata": "r(N) / e(N)"}},
+            "q": {"description": "Cochran's Q.", "type": "number", "x-tools": {"metafor": "QE", "meta": "Q", "statsmodels": "q", "Stata": "r(Q)"}},
+            "q_df": {"type": "number", "x-tools": {"metafor": "k - p", "meta": "df.Q", "statsmodels": "k - 1", "Stata": "r(df_Q)"}},
+            "q_p": {"type": ["number", "null"], "x-tools": {"metafor": "QEp", "meta": "pval.Q", "Stata": "r(p_Q)"}},
+            "tau2": {"description": "Between-study variance.", "type": ["number", "null"], "x-tools": {"metafor": "tau2", "meta": "tau2", "statsmodels": "tau2", "Stata": "r(tau2)"}},
+            "tau2_se": {"type": ["number", "null"], "x-tools": {"metafor": "se.tau2", "meta": "se.tau2"}},
+            "tau2_ci": {"description": "[low, high] and the method (Q-profile, ...).", "type": "object", "x-tools": {"metafor": "confint()", "meta": "lower.tau2, upper.tau2 (method.tau.ci)"}},
+            "i2": {"description": "I2 as a proportion (0-1). metafor, meta and Stata print it in percent; statsmodels returns a proportion.", "type": ["number", "null"], "x-tools": {"metafor": "I2 / 100", "meta": "I2 (proportion)", "statsmodels": "i2", "Stata": "r(I2) / 100"}},
+            "h2": {"type": ["number", "null"], "x-tools": {"metafor": "H2", "meta": "H^2", "statsmodels": "h2", "Stata": "r(H2)"}},
+            "r2_moderators": {"description": "Meta-regression: share of tau2 explained by moderators.", "type": ["number", "null"], "x-tools": {"metafor": "R2 / 100", "Stata meta regress": "e(R2) / 100"}},
+            "qm": {"description": "Omnibus test of moderators; record {value, df, p_value}.", "x-tools": {"metafor": "QM, QMdf, QMp", "Stata meta regress": "e(chi2)"}}
+          }
+        },
+        "structures": {
+          "properties": {
+            "studies": {
+              "description": "Study-level inputs and weights: a table structure with columns such as study, yi, vi, weight_common, weight_random (or an attachment when large).",
+              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "properties": {"kind": {"enum": ["table", "link"]}}
+            },
+            "small_study": {
+              "description": "Small-study / publication-bias diagnostics.",
+              "type": "object",
+              "properties": {
+                "egger": {"type": "object", "properties": {"statistic": {"type": "number"}, "p_value": {"type": "number"}}, "x-tools": {"metafor": "regtest()", "meta": "metabias(method.bias = \"Egger\")", "Stata": "meta bias, egger"}},
+                "begg": {"type": "object", "x-tools": {"metafor": "ranktest()", "meta": "metabias(method.bias = \"Begg\")", "Stata": "meta bias, begg"}},
+                "trim_and_fill": {"type": "object", "properties": {"k0": {"type": "integer"}, "side": {"type": "string"}, "estimate": {"type": "number"}}, "x-tools": {"metafor": "trimfill()", "meta": "trimfill()", "Stata": "meta trimfill"}}
+              }
+            }
+          }
+        }
+      },
+      "if": {"properties": {"meta": {"properties": {"estimator": {"properties": {"method": {"enum": ["random_effects", "meta_regression", "multilevel"]}}, "required": ["method"]}}}}, "required": ["meta"]},
+      "then": {
+        "properties": {
+          "specification": {"properties": {"meta_analysis": {"required": ["tau2_method", "ci_method"]}}},
+          "metrics": {"required": ["tau2"]}
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "required": ["effect_measure"],
+      "properties": {
+        "effect_measure": {
+          "type": "string",
+          "x-vocabulary": ["log_rr", "log_or", "rd", "log_hr", "smd_hedges_g", "smd_cohens_d", "md", "zcor", "cor", "log_irr", "proportion", "logit_proportion", "generic"],
+          "x-tools": {"metafor": "escalc(measure =) (RR, OR, RD, SMD, MD, ZCOR, COR, PLO, ...)", "meta": "sm (\"RR\", \"OR\", \"SMD\", ...); metagen for generic", "statsmodels": "generic (user-computed effect and variance)", "Stata": "meta esize (lnrratio, lnoratio, hedgesg, cohend, ...), meta set (generic)"}
+        },
+        "tau2_method": {
+          "description": "Between-study variance estimator. Defaults: metafor and meta REML, Stata REML, statsmodels \"iterated\" (Paule-Mandel).",
+          "type": "string",
+          "x-vocabulary": ["dl", "reml", "ml", "pm", "sj", "hs", "he", "eb", "hsk", "dlit"],
+          "x-tools": {"metafor": "method (\"REML\")", "meta": "method.tau (\"REML\")", "statsmodels": "method_re (\"iterated\" = pm; \"chi2\" = dl)", "Stata": "random(reml) default; dlaird, mle, ebayes, hedges, sjonkman, hschmidt"}
+        },
+        "ci_method": {
+          "description": "Interval and test for the pooled effect.",
+          "type": "string",
+          "x-vocabulary": ["z", "hartung_knapp", "hartung_knapp_adhoc", "t"],
+          "x-tools": {"metafor": "test (\"z\"; \"knha\", \"t\", \"adhoc\")", "meta": "method.random.ci (\"classic\" = z; \"HK\"); settings.meta() presets change it", "statsmodels": "use_t; the \"wls\" rows scale the variance", "Stata": "se(khartung) (default z)"}
+        },
+        "prediction_interval": {"description": "Whether a prediction interval was computed, and how.", "type": ["boolean", "string"], "x-tools": {"metafor": "predict()", "meta": "prediction (FALSE)", "Stata": "predinterval"}},
+        "pooling": {"description": "Weights for the common-effect estimate.", "type": "string", "x-vocabulary": ["inverse_variance", "mantel_haenszel", "peto"], "x-tools": {"meta": "method (\"MH\" for metabin; \"Inverse\")", "metafor": "rma.mh, rma.peto", "Stata": "common(mhaenszel), common(invvariance)"}},
+        "continuity_correction": {"description": "Added to cells of 2x2 tables with zeros.", "type": ["number", "string", "null"], "x-tools": {"metafor": "escalc add, to", "meta": "incr", "Stata": "zerocells()"}},
+        "k": {"type": "integer"},
+        "moderators": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"metafor": "mods", "meta": "metareg()", "Stata": "meta regress"}},
+        "study_label": {"type": ["string", "null"]},
+        "level": {"type": ["number", "null"]}
+      }
+    },
+    "row": {
+      "description": "Which pooled quantity a row is.",
+      "type": "object",
+      "required": ["model"],
+      "properties": {
+        "model": {"type": "string", "x-vocabulary": ["common", "random", "moderator"]},
+        "pi_low": {"description": "Prediction interval (random-effects rows).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"metafor": "predict(): pi.lb", "meta": "lower.predict", "Stata": "predinterval"}},
+        "pi_high": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"}
+      }
+    }
+  }
+}

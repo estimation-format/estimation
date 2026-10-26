@@ -189,6 +189,15 @@
       "maintainer": "jemather",
       "description": "med2s records (two-stage DiD mediation for staggered adoption): mediation plus the DiD design, placebo adjustment options, cluster-bootstrap percentile inference, and an extensions.med2s block with the signal test, moments, placebo composition, med2s_diag diagnostics and med2s_sens breakdown share.",
       "examples": ["examples/med2s.estimation.json"]
+    },
+    {
+      "name": "meta-analysis/0.1",
+      "file": "profiles/meta-analysis-0.1.json",
+      "kind": "standard",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Meta-analyses and meta-regressions (metafor, meta, statsmodels combine_effects, Stata meta): effect measure, number of studies, tau2 estimator and interval method, pooled common/random rows with prediction intervals, Q, tau2, I2 (as a proportion), study weights, small-study tests.",
+      "examples": ["examples/meta-analysis.estimation.json"]
     }
   ]
 }
