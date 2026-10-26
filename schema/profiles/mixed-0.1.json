@@ -130,13 +130,13 @@
                 "properties": {
                   "kind": {"const": "object"},
                   "group": {"type": "string"},
-                  "levels": {"description": "Groups in the estimation sample.", "$ref": "../estimation-0.1.json#/$defs/count", "x-tools": {"lme4, glmmTMB": "ngrps()", "Stata": "e(N_g)", "statsmodels": "n_groups", "MixedModels.jl": "nlevs per term"}},
+                  "levels": {"description": "Groups in the estimation sample.", "$ref": "../estimation-0.1.json#/$defs/count", "x-tools": {"lme4, glmmTMB": "ngrps()", "Stata": "e(N_g) (a matrix, one column per level)", "statsmodels": "n_groups", "MixedModels.jl": "nlevs per term"}},
                   "terms": {"$ref": "../estimation-0.1.json#/$defs/strings"},
                   "covariance": {"type": "string"},
                   "size": {
                     "type": "object",
                     "properties": {"min": {"$ref": "../estimation-0.1.json#/$defs/number"}, "mean": {"$ref": "../estimation-0.1.json#/$defs/number"}, "max": {"$ref": "../estimation-0.1.json#/$defs/number"}},
-                    "x-tools": {"Stata": "e(g_min), e(g_avg), e(g_max)", "statsmodels": "summary group sizes"}
+                    "x-tools": {"Stata": "e(g_min), e(g_avg), e(g_max) (matrices, one column per level)", "statsmodels": "summary group sizes"}
                   }
                 }
               }

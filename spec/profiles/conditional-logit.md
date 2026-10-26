@@ -6,8 +6,8 @@ Kind: standard. Builds on the core only.
 Conditional (fixed-effects) logit: the likelihood conditional on the number of positive
 outcomes in each group, so the group effects drop out and are never estimated. Surveyed
 2026-10-25: from source, R `survival::clogit` 3.8-13 (therneau/survival @ b76de62; it is a
-`coxph` fit) and statsmodels 0.15.0 `ConditionalLogit`; from their documentation, Stata
-`clogit` and `xtlogit, fe`.
+`coxph` fit) and statsmodels 0.15.0 `ConditionalLogit`; Stata `clogit` from its help file and
+`xtlogit, fe` from its documentation.
 
 Not for unconditional fixed-effects logit (fixest `feglm`, pyfixest `feglm`, `bife`), which
 estimates the group effects and has the incidental-parameters bias: those records claim

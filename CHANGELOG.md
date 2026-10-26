@@ -38,6 +38,12 @@
 - `mediation/0.1`: StataNow `mediate` and `ivmediate` mapped from their help files (pure
   indirect, total direct and potential-outcome-mean effects; interaction and treatment type;
   `ivmediate`'s two first-stage F statistics).
+- Stata mappings checked against the help files for `glm`, `clogit`, `cmclogit`,
+  `cmmixlogit`, `cmmprobit`, `mixed`, `stcox`, `streg` and `bayes`. `choice/0.1`: Stata stores
+  the base alternative as `e(i_base)` (`cmmixlogit`: `e(base)`), not `e(basealt)`, and the
+  integration defaults (Hammersley points, a sample-size-dependent count) are now mapped.
+  `mixed/0.1`: `e(N_g)` and `e(g_*)` are matrices by level. `survival/0.1`: `streg`'s
+  ancillary parameters and `e(frm2)`, and `stcox`/`streg` `e(cmd)` vs `e(cmd2)`.
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

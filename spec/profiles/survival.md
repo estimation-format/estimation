@@ -6,8 +6,8 @@ Kind: standard. Builds on the core only.
 Time-to-event regression: Cox proportional hazards, parametric models (AFT or PH metric), and
 Fine-Gray competing risks. Surveyed 2026-10-25: from source, R survival 3.8-13 (therneau/survival
 @ b76de62: `coxph`, `survreg`, `cox.zph`, `concordance`), lifelines 0.30.3, scikit-survival
-0.28.0 and statsmodels 0.15 `PHReg`; Stata `stcox`, `streg`, `stcrreg`, `estat phtest` and
-`estat concordance`, and R cmprsk `crr`, from documentation. Multi-state models, frailty and
+0.28.0 and statsmodels 0.15 `PHReg`; Stata `stcox` and `streg` from their help files; Stata
+`stcrreg`, `estat phtest` and `estat concordance`, and R cmprsk `crr`, from documentation. Multi-state models, frailty and
 Bayesian survival were not surveyed.
 
 ## Requirements
@@ -44,8 +44,15 @@ same fit gives different proportional-hazards test statistics under different ti
 **Parametric metric.** `survreg` and lifelines' `*AFTFitter` report the AFT metric; Stata's
 `streg` reports Weibull, exponential and Gompertz models in the PH metric unless `time` is
 given (lognormal, loglogistic and gamma are AFT). For a Weibull, β_PH = −β_AFT / σ, so the two
-metrics differ in sign and scale; `metric` says which one the rows use, and `metrics.scale` /
-`shape` hold the ancillary parameter.
+metrics differ in sign and scale; `metric` says which one the rows use (`streg` stores it in
+`e(frm2)`: `hazard` or `time`), and `metrics.scale` / `shape` hold the ancillary parameter
+(`e(aux_p)` for Weibull, `e(gamma)` for Gompertz and loglogistic, `e(sigma)` and `e(kappa)` for
+lognormal and generalized gamma).
+
+**Identifying the Stata command.** `stcox` stores `e(cmd)` as `cox` (`stcox_fr` with
+`shared()`), and `streg` stores the model's name (for example `weibull`); `e(cmd2)`
+holds `stcox` or `streg`. Both display hazard ratios unless `nohr` is given, while `e(b)` stays
+on the coefficient scale.
 
 ## `specification.survival`
 

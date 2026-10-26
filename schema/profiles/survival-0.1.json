@@ -24,7 +24,7 @@
                 "family": {"description": "\"survival\" is recommended.", "type": "string"},
                 "method": {"type": "string", "x-vocabulary": ["cox", "parametric", "fine_gray", "cause_specific_cox", "piecewise_exponential", "aalen_additive"], "x-tools": {"R survival": "coxph, survreg, finegray + coxph", "cmprsk": "crr (fine_gray)", "lifelines": "CoxPHFitter; WeibullAFTFitter, LogNormalAFTFitter, ...", "scikit-survival": "CoxPHSurvivalAnalysis", "statsmodels": "PHReg", "Stata": "stcox, streg, stcrreg"}},
                 "distribution": {"description": "Parametric models.", "type": "string", "x-vocabulary": ["weibull", "exponential", "lognormal", "loglogistic", "gompertz", "gamma", "generalized_gamma"], "x-tools": {"survreg": "dist (\"weibull\")", "Stata streg": "distribution() (required)", "lifelines": "fitter class"}},
-                "metric": {"description": "Parametric models: accelerated failure time or proportional hazards parameterization.", "type": "string", "x-vocabulary": ["aft", "ph"], "x-tools": {"survreg": "aft", "Stata streg": "ph for weibull/exponential/gompertz unless time; aft for lognormal, loglogistic, gamma", "lifelines": "aft (*AFTFitter)"}}
+                "metric": {"description": "Parametric models: accelerated failure time or proportional hazards parameterization.", "type": "string", "x-vocabulary": ["aft", "ph"], "x-tools": {"survreg": "aft", "Stata streg": "ph for weibull/exponential/gompertz unless time (time is allowed only for exponential and Weibull); aft for lognormal, loglogistic, ggamma; e(frm2) hazard|time", "lifelines": "aft (*AFTFitter)"}}
               }
             }
           }
@@ -69,8 +69,8 @@
               "x-tools": {"coxph": "concordance (timewt \"n\")", "lifelines": "concordance_index_ (Harrell)", "Stata": "estat concordance (Harrell; gheller for Gonen-Heller)", "scikit-survival": "concordance_index_censored (Harrell), concordance_index_ipcw (Uno)"}
             },
             "aic": {"description": "Partial AIC for Cox models.", "x-tools": {"coxph": "AIC()", "lifelines": "AIC_partial_", "Stata": "estat ic"}},
-            "scale": {"description": "Parametric scale parameter (sigma) in the AFT metric.", "x-tools": {"survreg": "scale", "Stata streg": "sigma / 1/p (weibull)"}},
-            "shape": {"x-tools": {"Stata streg weibull": "p (ancillary)", "lifelines": "rho_"}}
+            "scale": {"description": "Parametric scale parameter (sigma) in the AFT metric.", "x-tools": {"survreg": "scale", "Stata streg": "e(sigma) (lognormal, ggamma), e(gamma) (loglogistic), 1/e(aux_p) (weibull)"}},
+            "shape": {"x-tools": {"Stata streg": "e(aux_p) (weibull p), e(gamma) (gompertz), e(kappa) (ggamma)", "lifelines": "rho_"}}
           }
         },
         "structures": {

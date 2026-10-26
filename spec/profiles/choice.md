@@ -8,8 +8,10 @@ Discrete-choice models: multinomial (conditional) logit with alternative attribu
 space. Surveyed 2026-10-25 from source: R mlogit 2.0-0 (cran/mlogit @ 9299242), logitr 1.2.0
 (jhelvy/logitr @ e375a1d), apollo 0.3.9 (cran/apollo @ 82ef716), Python xlogit 0.2.7
 (arteagac/xlogit @ c3d6d44) and Biogeme (michelbierlaire/biogeme @ 8d1063b). Stata
-`cmclogit`, `cmmixlogit` and `mixlogit` are mapped from their documentation; their defaults
-were not checked. gmnl, Bayesian (HB) estimation and multinomial probit were not surveyed.
+`cmclogit`, `cmmixlogit` and `cmmprobit` are mapped from their help files; the user-written
+`mixlogit` from its documentation, defaults not checked. gmnl, Bayesian (HB) estimation and
+rank-ordered models (`cmrologit`, whose `ties()` default is `exactm`, and `cmroprobit`) were not
+surveyed.
 
 A plain MNL on choice-situation groups is the same likelihood as
 [`conditional-logit/0.1`](conditional-logit.md); a writer that fills both can claim both.
@@ -35,13 +37,13 @@ For a simulated model (`mixed_logit`, `gmnl`), also:
 
 ## Defaults that change results
 
-| | mlogit | logitr | apollo | xlogit | Biogeme |
-|---|---|---|---|---|---|
-| Draws | `R = 40` | `numDraws = 500` | `interNDraws` (user) | `n_draws = 1000` | `number_of_draws = 10000` |
-| Draw type | pseudo-random (`halton = NULL`; `NA` for Halton) | `"sobol"` | `"mlhs"` | Halton | set in the expression (`NORMAL_HALTON2`, ...) |
-| Seed | `seed = 10` | | `apollo_control$seed` | `random_state` | `seed = 0`: a new seed each run |
-| Optimizer | `"bfgs"` (`"nr"` for plain MNL) | nloptr L-BFGS | `"bgw"`, `maxIterations = 200` | scipy `"BFGS"` | `optimization_algorithm` |
-| Reported SEs | Hessian | Hessian (`robust = TRUE`) | `se` and `robse` | see below | robust in the default table |
+| | mlogit | logitr | apollo | xlogit | Biogeme | Stata `cmmixlogit` |
+|---|---|---|---|---|---|---|
+| Draws | `R = 40` | `numDraws = 500` | `interNDraws` (user) | `n_draws = 1000` | `number_of_draws = 10000` | 500 + ⌊2.5 √(N_case (ln(r + 5) + v))⌋, grows with the sample |
+| Draw type | pseudo-random (`halton = NULL`; `NA` for Halton) | `"sobol"` | `"mlhs"` | Halton | set in the expression (`NORMAL_HALTON2`, ...) | Hammersley |
+| Seed | `seed = 10` | | `apollo_control$seed` | `random_state` | `seed = 0`: a new seed each run | needed only with `intmethod(random)` |
+| Optimizer | `"bfgs"` (`"nr"` for plain MNL) | nloptr L-BFGS | `"bgw"`, `maxIterations = 200` | scipy `"BFGS"` | `optimization_algorithm` | `nr` (`cmmprobit`: `bfgs`) |
+| Reported SEs | Hessian | Hessian (`robust = TRUE`) | `se` and `robse` | see below | robust in the default table | OIM; `vce(robust)` clusters on the case |
 
 xlogit's `MixedLogit` reports by default the BFGS optimizer's approximation of the inverse
 Hessian as the vcov (`num_hess=False`); `MultinomialLogit` computes a numerical Hessian. Record
@@ -49,7 +51,11 @@ the first as `type: "bfgs_approx"`: its standard errors can differ noticeably fr
 xlogit's p-values use a t distribution with df = number of choice situations.
 
 Because Biogeme's default seed changes every run, a simulated Biogeme result is reproducible
-only if the record has the seed actually used.
+only if the record has the seed actually used. Stata's default number of points depends on the
+number of cases and parameters (r random coefficients, v variance parameters), so record
+`e(intpoints)` rather than the option. Default base alternatives differ too: the most often
+chosen in `cmclogit` and `cmmixlogit`, the first in sort order in `cmmprobit` (which also
+normalizes scale on the second).
 
 ## `specification.choice`
 
@@ -59,12 +65,12 @@ only if the record has the seed actually used.
 | `alternative` | alternative id | `e(altvar)` | `dfidx` alt | (long data) | wide | `alts` |
 | `decision_maker` | individual | `cmset` panelvar | `dfidx` id | `panelID` | `indivID` | `panels` |
 | `panel` | draws per individual | `cmxtmixlogit` | `panel` | `panelID` given | `panelData` | `panels` given |
-| `base_alternative` | normalized constant | `basealternative()` | `reflevel` | | | `base_alt` |
+| `base_alternative` | normalized constant | `basealternative()`; `e(i_base)` (`cmmixlogit`: `e(base)`) | `reflevel` | | | `base_alt` |
 | `availability` | availability variable | | | | `avail` | `avail` |
 | `space`, `scale_term` | WTP space and its price term | | | `scalePar` | user-coded | `scale_factor` |
 | `random_parameters` | `{term, distribution}` | `random()` | `rpar` (`n`, `ln`, `cn`, `t`, `u`, `zbu`, `zbt`) | `randPars` | user-coded | `randvars` (`n`, `ln`, `t`, `tn`, `u`) |
 | `correlated` | Cholesky | | `correlation` | `correlation` | user-coded | |
-| `simulation` | draws, type, seed, burn | `intpoints()`, `intmethod()` | `R`, `halton`, `seed` | `numDraws`, `drawType` | `apollo_draws` | `n_draws`, `halton`, `random_state` |
+| `simulation` | draws, type, seed, burn | `intpoints()`, `intmethod()`, `intseed()`, `intburn()` | `R`, `halton`, `seed` | `numDraws`, `drawType` | `apollo_draws` | `n_draws`, `halton`, `random_state` |
 
 Also `nests` (`[{name, alternatives}]`) and `n_classes`.
 

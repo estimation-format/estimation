@@ -37,7 +37,7 @@
             "choice": {"$ref": "#/$defs/design"},
             "options": {
               "properties": {
-                "optimizer": {"type": "string", "x-tools": {"mlogit": "method (\"bfgs\"; \"nr\" for plain multinomial)", "logitr": "nloptr L-BFGS", "apollo": "estimationRoutine (\"bgw\")", "xlogit": "optim_method (\"BFGS\")", "Biogeme": "optimization_algorithm", "Stata": "technique()"}},
+                "optimizer": {"type": "string", "x-tools": {"mlogit": "method (\"bfgs\"; \"nr\" for plain multinomial)", "logitr": "nloptr L-BFGS", "apollo": "estimationRoutine (\"bgw\")", "xlogit": "optim_method (\"BFGS\")", "Biogeme": "optimization_algorithm", "Stata": "technique() (nr; cmmprobit bfgs)"}},
                 "max_iterations": {"type": "integer", "x-tools": {"mlogit": "iterlim (2000)", "apollo": "maxIterations (200)", "xlogit": "maxiter (2000)", "Biogeme": "max_iterations"}},
                 "n_starts": {"description": "Multistart: number of starting points tried.", "type": "integer", "x-tools": {"logitr": "numMultiStarts (1)", "apollo": "apollo_searchStart"}}
               }
@@ -125,7 +125,7 @@
         "decision_maker": {"description": "Individual identifier; null for cross-sectional choices.", "type": ["string", "null"], "x-tools": {"logitr": "panelID", "xlogit": "panels", "apollo": "indivID", "mlogit": "dfidx id", "Stata": "cmset panelvar"}},
         "panel": {"description": "Random parameters drawn once per decision maker (true) or per choice situation (false).", "type": "boolean", "x-tools": {"mlogit": "panel (FALSE)", "logitr": "panelID given", "xlogit": "panels given", "apollo": "panelData", "Stata": "cmxtmixlogit vs cmmixlogit"}},
         "alternatives": {"description": "Alternatives in the sample, in the tool's order.", "type": "array"},
-        "base_alternative": {"description": "Alternative whose constant is normalized to zero; null without constants.", "type": ["string", "number", "null"], "x-tools": {"Stata cm*": "basealternative(), e(basealt)", "mlogit": "reflevel", "xlogit": "base_alt (first alternative)"}},
+        "base_alternative": {"description": "Alternative whose constant is normalized to zero; null without constants.", "type": ["string", "number", "null"], "x-tools": {"Stata cmclogit, cmmprobit": "basealternative(); e(i_base) indexes e(altvals); default: most often chosen (cmclogit), first in sort order (cmmprobit)", "Stata cmmixlogit": "basealternative(), e(base) (most often chosen)", "mlogit": "reflevel", "xlogit": "base_alt (first alternative)"}},
         "availability": {"description": "Availability variable, or null when every alternative is always available.", "type": ["string", "null"], "x-tools": {"xlogit": "avail", "apollo": "avail", "Biogeme": "av"}},
         "space": {"description": "Utility in preference space or willingness-to-pay space.", "type": "string", "x-vocabulary": ["preference", "wtp"], "x-tools": {"logitr": "scalePar given = wtp", "xlogit": "scale_factor given = wtp"}},
         "scale_term": {"description": "Price (scale) term in WTP space.", "type": ["string", "null"], "x-tools": {"logitr": "scalePar", "xlogit": "scale_factor"}},
@@ -138,19 +138,19 @@
             "required": ["term", "distribution"],
             "properties": {
               "term": {"type": "string"},
-              "distribution": {"type": "string", "x-vocabulary": ["normal", "lognormal", "triangular", "uniform", "censored_normal", "truncated_normal", "johnson_sb", "fixed"], "x-tools": {"mlogit": "rpar codes n, ln, cn, t, u, zbu, zbt", "logitr": "randPars n, ln, cn", "xlogit": "randvars n, ln, t, tn, u", "Stata": "random(), lnrandom(), ..."}}
+              "distribution": {"type": "string", "x-vocabulary": ["normal", "lognormal", "triangular", "uniform", "censored_normal", "truncated_normal", "johnson_sb", "fixed"], "x-tools": {"mlogit": "rpar codes n, ln, cn, t, u, zbu, zbt", "logitr": "randPars n, ln, cn", "xlogit": "randvars n, ln, t, tn, u", "Stata cmmixlogit": "random(varlist, normal|correlated|lnormal|tnormal|uniform|triangle) (normal)", "Stata mixlogit": "rand(), ln()"}}
             }
           }
         },
-        "correlated": {"description": "Random parameters correlated (Cholesky).", "type": "boolean", "x-tools": {"mlogit": "correlation", "logitr": "correlation", "Stata": "corr options"}},
+        "correlated": {"description": "Random parameters correlated (Cholesky).", "type": "boolean", "x-tools": {"mlogit": "correlation", "logitr": "correlation", "Stata cmmixlogit": "random(, correlated), corrmetric() (correlation)", "Stata mixlogit": "corr"}},
         "simulation": {
           "type": "object",
           "required": ["draws", "type"],
           "properties": {
-            "draws": {"type": "integer", "x-tools": {"mlogit": "R (40)", "logitr": "numDraws (500)", "xlogit": "n_draws (1000)", "apollo": "interNDraws", "Biogeme": "number_of_draws (10000)", "Stata": "intpoints() / nrep()"}},
-            "type": {"type": "string", "x-vocabulary": ["halton", "scrambled_halton", "mlhs", "sobol", "hammersley", "pmc", "pseudo_random"], "x-tools": {"mlogit": "halton (NULL: pseudo-random; NA: Halton)", "logitr": "drawType (\"sobol\")", "xlogit": "halton (True)", "apollo": "interDrawsType (\"mlhs\")", "Biogeme": "draw type in the expression (e.g. NORMAL_HALTON2)", "Stata": "intmethod() / halton options"}},
-            "seed": {"type": ["integer", "string", "null"], "x-tools": {"mlogit": "seed (10)", "xlogit": "random_state", "apollo": "apollo_control$seed", "Biogeme": "seed (0: a new seed each run)"}},
-            "burn": {"description": "Initial Halton elements dropped.", "type": ["integer", "null"], "x-tools": {"xlogit": "halton_opts", "Stata mixlogit": "burn()"}}
+            "draws": {"type": "integer", "x-tools": {"mlogit": "R (40)", "logitr": "numDraws (500)", "xlogit": "n_draws (1000)", "apollo": "interNDraws", "Biogeme": "number_of_draws (10000)", "Stata cmmixlogit, cmmprobit": "intpoints(), e(intpoints) / e(mc_points); default 500 + floor(2.5 sqrt(N_case (ln(r + 5) + v))) for r random coefficients (cmmprobit: k coefficients), twice that with intmethod(random)", "Stata mixlogit": "nrep()"}},
+            "type": {"type": "string", "x-vocabulary": ["halton", "scrambled_halton", "mlhs", "sobol", "hammersley", "pmc", "pseudo_random"], "x-tools": {"mlogit": "halton (NULL: pseudo-random; NA: Halton)", "logitr": "drawType (\"sobol\")", "xlogit": "halton (True)", "apollo": "interDrawsType (\"mlhs\")", "Biogeme": "draw type in the expression (e.g. NORMAL_HALTON2)", "Stata cmmixlogit, cmmprobit": "intmethod() (hammersley), e(intmethod) / e(mc_method)", "Stata mixlogit": "halton options"}},
+            "seed": {"type": ["integer", "string", "null"], "x-tools": {"Stata cmmixlogit, cmmprobit": "intseed() with intmethod(random); e(mc_rngstate)", "mlogit": "seed (10)", "xlogit": "random_state", "apollo": "apollo_control$seed", "Biogeme": "seed (0: a new seed each run)"}},
+            "burn": {"description": "Initial Halton elements dropped.", "type": ["integer", "null"], "x-tools": {"xlogit": "halton_opts", "Stata cmmixlogit": "intburn(), e(intburn) (default: drops the first n elements, n the largest prime used)", "Stata cmmprobit": "intburn() (0), e(mc_burn)", "Stata mixlogit": "burn()"}}
           }
         }
       }

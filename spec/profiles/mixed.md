@@ -6,7 +6,7 @@ Kind: standard. Builds on the core only.
 Linear and generalized linear mixed (multilevel) models. Surveyed 2026-10-25: from source,
 lme4 2.1-1 (lme4/lme4 @ 808a76d), lmerTest 3.2-1 (@ 282b9e9), glmmTMB 1.1.15.9000
 (@ 1db3b46), MixedModels.jl (@ 492680d) and statsmodels 0.15.0 `MixedLM`; from their
-documentation, Stata `mixed` and `melogit`/`mepoisson`/`meglm`. nlme, brms and
+documentation, Stata `melogit`/`mepoisson`/`meglm`; Stata `mixed` from its help file (StataNow, 28 July 2026). nlme, brms and
 Bayesian fits were not surveyed.
 
 ## Requirements
@@ -33,7 +33,7 @@ Bayesian fits were not surveyed.
 | `lmerTest::lmer` | REML | as lme4 | Satterthwaite df (`ddf`: `"Kenward-Roger"`, `"lme4"`) |
 | `lme4::glmer` | Laplace (`nAGQ = 1`) | `bobyqa`, then `Nelder_Mead` | z |
 | glmmTMB | ML (`REML = FALSE`) | `nlminb` | z |
-| Stata `mixed` | **ML** (`reml` option) | `technique()` | z; `dfmethod()` for small-sample df |
+| Stata `mixed` | **ML** (`reml` option); `e(method)` | `technique()` (`nr`), after 20 EM iterations | z; `dfmethod()` for small-sample df (Satterthwaite and Kenward-Roger need REML) |
 | Stata `me*` | adaptive quadrature, 7 points | | z |
 | statsmodels `MixedLM` | REML | `fit(method=)` | z |
 | MixedModels.jl | **ML** (`REML = false`) | `:LN_NEWUOA` | z |
@@ -53,7 +53,8 @@ covariance or correlation. `type` names the scale the estimate is on, as the too
 | Tool | Reports | `vc.type` |
 |---|---|---|
 | lme4, glmmTMB (`VarCorr`) | SDs and correlations | `sd`, `cor` |
-| Stata `mixed` `e(b)` | log SDs and atanh correlations (`lns1_1_1`, `atr1_1_1_2`, `lnsig_e`) | `log_sd`, `atanh_cor` |
+| Stata `mixed` `e(b)` | log SDs and atanh correlations (names such as `lns1_1_1`, `atr1_1_1_2`, `lnsig_e`; the help file confirms the metric, not the names) | `log_sd`, `atanh_cor` |
+| Stata `mixed` output (default `variance`; `stddeviations`) | variances and covariances, or SDs and correlations | `var`, `cov` or `sd`, `cor` |
 | statsmodels summary / `cov_re`, `scale` | variances and covariances | `var`, `cov` |
 | MixedModels.jl `VarCorr` | SDs and correlations | `sd`, `cor` |
 
@@ -74,8 +75,8 @@ attachment (core 4.4).
 | `metrics.sigma` | `sigma()` | `sigma()` | `exp(lnsig_e)` | `sqrt(scale)` | `sdest()` |
 | `metrics.aic`, `bic` | `AIC()`, `BIC()` | `AIC()`, `BIC()` | `estat ic` | `aic`, `bic` (NaN under REML) | `aic()`, `bic()` |
 | `metrics.lr_vs_fixed` | | | `e(chi2_c)`, `e(p_c)` | | |
-| `random_effects[].levels` | `ngrps()` | `ngrps()` | `e(N_g)` | `n_groups` | levels per term |
-| `random_effects[].size` | | | `e(g_min)`, `e(g_avg)`, `e(g_max)` | group sizes | |
+| `random_effects[].levels` | `ngrps()` | `ngrps()` | `e(N_g)` (matrix by level) | `n_groups` | levels per term |
+| `random_effects[].size` | | | `e(g_min)`, `e(g_avg)`, `e(g_max)` (matrices) | group sizes | |
 | `numerics.converged` | `optinfo$conv$opt == 0` and no convergence messages | `convergence == 0` and `sdr$pdHess` | `e(converged)` | `converged` | `optsum.returnvalue` |
 | `numerics.singular` | `isSingular()` | (inspect `VarCorr`) | | | `issingular()` |
 | `numerics.warnings` | `optinfo$conv$lme4$messages` | | | | |

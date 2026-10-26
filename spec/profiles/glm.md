@@ -6,8 +6,8 @@ Kind: standard. Builds on the core only (see "Why not `inference/0.1`" below).
 Generalized linear models (logit, probit, Poisson, gamma, ...), with or without absorbed fixed
 effects. Surveyed 2026-10-25: from source, ppmlhdfe 2.3.4 (sergiocorreia/ppmlhdfe @ b85665d),
 fixest 0.14.2 `feglm`/`fepois` (lrberge/fixest @ 789f888) and pyfixest 0.60.0
-`feglm`/`fepois`; from their documentation, Stata `logit`, `probit`, `poisson` and `glm`,
-R `glm` and statsmodels 0.15 `GLM`/`Logit`/`Poisson`.
+`feglm`/`fepois`; Stata `glm` from its help file; from their
+documentation, Stata `logit`, `probit` and `poisson`, R `glm` and statsmodels 0.15 `GLM`/`Logit`/`Poisson`.
 
 Tool profile: [`ppmlhdfe/0.1`](ppmlhdfe.md). Conditional (fixed-effects) logit — `clogit`,
 `xtlogit, fe`, `fixest::feglm` is not this — and negative binomial dispersion models were not
@@ -48,7 +48,7 @@ took the log of the variable.
 
 | Name | Stata | ppmlhdfe | R `glm` | fixest | statsmodels | pyfixest |
 |---|---|---|---|---|---|---|
-| `log_lik` | `e(ll)` | `e(ll)` | `logLik()` | `loglik` | `llf` | `_loglik` (fepois) |
+| `log_lik` | `e(ll)` (`glm`: not stored with `irls`) | `e(ll)` | `logLik()` | `loglik` | `llf` | `_loglik` (fepois) |
 | `log_lik_null` (constant only) | `e(ll_0)` | — | | `ll_null` | `llnull` | `_loglik_null` |
 | `log_lik_fe_only` | | `e(ll_0)` | | `ll_fe_only` | | |
 | `deviance` | `glm` `e(deviance)` | `e(deviance)` | `deviance` | `deviance` | `deviance` | `deviance` |
