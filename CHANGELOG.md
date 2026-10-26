@@ -35,6 +35,9 @@
   and `causal-ml/0.1` (DoubleML, EconML, grf), with example records and pages.
 - Draft standard profiles `gam/0.1` (mgcv, pyGAM, statsmodels GLMGam) and `bayesian/0.1` (brms,
   rstanarm, Stan, PyMC/ArviZ, Stata bayes), with example records and pages.
+- `mediation/0.1`: StataNow `mediate` and `ivmediate` mapped from their help files (pure
+  indirect, total direct and potential-outcome-mean effects; interaction and treatment type;
+  `ivmediate`'s two first-stage F statistics).
 - Format `estimation/0.1` (draft) and the `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and
   `dfeols/0.1` profiles, moved from the dfeols repository
   (https://github.com/jemather/dfeols, `src/dfeols/schema/` at a33a767) into their own

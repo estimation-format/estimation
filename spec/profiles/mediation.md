@@ -7,9 +7,8 @@ Mediation analyses, whether computed from two regressions, from two-stage (instr
 variables) regressions, or inside an SEM. Surveyed 2026-10-25: from source, R mediation 4.5.1
 (kosukeimai/mediation @ 44e1146; `mediate` and `mediate_tsls`), lavaan (defined parameters,
 `:=`), pingouin 0.7.0 `mediation_analysis` and statsmodels 0.15 `Mediation`; PROCESS, Stata
-`sem` / `estat teffects`, StataNow `mediate` and Stata `ivmediate` (Dippel, Ferrara and
-Heblich) from documentation, which means their stored-result names still need checking against
-their help files. The same layout
+`sem` / `estat teffects` from documentation; StataNow `mediate` (1.1.1) and Stata `ivmediate`
+(1.0.1; Dippel, Ferrara and Heblich) from their help files. The same layout
 fits other bootstrap mediation tools (`medsem`, `indirect_boot`): a writer fills
 `specification.mediation` and tags each effect row.
 
@@ -65,17 +64,30 @@ Two tools instrument part of the mediation chain; they record `instruments` and
 |---|---|---|
 | `instrumented` | `mediator`: the outcome model uses the mediator's first-stage fitted values | `treatment` |
 | `instruments` | regressors of `model.m` that are not in `model.y` | `instrument()` |
-| `models[].estimator` | `ols` (mediator), `tsls` (outcome) | IV |
-| `inference.method` | `aroian` (Aroian 1947 product SE; default) or `bootstrap` (`boot = TRUE`, `sims`) | |
-| Effects | `d0` = `d1` (indirect), `z0` = `z1` (direct), `tau.coef`, `n0`, each with an SE | indirect, direct, total |
+| `models[].estimator` | `ols` (mediator), `tsls` (outcome) | three IV regressions: Y on T, M on T, Y on M given T, each instrumented with Z |
+| `inference.method` | `aroian` (Aroian 1947 product SE; default) or `bootstrap` (`boot = TRUE`, `sims`) | `analytic`; vcov `type` from `vce()`: unadjusted (default), robust, cluster |
+| Effects | `d0` = `d1` (indirect), `z0` = `z1` (direct), `tau.coef`, `n0`, each with an SE | total, direct and indirect in `e(b)`/`e(V)`; `e(mepct)` = indirect / total × 100, recorded as a `prop_mediated` row (divided by 100) |
+| First stage | — | `e(fstat1)` (T on Z) and `e(fstat2)` (M on Z given T): Kleibergen-Paap F under `robust` or `cluster`. Recorded in `structures.first_stage.per_endogenous` with `endogenous` T and M |
+| Other | | one instrument only; `absorb()` absorbs one fixed effect; controls are partialled out and not reported |
 
 `mediate_tsls` always computes its analytic SEs with `sandwich::vcovCL`; with `cluster = NULL`
 each row is its own cluster (an HC1-type variance), so `robustSE` has no effect. When a tool
 reports first-stage diagnostics, they go in `structures.first_stage` as in [`iv/0.1`](iv.md).
 
-StataNow's `mediate` estimates potential-outcome effects with a model family for the mediator
-and the outcome (`models[].estimator`), one or two mediators, and reports `nie` (indirect),
-`nde` (direct), `te` (total), `pm` (proportion mediated) and `cde` (`controlled_direct`).
+### StataNow `mediate`
+
+`mediate (ovar …, omodel) (mvar …, mmodel) (tvar)` estimates potential-outcome effects with one
+mediator (two with `mediate multiple`, not mapped here):
+
+| Record | `mediate` |
+|---|---|
+| `treatment`, `mediators`, `outcome` | `e(tvar)`, `e(mvar)`, `e(depvar)` |
+| `models[].estimator` | `e(omodel)`, `e(mmodel)`: `linear` (default), `expmean`, `logit`, `probit`, `poisson` |
+| `treatment_type`, `control_value` | `e(tvartype)` (`binary`, `multivalued`, `continuous`; `continuous()` gives the evaluation points, the first the control), `e(control)` |
+| `interaction` | `e(interact)`: the treatment-mediator interaction is included unless `nointeraction` |
+| Effect rows | `nie` → `indirect`, `nde` → `direct`, `te` → `total` (the default set); `pnie` → `pure_indirect`, `tnde` → `total_direct`, `pomeans` → `potential_outcome_mean`. `aite`, `adte`, `ate`, `aitec`, `adtet` are ATE-terminology synonyms (`ateterms`) |
+| `inference` | analytic by default; `vce(robust)`, `vce(cluster)`, `vce(bootstrap)`, `vce(jackknife)`; `nose` suppresses SEs |
+| Convergence | `e(converged)` (optimizer: `conv_maxiter()` 300, `conv_ptol()` 1e-6, `conv_vtol()` 1e-7) |
 
 ## Effect rows: `parameters[*].mediation`
 
@@ -88,6 +100,8 @@ and the outcome (`models[].estimator`), one or two mediators, and reports `nie` 
 | `total_indirect` | sum of a predictor's indirect effects over mediators | | | |
 | `acme_control`, `acme_treated`, `acme_average` | average causal mediation effects | `d0`, `d1`, `d.avg` | `ACME (control)`, ... | |
 | `controlled_direct` | direct effect with the mediator fixed | | | |
+| `pure_indirect`, `total_direct` | Pearl's pure natural indirect and total natural direct effects | | | |
+| `potential_outcome_mean` | E[Y(t, M(t'))] | | | |
 | `direct`, `ade_*` | direct effect | `z0`, `z1`, `z.avg` | `ADE (...)` | `Direct` |
 | `total` | total effect | `tau.coef` | `Total effect` | `Total` |
 | `prop_mediated`, `prop_mediated_*` | share mediated | `n0`, `n1`, `n.avg` | `Prop. mediated (...)` | |
