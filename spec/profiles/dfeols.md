@@ -22,7 +22,8 @@ What only dfeols has:
   check when they do.
 - `row_key`: a hash of the indices of the rows used, combined shard by shard, so two runs can
   be checked for an identical sample without storing rows.
-- `absorption`: per fixed effect, the method (`local`, `crossing_dense`, `crossing_sparse`)
+- `absorption`: per fixed effect, the method (`local`, `crossing_dense`, `crossing_sparse`,
+  `crossing_iterate`: conjugate gradient on the crossing-FE coefficients)
   and whether it is nested in the partition.
 - `demeaning`: per-shard iterations (max, median), the worst shard's final change, timing of
   each round; the persisted demeaned-data key when the run came from a session.
