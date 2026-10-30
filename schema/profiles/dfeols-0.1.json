@@ -59,7 +59,7 @@
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "method": {"enum": ["local", "crossing_dense", "crossing_sparse", "crossing_iterate"]},
+              "method": {"enum": ["local", "crossing_dense", "crossing_sparse", "crossing_iterate", "cells"]},
               "nested_in_partition": {"type": "boolean"}
             }
           }
