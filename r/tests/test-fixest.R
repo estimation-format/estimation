@@ -74,9 +74,41 @@ check(r, "iv")
 stopifnot("iv/0.1" %in% r$meta$profiles, r$meta$estimator$method == "2sls",
           identical(r$specification$endogenous, I("x")),
           r$parameters[[1]]$term == "fit_x", r$parameters[[1]]$canonical$name == "x")
-fs <- r$structures$first_stage
-eq(fs$per_endogenous[[1]]$f_stat$statistic, fitstat(fi, ~ivf1)[[1]]$stat)
-stopifnot(fs$overid[[1]]$name == "sargan", fs$endogeneity[[1]]$name == "wu_hausman")
+cat_of <- function(rec) vapply(rec$tests, `[[`, "", "category")
+fs <- r$tests[cat_of(r) == "first_stage"][[1]]
+eq(fs$statistic, fitstat(fi, ~ivf1)[[1]]$stat)
+stopifnot(fs$response == "x", fs$component == "first_stage", is.null(r$structures$first_stage),
+          all(c("model", "weak_identification", "endogeneity", "overidentification") %in% cat_of(r)),
+          r$tests[cat_of(r) == "overidentification"][[1]]$name == "sargan")
+
+# Tests: the model Wald test from fixest; hypotheses added from the record's own b and V
+r <- to_estimation(f)
+mt <- r$tests[[1]]
+stopifnot(mt$category == "model", mt$name == "wald", mt$origin == "estimation", mt$vcov == "CRV1")
+eq(mt$statistic, fitstat(f, ~wald)$wald$stat)
+r2 <- add_test(r, "x = 0, x2 = 0")
+w <- r2$tests[[2]]
+eq(w$statistic, wald(f, keep = "^x", print = FALSE)$stat, 1e-10)   # same restrictions, same vcov
+stopifnot(w$category == "restriction", w$df1 == 2, w$df2 == r$structures$vcov[[1]]$df_t,
+          w$origin == "postestimation", !is.null(w$added), r2$history[[2]]$action == "extended")
+r2 <- add_test(r2, "x + x2", label = "total effect")
+lc <- r2$tests[[3]]
+V <- vcov(f)
+eq(lc$estimate, sum(coef(f)[c("x", "x2")]))
+eq(lc$std_error, sqrt(V["x", "x"] + V["x2", "x2"] + 2 * V["x", "x2"]))
+stopifnot(lc$category == "linear_combination", lc$name == "t", lc$label == "total effect",
+          lc$conf_low < lc$estimate, lc$conf_high > lc$estimate)
+r3 <- try(add_test(r2, "x = x2", vcov = "HC1"), silent = TRUE)   # the record has no HC1 vcov
+stopifnot(inherits(r3, "try-error"))
+r <- to_estimation(f, vcov = list(~id, "hetero"),
+                   tests = list("x = x2", wald(f, keep = "^x2$", print = FALSE)))
+r <- add_test(r, "2*x - x2 = 1", vcov = "HC1")
+stopifnot(length(r$tests) == 4, r$tests[[4]]$vcov$type == "HC1",
+          identical(as.numeric(r$tests[[4]]$hypothesis$restrictions$R[[1]]), c(2, -1)),
+          r$tests[[4]]$hypothesis$restrictions$q == 1, r$tests[[3]]$source$name == "fixest")
+check(r, "tests")
+stopifnot(inherits(try(add_test(r, "x^2 = 0"), silent = TRUE), "try-error"),
+          inherits(try(add_test(r, "nope = 0"), silent = TRUE), "try-error"))
 
 # Without the data: drops recorded as `other`, with a warning message
 g <- function() { dd <- d; feols(y ~ x + x2 | id, dd) }

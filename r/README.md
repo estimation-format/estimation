@@ -25,7 +25,19 @@ fits <- feols(c(y1, y2) ~ csw(x1, x2) | firm, data, split = ~region)
 write_estimation(fits, "fits.estimation.json")
 
 rec <- to_estimation(fit)   # the record as a list
+
+# Hypothesis tests, computed from the record's own coefficients and vcov
+rec <- to_estimation(fit, vcov = list(~firm, "hetero"), tests = c("x1 = x2", "x1 + x2"))
+rec <- add_test(rec, "x1 = 0, x2 = 0", vcov = "HC1")              # Wald F
+rec <- add_test(rec, wald(fit, keep = "^x", print = FALSE))       # a fixest test, as is
+write_estimation(rec, "fit.estimation.json")
 ```
+
+Tests go in the record's `tests` list: fixest's joint Wald test of the coefficients and, for
+IV, the first-stage and identification tests (`origin: "estimation"`), plus each test you add
+(`origin: "postestimation"`). A restriction with `=` is a Wald test (F with the vcov's t-test
+df). An expression without `=` is a linear combination: estimate, SE, interval and t test.
+Adding a test doesn't change the results, so it keeps the core digest valid.
 
 ## What a record holds
 
@@ -34,7 +46,8 @@ rec <- to_estimation(fit)   # the record as a list
 | `parameters` | estimates, SEs, t, p, CIs (`conf_level`), canonical term names; collinear terms marked `dropped` |
 | `metrics` | `nobs`, `n_singletons`, `df_residual`, R², within R², sigma, RSS/TSS, log-likelihoods |
 | `specification` | call, formula, terms, fixed effects, clusters, weights, endogenous/instruments; `sample`: rows in, the `subset`/`split` restriction, and rows dropped by reason (missing, non-finite, zero weights, singletons); options (`fixef.rm`, tolerances) |
-| `structures` | each vcov with its type, clusters and cluster counts, df for t tests and the small-sample correction (`ssc`); fixed-effect level counts; convergence; IV first-stage F, Wald F, Cragg-Donald, Kleibergen-Paap, Wu-Hausman and Sargan |
+| `structures` | each vcov with its type, clusters and cluster counts, df for t tests and the small-sample correction (`ssc`); fixed-effect level counts; convergence |
+| `tests` | fixest's joint Wald test; IV first-stage F and Wald F, Cragg-Donald, Kleibergen-Paap, Wu-Hausman and Sargan; tests you add |
 | `provenance` | fixest, R and loaded package versions; OS, BLAS/LAPACK, threads; user, host and command line (`identifying = FALSE` leaves these out) |
 
 Records claim `inference/0.1`, plus `linear-fe/0.1` with fixed effects and `iv/0.1` for IV.
@@ -61,7 +74,7 @@ canonical JSON.
 
 ## Not yet
 
-- `feglm`/`fepois` (`glm/0.1`), `fixest::wald()` and other hypothesis tests (see the `tests`
-  proposal), `lm`/`glm` and other classes through `insight`.
+- `feglm`/`fepois` (`glm/0.1`), `lm`/`glm` and other classes through `insight`, nonlinear
+  tests (`nlcom`-style, by the delta method).
 - Tests: `tests/test-fixest.R` (base R). It validates every record when the `estimation` CLI
   is on `PATH` or `ESTREC_VALIDATOR` names it.

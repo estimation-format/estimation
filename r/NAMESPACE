@@ -1,6 +1,7 @@
 export(to_estimation)
 export(write_estimation)
 export(is_estimation_record)
+export(add_test)
 S3method(to_estimation, default)
 S3method(to_estimation, fixest)
 S3method(to_estimation, fixest_multi)

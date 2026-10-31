@@ -11,8 +11,8 @@ to_estimation.fixest_multi <- function(fit, ...) {
 }
 
 to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.95,
-                                 title = NULL, notes = NULL, tags = NULL, publication = NULL,
-                                 call = TRUE, identifying = TRUE, ...) {
+                                 tests = NULL, title = NULL, notes = NULL, tags = NULL,
+                                 publication = NULL, call = TRUE, identifying = TRUE, ...) {
   if (fit$method != "feols")
     stop("estrec writes feols fits for now; a ", fit$method, " fit needs the glm/0.1 writer",
          call. = FALSE)
@@ -109,7 +109,10 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
       iterations_by_variable = if (length(it)) I(it), collinearity_tolerance = collin_tol,
       collinear_terms = I(collinear), collinearity_min_norm = .est_num(fit$collin.min_norm)))
   }
-  if (is_iv) structures$first_stage <- .fx_first_stage(fit)
+  # Tests: fixest's joint Wald test of the coefficients under the default vcov, and for IV the
+  # first-stage, identification, endogeneity and overidentification tests
+  fx_tests <- c(list(.fx_model_test(main)), if (is_iv) .fx_iv_tests(fit))
+  fx_tests <- Filter(Negate(is.null), fx_tests)
 
   provenance <- list(
     software = .est_software("fixest"),
@@ -138,10 +141,16 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   if (length(messages)) meta$messages <- messages
 
   rec <- list(schema = "estimation/0.1", meta = meta, specification = spec, metrics = metrics,
-              parameters = parameters, structures = structures, provenance = provenance)
+              parameters = parameters, structures = structures)
+  if (length(fx_tests))
+    rec$tests <- lapply(seq_along(fx_tests), function(i) c(list(id = paste0("t", i)), fx_tests[[i]]))
+  rec$provenance <- provenance
   if (!is.null(publication)) rec$publication <- publication
   rec$history <- list(list(when = meta$created, by = estrec_info(), action = "created",
                            sections = I(setdiff(names(rec), "schema"))))
+  # Tests asked for in the call: hypotheses as text or fixest wald() results (see add_test)
+  if (is.list(tests) && (!is.null(tests$stat) || !is.null(tests$name))) tests <- list(tests)
+  for (t in if (is.character(tests)) as.list(tests) else tests) rec <- add_test(rec, t)
   rec
 }
 
@@ -263,34 +272,48 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   out
 }
 
-# fixest's IV diagnostics (fitstat) -> structures.first_stage (iv/0.1)
-.fx_first_stage <- function(fit) {
-  get <- function(type) tryCatch(suppressWarnings(
-    unclass(fixest::fitstat(fit, as.formula(paste("~", type)), simplify = FALSE))),
-    error = function(e) NULL)
-  test <- function(x, name = NULL, distribution = "F") {
-    if (!is.list(x) || is.null(x$stat) || anyNA(x$stat)) return(NULL)
-    num <- function(v) if (!is.null(v)) .est_num(as.numeric(v))  # kpr's are 1 x 1 matrices
-    .est_compact(list(name = name, statistic = num(x$stat), p_value = num(x$p),
-                      df = num(x$df), df1 = num(x$df1), df2 = num(x$df2),
-                      distribution = if (!is.null(x$df)) "chi2" else distribution,
-                      vcov = x$vcov))
+.fx_fitstat <- function(fit, type) {
+  tryCatch(suppressWarnings(unclass(fixest::fitstat(fit, as.formula(paste("~", type)), simplify = FALSE))),
+           error = function(e) NULL)
+}
+
+# A fitstat entry (stat, p, df1/df2 or df, vcov) -> a test object
+.fx_test <- function(x, category, name, distribution = "F", ...) {
+  if (!is.list(x) || is.null(x$stat) || anyNA(x$stat)) return(NULL)
+  num <- function(v) if (!is.null(v)) .est_num(as.numeric(v))  # kpr's are 1 x 1 matrices
+  chi <- !is.null(x$df)
+  .est_compact(c(list(category = category, name = name, origin = "estimation"), list(...),
+                 list(statistic = num(x$stat), distribution = if (chi) "chi2" else distribution,
+                      df = num(x$df), df1 = num(x$df1), df2 = num(x$df2), p_value = num(x$p),
+                      vcov = if (!is.null(x$vcov)) .fx_vcov_type(x$vcov))))
+}
+
+# fixest's Wald test of joint nullity of the coefficients (intercept and FEs excluded), with
+# the fit's vcov
+.fx_model_test <- function(f) {
+  .fx_test(.fx_fitstat(f, "wald")$wald, "model", "wald")
+}
+
+# fixest's IV diagnostics (fitstat) -> tests (iv/0.1)
+.fx_iv_tests <- function(fit) {
+  ivf <- .fx_fitstat(fit, "ivf"); ivwald <- .fx_fitstat(fit, "ivwald")
+  out <- list()
+  for (e in fit$iv_endo_names) {
+    out <- c(out, list(
+      .fx_test(ivf[[paste0("ivf1::", e)]], "first_stage", "f", component = "first_stage", response = e),
+      # ivwald repeats ivf under an iid vcov
+      if (!identical(ivwald[[paste0("ivwald1::", e)]]$vcov, "IID"))
+        .fx_test(ivwald[[paste0("ivwald1::", e)]], "first_stage", "wald", component = "first_stage", response = e)))
   }
-  ivf <- get("ivf"); ivwald <- get("ivwald")
-  per <- lapply(fit$iv_endo_names, function(e) .est_compact(list(
-    endogenous = e,
-    f_stat = test(ivf[[paste0("ivf1::", e)]]),
-    f_stat_wald = test(ivwald[[paste0("ivwald1::", e)]]))))
-  out <- list(kind = "object", per_endogenous = per)
-  cd <- get("cd")$cd
-  if (is.numeric(cd) && !is.na(cd)) out$weak_id_cd_f <- .est_num(cd)
-  # fixest's `kpr` is the Kleibergen-Paap rk statistic, a chi-squared test of
-  # underidentification; it isn't the rk Wald F (weak_id_kp_f)
-  kpr <- test(get("kpr")$kpr, name = "kleibergen_paap_rk", distribution = "chi2")
-  if (!is.null(kpr)) out$underidentification <- kpr
-  wh <- test(get("wh")$wh, name = "wu_hausman")
-  if (!is.null(wh)) out$endogeneity <- list(wh)
-  sargan <- test(get("sargan")$sargan, name = "sargan", distribution = "chi2")
-  if (!is.null(sargan)) out$overid <- list(sargan)
-  out
+  cd <- .fx_fitstat(fit, "cd")$cd
+  if (is.numeric(cd) && !is.na(cd))
+    out <- c(out, list(list(category = "weak_identification", name = "cragg_donald_f",
+                            origin = "estimation", statistic = .est_num(as.numeric(cd)))))
+  # fixest's `kpr` is the Kleibergen-Paap rk statistic, a chi-squared rank test (fixest's help
+  # calls it a weak-instrument test); it isn't the rk Wald F
+  out <- c(out, list(
+    .fx_test(.fx_fitstat(fit, "kpr")$kpr, "underidentification", "kleibergen_paap_rk", "chi2"),
+    .fx_test(.fx_fitstat(fit, "wh")$wh, "endogeneity", "wu_hausman"),
+    .fx_test(.fx_fitstat(fit, "sargan")$sargan, "overidentification", "sargan", "chi2")))
+  Filter(Negate(is.null), out)
 }

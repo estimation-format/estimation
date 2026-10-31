@@ -14,7 +14,7 @@ effects, and provenance. A \code{fixest_multi} gives a list of records, one per 
 to_estimation(fit, ...)
 
 \method{to_estimation}{fixest}(fit, data = NULL, vcov = NULL, conf_level = 0.95,
-  title = NULL, notes = NULL, tags = NULL, publication = NULL, call = TRUE,
+  tests = NULL, title = NULL, notes = NULL, tags = NULL, publication = NULL, call = TRUE,
   identifying = TRUE, ...)
 
 is_estimation_record(x)
@@ -28,6 +28,10 @@ environment; without it, drops are recorded as \code{other}.}
 \code{summary.fixest} (e.g. \code{list("hetero", ~firm)}). Each is recorded; the first is
 the default and gives the parameters' standard errors.}
 \item{conf_level}{confidence level of \code{conf_low}/\code{conf_high}.}
+\item{tests}{tests to add, as for \code{\link{add_test}}: hypotheses as text
+(\code{c("x = x2", "x + x2")}), or a list of them and \code{fixest::wald()} results. The
+record always has fixest's joint Wald test of the coefficients, and for IV the first-stage,
+weak-identification, endogeneity and overidentification tests.}
 \item{title, notes, tags}{user labels for \code{meta}.}
 \item{publication}{optional \code{publication} section: where the result appears in a paper.}
 \item{call}{include the call as written.}
