@@ -26,14 +26,39 @@
     "vcov": [{"kind": "matrix", "labels": ["(Intercept)", "fit_x", "w"],
               "data": [[0.0025, 0, 0], [0, 0.01, 0], [0, 0, 0.0016]],
               "type": "HC1", "ssc": {"convention": "fixest"}, "default": true}],
-    "first_stage": {
-      "kind": "object",
-      "per_endogenous": [
-        {"endogenous": "x", "f_stat": {"statistic": 400.0, "p_value": 1e-66, "df1": 1, "df2": 497, "distribution": "F"},
-         "partial_r2": 0.44}
-      ],
-      "weak_id_kp_f": 395.2,
-      "endogeneity": [{"name": "wu_hausman", "statistic": 3.1, "p_value": 0.079, "df1": 1, "df2": 496, "distribution": "F"}]
+    "first_stage": {"kind": "object", "per_endogenous": [{"endogenous": "x", "partial_r2": 0.44}]}
+  },
+  "tests": [
+    {
+      "id": "t1",
+      "category": "first_stage",
+      "name": "f",
+      "component": "first_stage",
+      "response": "x",
+      "origin": "estimation",
+      "statistic": 400.0,
+      "p_value": 1e-66,
+      "df1": 1,
+      "df2": 497,
+      "distribution": "F"
+    },
+    {
+      "id": "t2",
+      "category": "weak_identification",
+      "name": "kleibergen_paap_rk_wald_f",
+      "statistic": 395.2,
+      "origin": "estimation"
+    },
+    {
+      "id": "t3",
+      "category": "endogeneity",
+      "name": "wu_hausman",
+      "statistic": 3.1,
+      "p_value": 0.079,
+      "df1": 1,
+      "df2": 496,
+      "distribution": "F",
+      "origin": "estimation"
     }
-  }
+  ]
 }

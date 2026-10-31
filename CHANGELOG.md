@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Core: an optional top-level `tests` list (spec 4.8, `$defs/test`) for every hypothesis test
+  about the model: the estimator's own, those asked for after the fit, and linear
+  combinations. Each test has a `name`, a `statistic` or `p_value`, and optionally a
+  `category`, `origin` (`estimation` or `postestimation`), the hypothesis (`text`, `terms`, and
+  `R`, `q` for a linear test), the reference distribution and df, the vcov it used, and its
+  `source`. `tests` is append-only: any tool may add tests to a record without writing a new
+  one. It is outside the core digest. Profiles name tests by `category` and can expect one
+  (`x-expected-tests`).
+- Profiles: tests move from their own locations to `tests`: iv (`structures.first_stage` keeps
+  only the R²s), linear-fe (`metrics.f_stat`, `f_stat_robust`, `f_fe`), glm and
+  conditional-logit (`metrics.chi2`, `chi2_type`), did and csdid (`pretrend`), survival
+  (`metrics.lr_test`, `structures.ph_test`), meta-analysis (Egger, Begg), sem (`chisq`,
+  `chisq_baseline` and their df and p), mixed (`lr_vs_fixed`), causal-ml (grf calibration).
+  `multiple-testing/0.1` accepts `p_value_adjusted` on tests. fixest's `kpr` is mapped to
+  underidentification, not to the Kleibergen-Paap Wald F.
+- Validator: checks test ids, restriction shapes, and term and vcov references; warns on a
+  missing expected test category. `estimation_format.add_test()` appends a test and logs it in
+  `history`.
+
 - Core: optional `parameters[*].scale` (`estimation`, `exponentiated`) and `measure`
   (`odds_ratio`, `hazard_ratio`, ...), so exponentiated estimates are labeled.
 - Draft profiles for difference-in-differences: `did/0.1` (standard; csdid, R did, did2s,

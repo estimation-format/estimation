@@ -58,7 +58,6 @@ took the log of the variable.
 | `aic`, `bic` | `glm` `e(aic)` (per obs.), `e(bic)` | | `aic` | `AIC()`, `BIC()` | `aic`, `bic` | |
 | `dispersion` | `glm` `e(phi)` | | `summary()$dispersion` | `dispersion` | `scale` | |
 | `pearson_chi2` | `glm` `e(deviance_p)` | | | | `pearson_chi2` | |
-| `chi2` (+ `chi2_type`) | `e(chi2)`, `e(chi2type)` | `e(chi2)` (Wald) | | | | |
 | `n_separated` | | `e(num_separated)` | | `obs_selection` / `fixef_removed` | | `n_separation_na` |
 | `n_completely_determined` | `logit`/`probit` `e(N_cds)` + `e(N_cdf)` | | | | | |
 | `n_singletons`, `nobs_full` | | `e(num_singletons)`, `e(N_full)` | | | | |

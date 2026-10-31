@@ -319,14 +319,21 @@
         {"cohort": 2007, "period": 2005, "base_period": 2004, "error": 0},
         {"cohort": 2007, "period": 2006, "base_period": 2005, "error": 0},
         {"cohort": 2007, "period": 2007, "base_period": 2006, "error": 0}
-      ],
-      "pretrend": {
-        "name": "wald_pre",
-        "statistic": 7.791236627199986,
-        "df": 5,
-        "p_value": 0.16812249492389855,
-        "distribution": "chi2"
-      }
+      ]
     }
-  }
+  },
+  "tests": [
+    {
+      "id": "t1",
+      "category": "pretrend",
+      "name": "wald",
+      "label": "wald_pre",
+      "statistic": 7.791236627199986,
+      "df": 5,
+      "p_value": 0.16812249492389855,
+      "distribution": "chi2",
+      "origin": "postestimation",
+      "source": {"name": "csdid", "call": "estat pretrend"}
+    }
+  ]
 }

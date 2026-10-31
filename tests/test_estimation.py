@@ -770,7 +770,69 @@ def test_expected_profile_fields_warn():
         {"$ref": sc.profiles["dfeols/0.1"]["$id"] + "#/$defs/rules"}, sc.documents()
     )
     iv = json.loads((est.PACKAGED_SCHEMAS / "examples" / "iv.estimation.json").read_text())
-    del iv["structures"]["first_stage"]
+    iv["tests"] = [t for t in iv["tests"] if t["category"] != "first_stage"]
     issues = est.validate(iv, schema=sc)
     assert errors(issues) == []
-    assert ("warning", "structures.first_stage") in {(i.level, i.path) for i in issues}
+    hits = [(i.level, i.path, i.message) for i in issues if i.path == "tests"]
+    assert hits == [("warning", "tests", "[iv/0.1] expected a 'first_stage' test, none present")]
+
+
+def test_add_test_keeps_digest_and_logs_history():
+    """tests is append-only and outside the core digest: adding one keeps the digest valid."""
+    rec = est.prepare(fe_record())
+    assert est.check_digest(rec) is True
+    n = len(rec["history"])
+    est.add_test(
+        rec,
+        {
+            "category": "restriction",
+            "name": "wald",
+            "statistic": 4.2,
+            "distribution": "F",
+            "df1": 1,
+            "df2": 30,
+            "p_value": 0.049,
+            "hypothesis": {"text": "x1 = 0", "terms": ["x1"]},
+        },
+    )
+    est.add_test(rec, {"name": "wald", "p_value": 0.5})
+    assert [t["id"] for t in rec["tests"]] == ["t1", "t2"]
+    assert all("added" in t for t in rec["tests"])
+    assert est.check_digest(rec) is True
+    assert rec["history"][n:] and all(
+        h["action"] == "extended" and h["sections"] == ["tests"] for h in rec["history"][n:]
+    )
+    with pytest.raises(est.EstimationError):
+        est.add_test(rec, {"id": "t1", "name": "wald", "p_value": 0.1})
+    assert errors(est.validate(rec)) == []
+
+
+def test_tests_cross_references():
+    """Ids unique; restrictions R is q rows of labels columns; terms and vcov resolve."""
+    rec = est.prepare(fe_record())
+    terms = [r["term"] for r in rec["parameters"]]
+    vtype = rec["structures"]["vcov"][0]["type"]
+    rec["tests"] = [
+        {
+            "id": "a",
+            "name": "wald",
+            "statistic": 1.0,
+            "vcov": vtype,
+            "hypothesis": {"restrictions": {"R": [[1, -1]], "q": [0], "labels": terms[:2]}},
+        },
+        {"id": "a", "name": "wald", "statistic": 1.0},
+        {
+            "id": "b",
+            "name": "wald",
+            "statistic": 1.0,
+            "hypothesis": {"restrictions": {"R": [[1]], "q": [0, 1], "labels": terms[:1]}},
+        },
+        {"id": "c", "name": "wald", "statistic": 1.0, "hypothesis": {"terms": ["nope"]}, "vcov": "HC3"},
+    ]
+    issues = est.validate(rec)
+    errs = {(i.path, i.message) for i in issues if i.level == "error"}
+    assert ("tests[1].id", "duplicate id 'a'") in errs
+    assert ("tests[2].hypothesis.restrictions", "R must be len(q) rows of len(labels) columns") in errs
+    warns = {i.path for i in issues if i.level == "warning"}
+    assert {"tests[3]", "tests[3].vcov"} <= warns
+    assert not any(i.path.startswith("tests[0]") for i in issues)

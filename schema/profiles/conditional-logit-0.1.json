@@ -80,7 +80,6 @@
               "x-tools": {"Stata": "e(ll_0)", "survival::clogit": "loglik[1] (at the initial values, zero by default)", "statsmodels": "loglike(zeros) (not stored)"}
             },
             "pseudo_r2": {"description": "1 - log_lik / log_lik_null.", "x-tools": {"clogit": "e(r2_p)"}},
-            "chi2": {"description": "Model test; chi2_type says which (LR, Wald, score).", "x-tools": {"Stata": "e(chi2), e(chi2type)", "survival::clogit": "summary(): logtest (LR), waldtest, sctest (score)"}},
             "df_model": {"x-tools": {"Stata": "e(df_m)"}}
           }
         },
@@ -127,6 +126,19 @@
                 "converged": {"Stata": "e(converged)"},
                 "iterations": {"Stata": "e(ic)", "survival::clogit": "iter"},
                 "max_iterations": {"survival::clogit": "control$iter.max (20)", "Stata": "iterate()"}
+              }
+            }
+          }
+        },
+        "tests": {
+          "description": "Model tests by category (core $defs/test).",
+          "x-categories": {
+            "model": {
+              "description": "Test that all coefficients are zero; `name` says which (wald, likelihood_ratio, score).",
+              "names": ["wald", "likelihood_ratio", "score"],
+              "x-tools": {
+                "Stata": "e(chi2), e(chi2type)",
+                "survival::clogit": "summary(): logtest (LR), waldtest, sctest (score)"
               }
             }
           }

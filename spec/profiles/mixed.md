@@ -77,7 +77,7 @@ attachment (core 4.4).
 | `metrics.reml_criterion` | `REMLcrit()` | | | −2 `llf` | |
 | `metrics.sigma` | `sigma()` | `sigma()` | `exp(lnsig_e)` | `sqrt(scale)` | `sdest()` |
 | `metrics.aic`, `bic` | `AIC()`, `BIC()` | `AIC()`, `BIC()` | `estat ic` | `aic`, `bic` (NaN under REML) | `aic()`, `bic()` |
-| `metrics.lr_vs_fixed` | | | `e(chi2_c)`, `e(p_c)` | | |
+| test `random_effects` (`likelihood_ratio`, on the boundary) | | | `e(chi2_c)`, `e(p_c)` | | |
 | `random_effects[].levels` | `ngrps()` | `ngrps()` | `e(N_g)` (matrix by level) | `n_groups` | levels per term |
 | `random_effects[].size` | | | `e(g_min)`, `e(g_avg)`, `e(g_max)` (matrices) | group sizes | |
 | `numerics.converged` | `optinfo$conv$opt == 0` and no convergence messages | `convergence == 0` and `sdr$pdHess` | `e(converged)` | `converged` | `optsum.returnvalue` |

@@ -63,12 +63,31 @@
               "properties": {"kind": {"enum": ["table", "link"]}}
             },
             "small_study": {
-              "description": "Small-study / publication-bias diagnostics.",
+              "description": "Small-study / publication-bias adjustments (trim-and-fill). Egger's and Begg's tests are in `tests` (category small_study).",
               "type": "object",
               "properties": {
-                "egger": {"type": "object", "properties": {"statistic": {"type": "number"}, "p_value": {"type": "number"}}, "x-tools": {"metafor": "regtest()", "meta": "metabias(method.bias = \"Egger\")", "Stata": "meta bias, egger"}},
-                "begg": {"type": "object", "x-tools": {"metafor": "ranktest()", "meta": "metabias(method.bias = \"Begg\")", "Stata": "meta bias, begg"}},
                 "trim_and_fill": {"type": "object", "properties": {"k0": {"type": "integer"}, "side": {"type": "string"}, "estimate": {"type": "number"}}, "x-tools": {"metafor": "trimfill()", "meta": "trimfill()", "Stata": "meta trimfill"}}
+              }
+            }
+          }
+        },
+        "tests": {
+          "description": "Meta-analysis tests by category (core $defs/test).",
+          "x-categories": {
+            "small_study": {
+              "description": "Small-study / publication-bias tests.",
+              "names": ["egger", "begg"],
+              "x-tools": {
+                "egger": {
+                  "metafor": "regtest()",
+                  "meta": "metabias(method.bias = \"Egger\")",
+                  "Stata": "meta bias, egger"
+                },
+                "begg": {
+                  "metafor": "ranktest()",
+                  "meta": "metabias(method.bias = \"Begg\")",
+                  "Stata": "meta bias, begg"
+                }
               }
             }
           }

@@ -28,12 +28,6 @@
     "nobs": 432,
     "n_events": 114,
     "log_lik": -658.7476594460858,
-    "lr_test": {
-      "value": 33.26594580156939,
-      "definition": "likelihood-ratio chi2 vs the null model",
-      "df": 7,
-      "p_value": 2.3620450536999168e-05
-    },
     "concordance": {"value": 0.6403292470997135, "definition": "Harrell's C"},
     "aic": {"value": 1331.4953188921716, "definition": "partial AIC"},
     "conf_level": 0.95
@@ -121,21 +115,111 @@
         "ssc": {"convention": "lifelines", "formula": "none (inverse observed information)"},
         "default": true
       }
-    ],
-    "ph_test": {
-      "kind": "object",
-      "transform": "rank",
-      "per_term": [
-        {"term": "age", "statistic": 11.453496600485108, "df": 1, "p_value": 0.0007135959798836676},
-        {"term": "fin", "statistic": 0.015055834879840831, "df": 1, "p_value": 0.9023429055664863},
-        {"term": "mar", "statistic": 0.709473750549794, "df": 1, "p_value": 0.39961856932303874},
-        {"term": "paro", "statistic": 0.13426615274757392, "df": 1, "p_value": 0.7140491159363742},
-        {"term": "prio", "statistic": 0.01883421852219513, "df": 1, "p_value": 0.890842819738199},
-        {"term": "race", "statistic": 1.426478583542939, "df": 1, "p_value": 0.2323399963081184},
-        {"term": "wexp", "statistic": 7.314933685994999, "df": 1, "p_value": 0.006838392264642656}
-      ]
-    }
+    ]
   },
+  "tests": [
+    {
+      "id": "t1",
+      "category": "model",
+      "name": "likelihood_ratio",
+      "statistic": 33.26594580156939,
+      "distribution": "chi2",
+      "df": 7,
+      "p_value": 2.3620450536999168e-05,
+      "origin": "estimation"
+    },
+    {
+      "id": "t2",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["age"],
+      "statistic": 11.453496600485108,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.0007135959798836676,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t3",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["fin"],
+      "statistic": 0.015055834879840831,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.9023429055664863,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t4",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["mar"],
+      "statistic": 0.709473750549794,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.39961856932303874,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t5",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["paro"],
+      "statistic": 0.13426615274757392,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.7140491159363742,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t6",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["prio"],
+      "statistic": 0.01883421852219513,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.890842819738199,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t7",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["race"],
+      "statistic": 1.426478583542939,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.2323399963081184,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    },
+    {
+      "id": "t8",
+      "category": "proportional_hazards",
+      "name": "schoenfeld",
+      "terms": ["wexp"],
+      "statistic": 7.314933685994999,
+      "distribution": "chi2",
+      "df": 1,
+      "p_value": 0.006838392264642656,
+      "options": {"transform": "rank"},
+      "origin": "postestimation",
+      "source": {"name": "lifelines", "call": "proportional_hazard_test(cph, df, time_transform=\"rank\")"}
+    }
+  ],
   "provenance": {
     "software": [
       {

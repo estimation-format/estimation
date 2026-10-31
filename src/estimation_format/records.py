@@ -52,7 +52,7 @@ FAIL_BYTES = 16_000_000
 
 REQUIRED = ("schema", "meta", "parameters")
 EXPECTED = ("metrics", "specification", "provenance")
-OPTIONAL = ("structures", "publication", "validation", "attachments", "extensions", "history")
+OPTIONAL = ("structures", "tests", "publication", "validation", "attachments", "extensions", "history")
 # Sections covered by meta.core_digest (meta without the digest itself)
 CORE = ("meta", "specification", "metrics", "parameters", "structures")
 STATUSES = ("ok", "warning", "failed")
@@ -727,6 +727,8 @@ def _check_core(rec: dict, structural: bool = True) -> list[Issue]:
             elif s["kind"] == "link" and s.get("attachment") not in att_ids:
                 xerr(f"{p}.attachment", f"no attachment with id {s.get('attachment')!r}")
 
+    issues += _check_tests(rec, err, xerr, warn)
+
     for ns, block in (rec.get("extensions") or {}).items() if isinstance(rec.get("extensions"), dict) else []:
         if not isinstance(block, dict):
             err(f"extensions.{ns}", "must be an object")
@@ -741,6 +743,87 @@ def _check_core(rec: dict, structural: bool = True) -> list[Issue]:
                 if not isinstance(h, dict) or not {"when", "by", "action"} <= h.keys():
                     warn(f"history[{i}]", "needs 'when', 'by' and 'action'")
     return issues
+
+
+def _check_tests(rec: dict, err, xerr, warn) -> list[Issue]:
+    """`tests`: shape (when no schema is in use), unique ids, and references to parameters
+    and vcovs that must resolve. Problems are reported through the callbacks."""
+    if "tests" not in rec:
+        return []
+    tests = rec["tests"]
+    if not isinstance(tests, list):
+        err("tests", "must be a list")
+        return []
+    terms = {r.get("term") for r in rec.get("parameters") or [] if isinstance(r, dict)}
+    v = (rec.get("structures") or {}).get("vcov") if isinstance(rec.get("structures"), dict) else None
+    vcovs = [x for x in (v if isinstance(v, list) else [v]) if isinstance(x, dict)]
+    ids: set = set()
+    for i, t in enumerate(tests):
+        p = f"tests[{i}]"
+        if not isinstance(t, dict):
+            err(p, "must be an object")
+            continue
+        if not isinstance(t.get("name"), str):
+            err(f"{p}.name", "required string")
+        if "statistic" not in t and "p_value" not in t:
+            err(p, "needs 'statistic' or 'p_value'")
+        if "id" in t:
+            if t["id"] in ids:
+                xerr(f"{p}.id", f"duplicate id {t['id']!r}")
+            ids.add(t["id"])
+        hyp = t.get("hypothesis") if isinstance(t.get("hypothesis"), dict) else {}
+        named = list(hyp.get("terms") or []) + list(t.get("terms") or [])
+        r = hyp.get("restrictions")
+        if isinstance(r, dict):
+            labels, R, q = r.get("labels") or [], r.get("R") or [], r.get("q") or []
+            named += list(labels)
+            if len(R) != len(q) or any(not isinstance(row, list) or len(row) != len(labels) for row in R):
+                xerr(f"{p}.hypothesis.restrictions", "R must be len(q) rows of len(labels) columns")
+        missing = sorted({n for n in named if isinstance(n, str)} - terms)
+        if missing and terms:
+            warn(f"{p}", f"terms not in parameters: {', '.join(missing)}")
+        tv = t.get("vcov")
+        if tv is not None and vcovs:
+            want = tv if isinstance(tv, dict) else {"type": tv}
+            match = [
+                x
+                for x in vcovs
+                if x.get("type") == want.get("type")
+                and ("cluster" not in want or list(x.get("cluster") or []) == list(want["cluster"]))
+            ]
+            if not match:
+                warn(
+                    f"{p}.vcov",
+                    f"no structures.vcov entry with type {want.get('type')!r}"
+                    + (f" and cluster {want['cluster']}" if "cluster" in want else ""),
+                )
+    return []
+
+
+def add_test(record: dict, test: dict, *, by: dict | None = None) -> dict:
+    """Append one test to `record["tests"]` in place and return the record.
+
+    `tests` is append-only and outside the core digest, so adding a test after the record
+    was written keeps the digest valid. The test gets an `id` (`t<n>`) if it has none and
+    `added`; a history entry records the extension."""
+    tests = record.setdefault("tests", [])
+    if not isinstance(tests, list):
+        raise EstimationError("record['tests'] must be a list")
+    t = to_json(dict(test))
+    taken = {x.get("id") for x in tests if isinstance(x, dict)}
+    if "id" not in t:
+        n = len(tests) + 1
+        while f"t{n}" in taken:
+            n += 1
+        t["id"] = f"t{n}"
+    elif t["id"] in taken:
+        raise EstimationError(f"a test with id {t['id']!r} is already in the record")
+    t.setdefault("added", _now())
+    tests.append(t)
+    record.setdefault("history", []).append(
+        {"when": t["added"], "by": by or _producer(), "action": "extended", "sections": ["tests"]}
+    )
+    return record
 
 
 def _default_vcov(rec: dict) -> dict | None:
@@ -1181,15 +1264,34 @@ def expected_paths(schema: dict, documents: Iterable[dict] = ()) -> list[tuple[s
     return sorted(found)
 
 
+def expected_tests(schema: dict, documents: Iterable[dict] = ()) -> list[str]:
+    """Test categories a JSON Schema lists in `x-expected-tests`: a conforming record has a
+    test of each in `tests`, as a rule, but not necessarily."""
+    found: set[str] = set()
+
+    def visit(node: dict, path: str) -> bool:
+        found.update(node.get("x-expected-tests") or [])
+        return False
+
+    _walk_schema(schema, documents, visit)
+    return sorted(found)
+
+
 def _expected_issues(enc: dict, schemas: Schemas, claimed: list, seen: set) -> list[Issue]:
     """A warning for each `x-expected` field of a claimed profile's rules that is missing
-    from an object the record has."""
+    from an object the record has, and for each `x-expected-tests` category with no test."""
     issues = []
     docs = schemas.documents()
+    tests = enc.get("tests") if isinstance(enc.get("tests"), list) else []
+    have = {t.get("category") for t in tests if isinstance(t, dict)}
     for p in claimed:
         doc = schemas.profiles.get(p)
         if doc is None or "rules" not in doc.get("$defs", {}):
             continue
+        for cat in expected_tests({"$ref": f"{doc['$id']}#/$defs/rules"}, docs):
+            if cat not in have and ("warning", f"tests:{cat}") not in seen:
+                seen.add(("warning", f"tests:{cat}"))
+                issues.append(Issue("warning", "tests", f"[{p}] expected a {cat!r} test, none present"))
         for path, field in expected_paths({"$ref": f"{doc['$id']}#/$defs/rules"}, docs):
             objects = [(enc, "")] if not path else [(c[k], q) for c, k, q in _matches(enc, _split(path), "")]
             for obj, where in objects:

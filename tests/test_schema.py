@@ -107,7 +107,7 @@ def doc_examples():
 def test_doc_blocks_found():
     kinds = [next(iter(b[0])) for b in doc_blocks()]
     assert sorted(kinds) == sorted(
-        ["term", "vcov", "publication", "comparisons", "id", "extensions", "schema"]
+        ["term", "vcov", "tests", "publication", "comparisons", "id", "extensions", "schema"]
     )
 
 
@@ -118,6 +118,8 @@ def test_doc_examples_validate():
     for row in canon:
         assert errors(CORE, row, "parameter") == []
     assert errors(CORE, vcov[0], "structures") == []
+    for t in ex["tests"][0]["tests"]:
+        assert errors(CORE, t, "test") == []
     assert errors(CORE, pub[0]["publication"], "publication") == []
     assert errors(CORE, comp[0], "validation") == []
     assert errors(CORE, att[0], "attachment") == []
@@ -279,15 +281,17 @@ def test_iv_and_dfeols_require():
         bad = copy.deepcopy(iv)
         del bad["specification"][key]
         assert errors(p, bad), key
-    # first_stage is expected, not required: most tools compute it only on request
+    # first-stage tests and structures.first_stage are expected, not required: most tools
+    # compute them only on request
     no_first = copy.deepcopy(iv)
     del no_first["structures"]["first_stage"]
+    del no_first["tests"]
     assert errors(p, no_first) == []
     bad = copy.deepcopy(iv)
     del bad["structures"]["first_stage"]["per_endogenous"][0]["endogenous"]
     assert errors(p, bad)
     bad = copy.deepcopy(iv)
-    bad["structures"]["first_stage"]["endogeneity"][0] = {"name": "wu_hausman"}  # no statistic
+    bad["tests"][2] = {"category": "endogeneity", "name": "wu_hausman"}  # no statistic or p_value
     assert errors(p, bad)
 
     rec = example("dfeols-linear-fe.estimation.json")
@@ -313,3 +317,21 @@ def test_identifying_marks_match_library():
     marked = set(est.identifying_paths(load(CORE)))
     assert marked == set(est.DEFAULT_IDENTIFYING)
     assert not any(p.split(".")[0] in est.CORE for p in marked)  # redaction can't touch digest sections
+
+
+def test_tests_section():
+    """Core tests: a name and a statistic or p-value; profile rules on tests by category."""
+    rec = example("survival-cox-efron.estimation.json")
+    p = "profiles/survival-0.1.json"
+    assert errors(p, rec) == []
+    bad = copy.deepcopy(rec)
+    del bad["tests"][1]["name"]
+    assert errors(p, bad)
+    bad = copy.deepcopy(rec)
+    del bad["tests"][1]["options"]  # a proportional-hazards test needs its time transform
+    assert errors(p, bad)
+    rec = example("sem.estimation.json")
+    p = "profiles/sem-0.1.json"
+    bad = copy.deepcopy(rec)
+    bad["tests"] = [t for t in bad["tests"] if t["category"] != "model_fit"]
+    assert errors(p, bad)  # sem/0.1 requires the model chi-square

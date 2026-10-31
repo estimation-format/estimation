@@ -126,9 +126,10 @@ A `kind: "object"` structure, all fields optional:
 - `periods`: the calendar periods in the sample.
 - `cells`: one entry per ATT(g,t) 2×2 comparison, `{cohort, period, base_period, n, n_control,
   n_treated, error}` (csdid `e(gtt)`: `cohort t0 t1 error N N_cntr N_trt`).
-- `pretrend`: the joint pre-trend test, `{name, statistic, df, p_value, distribution}` (csdid
-  `estat pretrend`; R `did` `W`, `Wpval`).
 - `uniform_band`: `{critical_value, level, method, applies_to}` (R `did` `c`, `crit.val.egt`).
+
+The joint pre-trend test goes in `tests` (core 4.8) with `category: "pretrend"`, usually `name:
+"wald"` with a chi2 statistic (csdid `estat pretrend`; R `did` `W`, `Wpval`).
 
 ## Examples
 

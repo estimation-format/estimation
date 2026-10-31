@@ -91,7 +91,6 @@
             "bic": {"x-tools": {"Stata glm": "e(bic)", "fixest": "BIC()", "statsmodels": "bic"}},
             "dispersion": {"description": "Dispersion (scale) parameter used for the vcov; 1 for binomial and Poisson unless estimated.", "x-tools": {"R glm": "summary()$dispersion", "fixest": "dispersion", "statsmodels": "scale", "Stata glm": "e(phi)"}},
             "pearson_chi2": {"x-tools": {"Stata glm": "e(deviance_p)", "statsmodels": "pearson_chi2"}},
-            "chi2": {"description": "Model test statistic; chi2_type says which (Wald, LR).", "x-tools": {"Stata": "e(chi2), e(chi2type)", "ppmlhdfe": "e(chi2) (Wald)"}},
             "n_separated": {"description": "Rows dropped as separated (their fitted mean is 0 or the outcome bound).", "type": ["integer", "null"], "x-tools": {"ppmlhdfe": "e(num_separated)", "pyfixest": "n_separation_na", "fixest": "obs_selection / fixef_removed (perfect_fit)"}},
             "n_completely_determined": {"description": "Rows whose outcome the model predicts exactly but kept (Stata logit/probit e(N_cds) + e(N_cdf)).", "type": ["integer", "null"]},
             "n_singletons": {"description": "As in linear-fe.", "x-tools": {"ppmlhdfe": "e(num_singletons)"}},
@@ -125,6 +124,16 @@
               }
             },
             "fixed_effects": {"description": "Absorbed fixed effects, as in linear-fe/0.1: one {kind: \"object\", name, levels} per FE."}
+          }
+        },
+        "tests": {
+          "description": "Model tests by category (core $defs/test).",
+          "x-categories": {
+            "model": {
+              "description": "Test that all coefficients are zero; `name` says which (wald, likelihood_ratio, score).",
+              "names": ["wald", "likelihood_ratio", "score"],
+              "x-tools": {"Stata": "e(chi2), e(chi2type)", "ppmlhdfe": "e(chi2) (Wald)"}
+            }
           }
         }
       }

@@ -25,6 +25,11 @@
     "specification": {"$ref": "#/$defs/specification"},
     "provenance": {"$ref": "#/$defs/provenance"},
     "structures": {"$ref": "#/$defs/structures"},
+    "tests": {
+      "description": "Hypothesis tests about the model: the estimator's own (model F, first-stage, overidentification, pre-trend, ...) and those added after the fit (Wald tests of restrictions, linear combinations). Append-only: a tool MAY add entries and MUST NOT change or remove entries another tool wrote. Outside the core digest. Ids unique within the record.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/test"}
+    },
     "publication": {"$ref": "#/$defs/publication"},
     "validation": {"$ref": "#/$defs/validation"},
     "attachments": {
@@ -43,6 +48,66 @@
     }
   },
   "$defs": {
+    "test": {
+      "description": "One hypothesis test. `category` says what it tests (profiles refer to tests by category), `name` which test. A linear test gives H0: R b = q in `hypothesis.restrictions`, so it can be recomputed from the record's parameters and vcov; a single restriction (a linear combination, lincom) may also carry estimate, std_error and an interval.",
+      "type": "object",
+      "required": ["name"],
+      "anyOf": [{"required": ["statistic"]}, {"required": ["p_value"]}],
+      "properties": {
+        "id": {"description": "Unique within the record; referenced by other tests or tools.", "type": "string"},
+        "category": {"type": "string", "x-vocabulary": ["model", "restriction", "linear_combination", "fixed_effects", "random_effects", "first_stage", "weak_identification", "underidentification", "overidentification", "endogeneity", "pretrend", "proportional_hazards", "small_study", "model_fit", "baseline_fit", "calibration", "specification"]},
+        "name": {"type": "string", "x-vocabulary": ["wald", "f", "t", "likelihood_ratio", "score", "sargan", "basmann", "hansen_j", "anderson_rubin", "stock_wright", "wu_hausman", "durbin", "hausman", "cragg_donald_f", "kleibergen_paap_rk_lm", "kleibergen_paap_rk_wald_f", "anderson_lm", "sanderson_windmeijer_f", "angrist_pischke_f", "effective_f", "schoenfeld", "egger", "begg", "chi2"]},
+        "label": {"description": "The user's own label.", "type": "string"},
+        "origin": {"description": "\"estimation\": computed by the estimating software as part of the fit or its standard output; \"postestimation\": asked for afterwards (a test command, wald(), estat).", "type": "string", "x-vocabulary": ["estimation", "postestimation"]},
+        "tags": {"$ref": "#/$defs/strings"},
+        "hypothesis": {
+          "type": "object",
+          "properties": {
+            "text": {"description": "The null as written, e.g. \"x = x2\" or \"x + x2 = 1\".", "type": "string"},
+            "terms": {"description": "The parameters[*].term values the test involves.", "$ref": "#/$defs/strings"},
+            "restrictions": {
+              "description": "H0: R b = q. R has one row per restriction and one column per label (parameters[*].term).",
+              "type": "object",
+              "required": ["R", "q", "labels"],
+              "properties": {
+                "R": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/number"}}},
+                "q": {"type": "array", "items": {"$ref": "#/$defs/number"}},
+                "labels": {"$ref": "#/$defs/strings"}
+              }
+            },
+            "alternative": {"type": "string", "x-vocabulary": ["two_sided", "greater", "less"]}
+          }
+        },
+        "response": {"description": "Which outcome or equation, as in parameters (e.g. the endogenous variable of a first stage).", "type": "string"},
+        "component": {"description": "As in parameters (e.g. \"first_stage\").", "type": "string"},
+        "terms": {"description": "Terms a per-term test is about (e.g. one proportional-hazards test per term).", "$ref": "#/$defs/strings"},
+        "estimate": {"$ref": "#/$defs/number_or_null"},
+        "std_error": {"$ref": "#/$defs/number_or_null"},
+        "conf_low": {"$ref": "#/$defs/number_or_null"},
+        "conf_high": {"$ref": "#/$defs/number_or_null"},
+        "statistic": {"$ref": "#/$defs/number_or_null"},
+        "distribution": {"type": "string", "x-vocabulary": ["F", "chi2", "t", "normal", "empirical"]},
+        "df": {"description": "chi2 or t degrees of freedom.", "$ref": "#/$defs/number_or_null"},
+        "df1": {"description": "F numerator df.", "$ref": "#/$defs/number_or_null"},
+        "df2": {"description": "F denominator df.", "$ref": "#/$defs/number_or_null"},
+        "p_value": {"$ref": "#/$defs/number_or_null"},
+        "p_value_adjusted": {"$ref": "#/$defs/number_or_null"},
+        "family": {"description": "Multiple-testing family (multiple-testing/0.1 test_family).", "type": "string"},
+        "method": {"type": "string", "x-vocabulary": ["wald", "likelihood_ratio", "score", "bootstrap", "permutation", "exact"]},
+        "vcov": {
+          "description": "The structures.vcov entry the test used, matched on type (and cluster). Absent: the default vcov. A string is the type alone.",
+          "anyOf": [
+            {"type": "string"},
+            {"type": "object", "required": ["type"], "properties": {"type": {"type": "string"}, "cluster": {"$ref": "#/$defs/strings"}}}
+          ]
+        },
+        "options": {"description": "Test-specific settings (e.g. the proportional-hazards time transform).", "type": "object"},
+        "resampling": {"description": "For bootstrap and permutation tests, as in resampling/0.1.", "type": "object"},
+        "records": {"description": "meta.id of each record a cross-model test compares (Hausman, lrtest m1 m2).", "$ref": "#/$defs/strings"},
+        "source": {"description": "What computed the test when it isn't the estimator: name, version, call.", "type": "object", "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "call": {"type": "string"}}},
+        "added": {"description": "When a test was added to an existing record.", "$ref": "#/$defs/timestamp"}
+      }
+    },
     "number": {
       "description": "A JSON number, or a non-finite value as a string.",
       "anyOf": [{"type": "number"}, {"enum": ["NaN", "Inf", "-Inf"]}]

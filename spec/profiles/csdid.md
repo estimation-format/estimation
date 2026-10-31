@@ -37,7 +37,7 @@ Everything `did/0.1` requires (the profile includes its rules), plus:
 | `e(reps)`, `e(wbtype)`, `e(seed)`, `e(citype)` | vcov `reps`, `bootstrap_weights`, `seed`; `options.citype` |
 | `e(cband)` (`b se t ll ul`) | with `e(citype) == "uniform"`: `did.band_low`/`band_high`; with `pointwise`: `conf_low`/`conf_high` |
 | `e(riffile)` | `options.saverif` (a path: identifying) |
-| `estat pretrend`: `r(chi2)`, `r(pchi2)`, `r(df)` | `structures.did.pretrend` |
+| `estat pretrend`: `r(chi2)`, `r(pchi2)`, `r(df)` | a `tests` entry, `category: "pretrend"`, `origin: "postestimation"` |
 | `estat simple/group/calendar/event`: `r(b)`, `r(V)` | more rows with the matching `did.type`, and their own non-default vcov |
 
 The variance is V = IF′IF / n² (cluster sums of the influence function when clustered), with

@@ -269,10 +269,10 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	string matrix cs, rs
 	string vector terms, clusters, absvars, fe, params, vrows, software, sections, dofrows
 	string scalar canon, dropped, vce, vtype, wtype, wvar, dfr_def, meta, spec, metrics
-	string scalar structures, provenance, history, rec, sample, nested, vcov, datain, messages, nl, aw_def
+	string scalar structures, provenance, history, rec, sample, nested, vcov, datain, messages, nl, aw_def, tests
 	string vector clk, clv
 	real scalar i, j, N, Nfull, nsing, rows_input, n_missing, n_other, df, se, t, crit, level
-	real scalar fh, ncl
+	real scalar fh, ncl, Fv
 
 	b = st_matrix("e(b)")
 	V = st_matrix("e(V)")
@@ -352,14 +352,20 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	aw_def = wtype == "aweight" ? ", with aweights rescaled to sum to N" : ""
 	metrics = _ej_o(("nobs", "nobs_full", "n_singletons", "df_residual", "df_model", "df_absorbed", "df_absorbed_nested",
 		"rss", "tss", "tss_within", "r2", "adj_r2", "r2_within", "adj_r2_within", "sigma", "log_lik", "log_lik_null",
-		"f_stat", "sum_weights", "rank", "conf_level"),
+		"sum_weights", "rank", "conf_level"),
 		(_ej_n(N), _ej_n(Nfull), _ej_n(nsing),
 		 (ncl ? _ej_o(("value", "definition"), (_ej_n(df), _ej_s(dfr_def))) : _ej_n(df)),
 		 _est_num("df_m"), _est_num("df_a"), _est_num("df_a_nested"), _est_def("rss", "weighted RSS" + aw_def, aw_def != ""), _est_num("tss"),
 		 _est_num("tss_within"), _est_num("r2"), _est_num("r2_a"), _est_num("r2_within"), _est_num("r2_a_within"),
-		 _est_def("rmse", "sqrt(RSS / (N - K))" + aw_def, aw_def != ""), _est_num("ll"), _est_num("ll_0"), _est_num("F"),
+		 _est_def("rmse", "sqrt(RSS / (N - K))" + aw_def, aw_def != ""), _est_num("ll"), _est_num("ll_0"),
 		 (missing(_est_sc("e(sumweights)")) ? "" : _est_num("sumweights")), _est_num("rank"),
 		 _ej_n(level / 100)))
+
+	// The model F (Wald F under a robust vcov) goes in tests, not metrics
+	Fv = _est_sc("e(F)")
+	tests = missing(Fv) ? "" : "[" + _ej_o(("id", "category", "name", "origin", "statistic", "distribution", "df1", "df2", "p_value"),
+		(_ej_s("t1"), _ej_s("model"), _ej_s(vtype == "iid" ? "f" : "wald"), _ej_s("estimation"), _ej_n(Fv), _ej_s("F"),
+		 _est_num("df_m"), _ej_n(df), _ej_n(Ftail(_est_sc("e(df_m)"), df, Fv)))) + "]"
 
 	wvar = strtrim(subinstr(st_global("e(wexp)"), "=", "", 1))
 	sample = _ej_o(("restriction", "rows_input", "dropped"),
@@ -399,6 +405,7 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 		(_ej_s(_est_uuid()), _ej_s(created), _ej_s("ok"), _ej_o(("family", "method"), (_ej_s("linear"), _ej_s("ols"))),
 		 _ej_sa(st_global("e(depvar)")), _ej_sa(("inference/0.1", "linear-fe/0.1")), messages))
 	sections = ("meta", "specification", "metrics", "parameters", "structures", "provenance")
+	if (tests != "") sections = sections, "tests"
 	history = "[" + _ej_o(("when", "by", "action", "sections"), (_ej_s(created),
 		_ej_o(("name", "version"), (_ej_s("estimation_write"), _ej_s("0.1.0"))), _ej_s("created"), _ej_sa(sections))) + "]"
 
@@ -410,6 +417,7 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 		" " + _ej_s("metrics") + ": " + metrics + "," + nl +
 		" " + _ej_s("parameters") + ": [" + nl + "  " + invtokens(params, "," + nl + "  ") + nl + " ]," + nl +
 		" " + _ej_s("structures") + ": " + structures + "," + nl +
+		(tests != "" ? " " + _ej_s("tests") + ": " + tests + "," + nl : "") +
 		" " + _ej_s("provenance") + ": " + provenance + "," + nl +
 		" " + _ej_s("history") + ": " + history + nl + "}" + nl
 

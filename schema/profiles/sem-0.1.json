@@ -3,7 +3,7 @@
   "$id": "https://estimation-format.github.io/estimation/schema/profiles/sem-0.1.json",
   "title": "sem/0.1",
   "x-license": "CC0-1.0",
-  "description": "Profile for structural equation models (CFA, path models, full SEM; single- or multi-group): R lavaan; Python semopy; Stata sem (survey 2026-10-25, spec/profiles/sem.md). Requires meta.estimator.method (ml, mlr, wlsmv, ...); specification.formula with the model syntax; a `sem` object (op, lhs, rhs, free) on every row that isn't dropped, with estimate, and std_error on free parameters; metrics.nobs, chisq and chisq_df; a default vcov with type; and structures.numerics.converged. cfi, tli, rmsea and srmr are expected. Fit indices that tools define differently (N vs N-1 in the chi-square, semopy's LogLik) are recorded as {value, definition}. Indirect effects defined in the model (lavaan :=) can also be described by mediation/0.1.",
+  "description": "Profile for structural equation models (CFA, path models, full SEM; single- or multi-group): R lavaan; Python semopy; Stata sem (survey 2026-10-25, spec/profiles/sem.md). Requires meta.estimator.method (ml, mlr, wlsmv, ...); specification.formula with the model syntax; a `sem` object (op, lhs, rhs, free) on every row that isn't dropped, with estimate, and std_error on free parameters; metrics.nobs; a model_fit chi-square test with its df in `tests`; a default vcov with type; and structures.numerics.converged. cfi, tli, rmsea and srmr are expected. Fit indices that tools define differently (N vs N-1 in the chi-square, semopy's LogLik) are recorded as {value, definition}. Indirect effects defined in the model (lavaan :=) can also be described by mediation/0.1.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
@@ -13,7 +13,7 @@
   "$defs": {
     "rules": {
       "type": "object",
-      "required": ["meta", "specification", "metrics", "structures"],
+      "required": ["meta", "specification", "metrics", "structures", "tests"],
       "properties": {
         "meta": {
           "required": ["estimator"],
@@ -61,16 +61,11 @@
           }
         },
         "metrics": {
-          "required": ["nobs", "chisq", "chisq_df"],
+          "required": ["nobs"],
           "x-expected": ["cfi", "tli", "rmsea", "srmr"],
           "properties": {
             "nobs": {"x-tools": {"lavaan": "nobs() / lavInspect(\"nobs\") (per group)", "semopy": "rows of the data", "Stata sem": "e(N)"}},
             "npar": {"description": "Free parameters.", "type": ["integer", "null"], "x-tools": {"lavaan": "fitMeasures \"npar\"", "semopy": "len(param_vals)"}},
-            "chisq": {"description": "Model chi-square against the saturated model. Record {value, definition} when it uses N - 1 or a scaled test.", "x-tools": {"lavaan": "fitMeasures \"chisq\" (\"chisq.scaled\")", "semopy": "calc_stats chi2", "Stata sem": "e(chi2_ms)"}},
-            "chisq_df": {"x-tools": {"lavaan": "\"df\"", "semopy": "DoF", "Stata sem": "e(df_ms)"}},
-            "chisq_p": {"x-tools": {"lavaan": "\"pvalue\"", "semopy": "chi2 p-value", "Stata sem": "e(p_ms)"}},
-            "chisq_baseline": {"x-tools": {"lavaan": "\"baseline.chisq\"", "semopy": "chi2 Baseline", "Stata sem": "e(chi2_bs)"}},
-            "chisq_baseline_df": {"x-tools": {"lavaan": "\"baseline.df\"", "semopy": "DoF Baseline", "Stata sem": "e(df_bs)"}},
             "cfi": {"x-tools": {"lavaan": "\"cfi\" (\"cfi.scaled\", \"cfi.robust\")", "semopy": "CFI", "Stata sem": "estat gof, stats(all): r(cfi)"}},
             "tli": {"x-tools": {"lavaan": "\"tli\"", "semopy": "TLI", "Stata sem": "r(tli)"}},
             "rmsea": {"x-tools": {"lavaan": "\"rmsea\"", "semopy": "RMSEA", "Stata sem": "r(rmsea)"}},
@@ -107,6 +102,37 @@
             "numerics": {
               "required": ["converged"],
               "x-tools": {"converged": {"lavaan": "lavInspect(\"converged\")", "semopy": "fit() result: \"Optimization successful\"", "Stata sem": "e(converged)"}, "iterations": {"lavaan": "lavInspect(\"iterations\")", "semopy": "fit() result: Number of iterations", "Stata sem": "e(ic)"}}
+            }
+          }
+        },
+        "tests": {
+          "description": "SEM tests by category (core $defs/test).",
+          "contains": {"required": ["category", "statistic", "df"], "properties": {"category": {"const": "model_fit"}}},
+          "x-categories": {
+            "model_fit": {
+              "description": "Model chi-square against the saturated model. Record {value, definition} when it uses N - 1 or a scaled test. The variant (standard, Satorra-Bentler, ...) is specification.options.test.",
+              "names": ["chi2"],
+              "x-tools": {
+                "statistic": {
+                  "lavaan": "fitMeasures \"chisq\" (\"chisq.scaled\")",
+                  "semopy": "calc_stats chi2",
+                  "Stata sem": "e(chi2_ms)"
+                },
+                "df": {"lavaan": "\"df\"", "semopy": "DoF", "Stata sem": "e(df_ms)"},
+                "p_value": {"lavaan": "\"pvalue\"", "semopy": "chi2 p-value", "Stata sem": "e(p_ms)"}
+              }
+            },
+            "baseline_fit": {
+              "description": "Chi-square of the baseline (independence) model, used by CFI and TLI.",
+              "names": ["chi2"],
+              "x-tools": {
+                "statistic": {
+                  "lavaan": "\"baseline.chisq\"",
+                  "semopy": "chi2 Baseline",
+                  "Stata sem": "e(chi2_bs)"
+                },
+                "df": {"lavaan": "\"baseline.df\"", "semopy": "DoF Baseline", "Stata sem": "e(df_bs)"}
+              }
             }
           }
         }

@@ -64,9 +64,10 @@ Vocabulary for `effect_measure`: `log_rr`, `log_or`, `rd`, `log_hr`, `smd_hedges
 
 `structures.studies` is a `table` of the study inputs and weights (`study`, `yi`, `vi`,
 `weight_common`, `weight_random`), or a link to an attachment when large.
-`structures.small_study` holds Egger's and Begg's tests and trim-and-fill (`k0`, side, adjusted
-estimate): metafor `regtest()`, `ranktest()`, `trimfill()`; meta `metabias()`, `trimfill()`;
-Stata `meta bias`, `meta trimfill`.
+Egger's and Begg's tests go in `tests` (core 4.8), `category: "small_study"`, `name: "egger"` or
+`"begg"` (metafor `regtest()`, `ranktest()`; meta `metabias()`; Stata `meta bias`).
+`structures.small_study` holds trim-and-fill (`k0`, side, adjusted estimate): metafor
+`trimfill()`, meta `trimfill()`, Stata `meta trimfill`.
 
 ## Example
 

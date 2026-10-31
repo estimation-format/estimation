@@ -98,8 +98,7 @@
             "deviance": {"description": "As the tool defines it; lme4 deviance() of a REML fit is the ML deviance at the REML estimates, so record {value, definition}.", "x-tools": {"lme4": "deviance()", "MixedModels.jl": "deviance()", "glmmTMB": "deviance()"}},
             "aic": {"x-tools": {"lme4, glmmTMB": "AIC()", "statsmodels": "aic (NaN under REML)", "MixedModels.jl": "aic()"}},
             "bic": {"x-tools": {"lme4, glmmTMB": "BIC()", "statsmodels": "bic", "MixedModels.jl": "bic()"}},
-            "sigma": {"description": "Residual standard deviation.", "x-tools": {"lme4": "sigma()", "statsmodels": "sqrt(scale)", "Stata": "exp(_b[lnsig_e:_cons])", "MixedModels.jl": "sdest()"}},
-            "lr_vs_fixed": {"description": "LR test of the random effects against the model without them (on the boundary).", "x-tools": {"Stata": "e(chi2_c), e(p_c), e(df_c)"}}
+            "sigma": {"description": "Residual standard deviation.", "x-tools": {"lme4": "sigma()", "statsmodels": "sqrt(scale)", "Stata": "exp(_b[lnsig_e:_cons])", "MixedModels.jl": "sdest()"}}
           }
         },
         "structures": {
@@ -154,6 +153,16 @@
                 "function_evaluations": {"type": ["integer", "null"], "x-tools": {"lme4": "optinfo$feval", "MixedModels.jl": "optsum.feval"}},
                 "iterations": {"x-tools": {"Stata": "e(ic)"}}
               }
+            }
+          }
+        },
+        "tests": {
+          "description": "Mixed-model tests by category (core $defs/test).",
+          "x-categories": {
+            "random_effects": {
+              "description": "LR test of the random effects against the model without them (on the boundary).",
+              "names": ["likelihood_ratio"],
+              "x-tools": {"Stata": "e(chi2_c), e(p_c), e(df_c)"}
             }
           }
         }

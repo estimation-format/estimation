@@ -61,9 +61,6 @@
             "log_lik": {"x-tools": {"fixest": "loglik", "reghdfe": "e(ll)", "linearmodels": "loglik", "areg/xtreg": "e(ll)", "FixedEffectModels.jl": "loglikelihood()"}},
             "log_lik_null": {"x-tools": {"fixest": "ll_null", "reghdfe": "e(ll_0)", "areg/xtreg": "e(ll_0)"}},
             "log_lik_fe_only": {"x-tools": {"fixest": "ll_fe_only"}},
-            "f_stat": {"x-tools": {"fixest": "fitstat()", "reghdfe": "e(F)", "linearmodels": "f_statistic", "areg/xtreg": "e(F)", "pyfixest": "_f_statistic", "lfe": "fstat / P.fstat", "FixedEffectModels.jl": "F"}},
-            "f_stat_robust": {"x-tools": {"linearmodels": "f_statistic_robust"}},
-            "f_fe": {"description": "Test that the FEs are jointly zero.", "x-tools": {"linearmodels": "f_pooled", "xtreg": "e(F_f)", "areg": "e(F_absorb)"}},
             "sum_weights": {"x-tools": {"reghdfe": "e(sumweights)"}},
             "rank": {"description": "Rank of the vcov.", "x-tools": {"reghdfe": "e(rank)", "areg/xtreg": "e(rank)"}}
           }
@@ -107,6 +104,30 @@
                 "collinear_terms": {"fixest": "collin.var"},
                 "collinearity_min_norm": {"fixest": "collin.min_norm"}
               }
+            }
+          }
+        },
+        "tests": {
+          "description": "Model tests by category (core $defs/test).",
+          "x-categories": {
+            "model": {
+              "description": "Joint test that the regressors' coefficients are zero (fixed effects absorbed); vcov says iid or robust.",
+              "names": ["f", "wald"],
+              "x-tools": {
+                "fixest": "fitstat()",
+                "reghdfe": "e(F)",
+                "linearmodels": "f_statistic",
+                "areg/xtreg": "e(F)",
+                "pyfixest": "_f_statistic",
+                "lfe": "fstat / P.fstat",
+                "FixedEffectModels.jl": "F",
+                "linearmodels (robust)": "f_statistic_robust"
+              }
+            },
+            "fixed_effects": {
+              "description": "Test that the fixed effects are jointly zero.",
+              "names": ["f"],
+              "x-tools": {"linearmodels": "f_pooled", "xtreg": "e(F_f)", "areg": "e(F_absorb)"}
             }
           }
         }

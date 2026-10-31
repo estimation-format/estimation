@@ -53,7 +53,7 @@ is vocabulary only (below).
 | `metrics.log_lik` | `e(ll)` | `e(ll)` | `loglik[2]` | `llf` |
 | `metrics.log_lik_null` (all coefficients 0) | `e(ll_0)` | `e(ll_0)` | `loglik[1]` | `loglike(zeros)` (not stored) |
 | `metrics.pseudo_r2` | `e(r2_p)` | | | |
-| `metrics.chi2` (+ `chi2_type`) | `e(chi2)`, `e(chi2type)` | `e(chi2)` | `summary()`: `logtest`, `waldtest`, `sctest` | |
+| `tests`: category `model`, `name` `likelihood_ratio`, `wald` or `score` | `e(chi2)`, `e(chi2type)` | `e(chi2)` | `summary()`: `logtest`, `waldtest`, `sctest` | |
 | `structures.groups.size` | | `e(g_min)`, `e(g_avg)`, `e(g_max)` | | summary group sizes |
 | `structures.groups.multiple_positive` | `e(multiple)` | | | |
 | `structures.numerics.converged` | `e(converged)` | `e(converged)` | warning only | not kept |

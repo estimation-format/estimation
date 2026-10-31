@@ -226,3 +226,24 @@ def test_singletons_and_missing(pyfixest_records):
     rec = pyfixest_records["twofe_crv"]
     assert rec["metrics"]["n_singletons"] == 3
     assert rec["specification"]["sample"]["dropped"] == {"missing": 2, "singletons": 3}
+
+
+@pytest.mark.parametrize("spec", list(SPECS))
+def test_model_f_in_tests(pyfixest_records, reghdfe_records, spec):
+    """The model F is a test (category model). pyfixest and reghdfe agree on the statistic;
+    each uses its own residual df as the denominator df. Without clustering those differ:
+    pyfixest's _dfd is N - k - all FE levels, reghdfe's e(df_r) subtracts the redundant ones,
+    so the p-values differ slightly."""
+    from scipy.stats import f as f_dist
+
+    ta, tb = (
+        next(t for t in r[spec].get("tests", []) if t["category"] == "model")
+        for r in (pyfixest_records, reghdfe_records)
+    )
+    assert ta["name"] == tb["name"] and ta["df1"] == tb["df1"]
+    assert ta["statistic"] == pytest.approx(tb["statistic"], rel=1e-6)
+    for t, r in ((ta, pyfixest_records[spec]), (tb, reghdfe_records[spec])):
+        assert t["df2"] == _value(r["metrics"]["df_residual"])
+        assert t["p_value"] == pytest.approx(
+            f_dist.sf(t["statistic"], t["df1"], t["df2"]), rel=1e-6, abs=1e-300
+        )

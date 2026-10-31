@@ -244,10 +244,6 @@ def to_record(
         "adj_r2": _num(fit._adj_r2),
         # pyfixest _rmse is sqrt(RSS / N); fixest sigma() and reghdfe e(rmse) divide by the residual df
         "sigma": {"value": _num(fit._rmse), "definition": "sqrt(RSS / N) (pyfixest _rmse)"},
-        "f_stat": {
-            "value": _num(fit._f_statistic),
-            "definition": f"Wald F of all coefficients with the default vcov, df ({fit._dfn}, {fit._dfd})",
-        },
         "conf_level": 0.95,
     }
     if has_fe:
@@ -341,6 +337,25 @@ def to_record(
         "structures": structures,
         "provenance": provenance,
     }
+    # The Wald F of all coefficients that pyfixest computes at fit time (a later wald_test()
+    # call overwrites _f_statistic, so convert right after fitting)
+    if getattr(fit, "_f_statistic", None) is not None:
+        from scipy.stats import f as f_dist
+
+        vtype = structures["vcov"][0]["type"]
+        record["tests"] = [
+            {
+                "id": "t1",
+                "category": "model",
+                "name": "f" if vtype == "iid" else "wald",
+                "origin": "estimation",
+                "statistic": _num(fit._f_statistic),
+                "distribution": "F",
+                "df1": int(fit._dfn),
+                "df2": _num(fit._dfd),
+                "p_value": _num(f_dist.sf(fit._f_statistic, fit._dfn, fit._dfd)),
+            }
+        ]
     if publication:
         record["publication"] = publication
     record["history"] = [

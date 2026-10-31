@@ -1,7 +1,15 @@
 # Proposal: a top-level `tests` section
 
-Status: **draft for Ted**, 2026-10-31. Not in the spec or schemas. Once Ted agrees, it
-becomes an issue (CONTRIBUTING: core changes start with an issue) and then a schema change.
+Status: **adopted** in 0.1 (Ted, 2026-10-31). Spec 4.8, core `$defs/test`; the profiles'
+tests moved. Ted's answers to the questions below:
+
+1. Amend 0.1 (still a draft), not 0.2.
+2. Move the profiles' tests into `tests`.
+3. Linear combinations go in `tests`.
+4. Append-only, outside the digest.
+
+Base tests vs. additional ones: added as `origin` (`estimation` / `postestimation`), plus free
+`tags`. Ted wasn't sure a marker was needed, so it is optional and open to change.
 
 ## Problem
 

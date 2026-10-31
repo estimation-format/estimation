@@ -73,12 +73,12 @@
               "required": ["cells"],
               "properties": {
                 "cells": {"x-tools": {"csdid": "e(gtt): cohort, t0 (base period), t1 (period), error (_rc), N, N_cntr, N_trt"}},
-                "pretrend": {"x-tools": {"csdid": "estat pretrend: r(chi2), r(pchi2), r(df)"}},
                 "uniform_band": {"x-tools": {"csdid": "e(cband) (columns b se t ll ul) when e(citype) is uniform"}}
               }
             }
           }
-        }
+        },
+        "tests": {"x-categories": {"pretrend": {"x-tools": {"csdid": "estat pretrend: r(chi2), r(pchi2), r(df)"}}}}
       }
     }
   }

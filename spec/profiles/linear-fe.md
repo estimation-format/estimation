@@ -49,10 +49,15 @@ Not required, though in the vocabulary: `r2_within` (`areg` reports none), and c
 | `sigma` | root mean squared error, sqrt(RSS / (N − K)), K the regressors plus absorbed levels as the tool counts them | `sigma()` | `e(rmse)` | `s2` (variance) | areg/xtreg `e(rmse)`; xtreg `e(sigma_e)`; pyfixest `_rmse` is sqrt(RSS / N): record it as `{value, definition}`; lfe `rse` |
 | `sigma_fe`, `rho` | fixed-effect SD; share of variance due to the fixed effects | | | `variance_decomposition` | xtreg `e(sigma_u)`, `e(rho)` |
 | `log_lik`, `log_lik_fe_only`, `log_lik_null` | log-likelihoods | `loglik`, `ll_fe_only`, `ll_null` | `e(ll)`, `e(ll_0)` | `loglik` | areg/xtreg `e(ll)`, `e(ll_0)`; FEM.jl `loglikelihood()` |
-| `f_stat`, `f_stat_robust` | joint test of the regressors | `fitstat` | `e(F)` | `f_statistic`, `f_statistic_robust` | areg/xtreg `e(F)`; pyfixest `_f_statistic`; lfe `fstat`, `P.fstat`; FEM.jl `F` |
-| `f_fe` | test that the fixed effects are jointly zero | | | `f_pooled` | xtreg `e(F_f)`; areg `e(F_absorb)` |
 | `sum_weights` | sum of weights | | `e(sumweights)` | | |
 | `rank` | rank of the vcov | | `e(rank)` | | areg/xtreg `e(rank)` |
+
+Tests are in `tests` (core 4.8), not in `metrics`:
+
+| `category` | `name` | Meaning | fixest | reghdfe | linearmodels | others |
+|---|---|---|---|---|---|---|
+| `model` | `f`; `wald` with a robust `vcov` | joint test of the regressors (FEs absorbed) | `fitstat(, "f")`, `fitstat(, "wald")` | `e(F)` | `f_statistic`, `f_statistic_robust` | areg/xtreg `e(F)`; pyfixest `_f_statistic`; lfe `fstat`, `P.fstat`; FEM.jl `F` |
+| `fixed_effects` | `f` | the fixed effects are jointly zero | | | `f_pooled` | xtreg `e(F_f)`; areg `e(F_absorb)` |
 
 ✓ required; (✓) expected. \* a method or derived value (`r2()`, `fitstat()`, `sigma()`), not a stored
 element.

@@ -10,7 +10,8 @@ p-values adjusted for a family of hypotheses. Surveyed 2026-10-25: from source, 
 
 - `specification.multiple_testing`: `method`, `controls` (`fwer` or `fdr`) and `n_tests`; for
   resampling-based methods also `reps`, `seed` and `resampling`.
-- `parameters[*].p_value_adjusted` on the tested rows (at least one).
+- `p_value_adjusted` on the tested rows (at least one): `parameters` rows, or `tests` entries
+  (with `family` in place of `test_family`).
 
 A family can span several models, typically one coefficient across several outcomes: the tested
 rows of each model sit in one record, told apart by `response`; `records` can list the ids of

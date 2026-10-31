@@ -44,7 +44,7 @@ handled, so a writer fills `ties` from the manual's methods section rather than 
 
 The same Cox model gives slightly different coefficients under Efron and Breslow ties, and the
 same fit gives different proportional-hazards test statistics under different time transforms.
-`ties` is required; `ph_test.transform` is required whenever `ph_test` is given.
+`ties` is required; a proportional-hazards test requires `options.transform`.
 
 **Parametric metric.** `survreg` and lifelines' `*AFTFitter` report the AFT metric; Stata's
 `streg` reports Weibull, exponential and Gompertz models in the PH metric unless `time` is
@@ -80,15 +80,20 @@ on the coefficient scale.
 | `n_subjects` | | `e(N_sub)` | | |
 | `time_at_risk` | | `e(risk)` | | |
 | `log_lik`, `log_lik_null` | `loglik[2]`, `loglik[1]` | `e(ll)`, `e(ll_0)` | `log_likelihood_` | `llf` |
-| `lr_test` | `logtest` | `e(chi2)` (LR) | `log_likelihood_ratio_test()` | |
 | `concordance` | `concordance` | `estat concordance`: `r(C)` (Harrell), `r(K)` (`gheller`) | `concordance_index_` | |
 | `aic` (partial) | `AIC()` | `estat ic` | `AIC_partial_` | |
 | vcov `type` | `var` (`oim`; robust with `cluster()`, model-based in `naive.var`) | `e(vce)` | `variance_matrix_` (`robust=True`) | `cov_params()` |
 
-`structures.ph_test` is `{kind: "object", transform, global, per_term}`, each test
-`{statistic, df, p_value}` (`cox.zph` table; Stata `estat phtest` `r(chi2)`, `r(df)`, `r(p)`,
-and `detail` per term in the `r(phtest)` matrix). `estat phtest` tests against analysis time
-unless `log`, `km`, `rank` or `time()` is given.
+Tests go in `tests` (core 4.8):
+
+- The likelihood-ratio test of all coefficients: `category: "model"`, `name:
+  "likelihood_ratio"` (`coxph` `logtest`; Stata `e(chi2)` with `e(chi2type)` LR; lifelines
+  `log_likelihood_ratio_test()`).
+- Proportional hazards: `category: "proportional_hazards"`, `name: "schoenfeld"`, with
+  `options.transform` (required). The global test has no `terms`; each per-term test has
+  `terms: [term]` (`cox.zph` table; Stata `estat phtest` `r(chi2)`, `r(df)`, `r(p)`, and
+  `detail` per term in the `r(phtest)` matrix; lifelines `proportional_hazard_test()`).
+  `estat phtest` tests against analysis time unless `log`, `km`, `rank` or `time()` is given.
 
 Convergence: Stata stores `e(converged)`; `coxph` and lifelines only warn.
 

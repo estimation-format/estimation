@@ -3,7 +3,7 @@
   "$id": "https://estimation-format.github.io/estimation/schema/profiles/did-0.1.json",
   "title": "did/0.1",
   "x-license": "CC0-1.0",
-  "description": "Profile for heterogeneity-robust difference-in-differences and event-study estimators with staggered treatment timing: Stata csdid and did2s; R did (att_gt, aggte) and did2s; Python pyfixest did2s (survey 2026-10-25, spec/profiles/did.md). Requires meta.estimator.method; specification.did with the time variable, the comparison group and the cohort (first-treated period) or treatment indicator; metrics.nobs; estimate and std_error on every row that isn't dropped; a default vcov with type; and a `did` object on at least one row saying which treatment effect the row is (att_gt, event, group, calendar, simple, pre_avg, post_avg). conf_low/conf_high are pointwise; uniform bands go in the row's did.band_low/band_high. structures.did (cohort sizes, pre-trend test, uniform-band critical value, per-cell sample sizes) is expected, not required. Does not build on inference/0.1: csdid, R did and Stata did2s use normal inference with no residual df, and csdid's wild bootstrap reports no p-values. Records that meet inference/0.1 too (R and pyfixest did2s) claim both.",
+  "description": "Profile for heterogeneity-robust difference-in-differences and event-study estimators with staggered treatment timing: Stata csdid and did2s; R did (att_gt, aggte) and did2s; Python pyfixest did2s (survey 2026-10-25, spec/profiles/did.md). Requires meta.estimator.method; specification.did with the time variable, the comparison group and the cohort (first-treated period) or treatment indicator; metrics.nobs; estimate and std_error on every row that isn't dropped; a default vcov with type; and a `did` object on at least one row saying which treatment effect the row is (att_gt, event, group, calendar, simple, pre_avg, post_avg). conf_low/conf_high are pointwise; uniform bands go in the row's did.band_low/band_high. structures.did (cohort sizes, uniform-band critical value, per-cell sample sizes) and a pretrend test in `tests` are expected, not required. Does not build on inference/0.1: csdid, R did and Stata did2s use normal inference with no residual df, and csdid's wild bootstrap reports no p-values. Records that meet inference/0.1 too (R and pyfixest did2s) claim both.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
@@ -96,6 +96,19 @@
             },
             "did": {"$ref": "#/$defs/did_structure"}
           }
+        },
+        "tests": {
+          "description": "DiD tests by category (core $defs/test).",
+          "x-categories": {
+            "pretrend": {
+              "description": "Joint test that the pre-treatment effects are zero. Usually chi2 (Wald) on the pre-period effects.",
+              "names": ["wald"],
+              "x-tools": {
+                "csdid": "estat pretrend: r(chi2), r(pchi2), r(df)",
+                "did": "W, Wpval (summary: \"P-value for pre-test of parallel trends assumption\")"
+              }
+            }
+          }
         }
       }
     },
@@ -154,19 +167,6 @@
         {"if": {"properties": {"type": {"const": "calendar"}}}, "then": {"required": ["period"]}}
       ]
     },
-    "test": {
-      "description": "A test statistic, as in iv/0.1.",
-      "type": "object",
-      "required": ["statistic"],
-      "properties": {
-        "name": {"type": "string"},
-        "statistic": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
-        "p_value": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
-        "df": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"},
-        "distribution": {"type": "string", "x-vocabulary": ["F", "chi2", "normal"]},
-        "vcov": {"description": "vcov type the statistic uses, when it differs from the default vcov.", "type": "string"}
-      }
-    },
     "did_structure": {
       "description": "Design and diagnostics of a DiD run: counts, never the unit ids.",
       "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
@@ -204,11 +204,6 @@
               "error": {"description": "The tool's return code for the cell (csdid _rc), 0 when it estimated.", "type": ["integer", "null"]}
             }
           }
-        },
-        "pretrend": {
-          "description": "Joint test that the pre-treatment effects are zero.",
-          "$ref": "#/$defs/test",
-          "x-tools": {"csdid": "estat pretrend: r(chi2), r(pchi2), r(df)", "did": "W, Wpval (summary: \"P-value for pre-test of parallel trends assumption\")"}
         },
         "uniform_band": {
           "description": "The simultaneous confidence band behind parameters[*].did.band_low/band_high.",

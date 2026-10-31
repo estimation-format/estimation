@@ -102,15 +102,24 @@
               "x-tools": {"DoubleML": "nuisance_loss (RMSE / log loss), evaluate_learners()", "EconML": "nuisance_scores_y, nuisance_scores_t"}
             },
             "heterogeneity": {
-              "description": "Tests and summaries of effect heterogeneity.",
+              "description": "Summaries of effect heterogeneity. Calibration tests are in `tests` (category calibration).",
               "type": "object",
               "properties": {
-                "calibration": {"description": "grf test_calibration: mean and differential forest prediction coefficients.", "type": "object", "x-tools": {"grf": "test_calibration()"}},
                 "blp": {"description": "Best linear predictor of the CATE.", "type": "object", "x-tools": {"DoubleML": "cate()", "grf": "best_linear_projection()"}},
                 "variable_importance": {"type": "object", "x-tools": {"grf": "variable_importance()", "EconML": "feature_importances_"}}
               }
             },
             "sensitivity": {"description": "Omitted-variable sensitivity bounds (DoubleML sensitivity_analysis: cf_y, cf_d, rho, bounds, robustness values).", "type": "object", "x-tools": {"DoubleML": "sensitivity_analysis(), sensitivity_params"}}
+          }
+        },
+        "tests": {
+          "description": "Causal-ML tests by category (core $defs/test).",
+          "x-categories": {
+            "calibration": {
+              "description": "grf test_calibration: mean and differential forest prediction coefficients. One test per coefficient, with estimate and std_error; hypothesis.terms names the coefficient.",
+              "names": ["mean_forest_prediction", "differential_forest_prediction"],
+              "x-tools": {"grf": "test_calibration()"}
+            }
           }
         }
       }

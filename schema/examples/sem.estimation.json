@@ -26,11 +26,6 @@
   "metrics": {
     "nobs": 301,
     "npar": 21,
-    "chisq": 85.30572787336516,
-    "chisq_df": 24,
-    "chisq_p": 8.501896298085398e-09,
-    "chisq_baseline": 918.8516374094663,
-    "chisq_baseline_df": 36,
     "cfi": 0.9305594221320659,
     "tli": 0.8958391331980989,
     "rmsea": 0.09227504769360063,
@@ -266,6 +261,28 @@
       "iterations": 28
     }
   },
+  "tests": [
+    {
+      "id": "t1",
+      "category": "model_fit",
+      "name": "chi2",
+      "statistic": 85.30572787336516,
+      "distribution": "chi2",
+      "df": 24,
+      "p_value": 8.501896298085398e-09,
+      "origin": "estimation"
+    },
+    {
+      "id": "t2",
+      "category": "baseline_fit",
+      "name": "chi2",
+      "statistic": 918.8516374094663,
+      "distribution": "chi2",
+      "df": 36,
+      "p_value": 1.5733767781214904e-169,
+      "origin": "estimation"
+    }
+  ],
   "provenance": {
     "software": [
       {

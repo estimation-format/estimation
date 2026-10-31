@@ -60,8 +60,10 @@ aggregation.
   `evaluate_learners()`; EconML `nuisance_scores_y`, `nuisance_scores_t`). Poorly fit nuisances
   are the usual reason two DML results disagree.
 - `specification.overlap`: trimming rule and threshold, and the fitted propensity range.
-- `structures.heterogeneity`: grf `test_calibration()`, `best_linear_projection()`,
-  `variable_importance()`; DoubleML `cate()`.
+- `structures.heterogeneity`: grf `best_linear_projection()`, `variable_importance()`; DoubleML
+  `cate()`. grf `test_calibration()` goes in `tests`, `category: "calibration"`, one test per
+  coefficient (`mean_forest_prediction`, `differential_forest_prediction`) with `estimate` and
+  `std_error`.
 - `structures.sensitivity`: DoubleML `sensitivity_analysis()` (cf_y, cf_d, rho, bounds,
   robustness values).
 

@@ -13,9 +13,9 @@ FixedEffectModels.jl.
 Everything `inference/0.1` requires, plus `specification.endogenous` and
 `specification.instruments` (the excluded instruments).
 
-`structures.first_stage` is **expected**, not required: most tools compute first-stage
+A `first_stage` test in `tests` is **expected**, not required: most tools compute first-stage
 statistics only on request. Writers SHOULD include it when the tool computed it, and
-validators warn when it is missing.
+validators warn when no `first_stage` test is present.
 
 ## What each tool stores
 
@@ -31,26 +31,33 @@ validators warn when it is missing.
 | pyfixest IV | `_endogvar`, `_non_exo_instruments` | `_f_stat_1st_stage` | `IV_Diag()`: `_eff_F` (Montiel Olea-Pflueger) |
 | FixedEffectModels.jl | formula | `F_kp`, `p_kp` (Kleibergen-Paap) | — |
 
-## `structures.first_stage`
+## Tests
 
-A `kind: "object"` structure with a `per_endogenous` list (one entry per endogenous
-regressor, each naming its `endogenous` variable) and joint tests. Every test is
-`{name, statistic, p_value, df, df1, df2, distribution}`; `overid` and `endogeneity` are
-lists, since tools report several versions.
+IV tests go in `tests` (core 4.8), one object per test, with the `category` and `name` below.
+A first-stage test names its equation as `parameters` do: `component: "first_stage"`,
+`response` = the endogenous variable. Tools report several versions of the overidentification
+and endogeneity tests, so a record may hold more than one of each.
 
-| Name | Meaning | Stata `ivregress` | ivreg2 / ivreghdfe | fixest | R `ivreg` / estimatr / lfe | linearmodels | pyfixest / FEM.jl |
-|---|---|---|---|---|---|---|---|
-| `per_endogenous[].f_stat` | first-stage F of the excluded instruments | `estat firststage` F | `e(first)` `F` | `ivf1`; `ivwald1` (robust) | weak-instruments F; `diagnostic_first_stage_fstatistic`; `iv1fstat` | `f.stat` | `_f_stat_1st_stage` |
-| `per_endogenous[].r2`, `partial_r2`, `shea_partial_r2` | first-stage R²s | `estat firststage` | `e(first)` `pr2`, `sheapr2` | | | `rsquared`, `partial.rsquared`, `shea.rsquared` | |
-| `per_endogenous[].sw_f`, `ap_f` | Sanderson-Windmeijer, Angrist-Pischke conditional F | | `e(first)` `SWF`, `APF` | | lfe `condfstat` | | |
-| `per_endogenous[].effective_f` | Montiel Olea-Pflueger effective F | | | | | | pyfixest `_eff_F` |
-| `underidentification` | Anderson LM or Kleibergen-Paap rk LM | | `e(idstat)`, `e(idp)`, `e(iddf)` | | | | |
-| `weak_id_cd_f` | Cragg-Donald Wald F | minimum eigenvalue statistic | `e(cdf)` | `cd` | | `cragg_donald_f` | |
-| `weak_id_kp_f` | Kleibergen-Paap rk Wald F | | `e(rkf)` | `kpr` | | `kleibergen_paap_f` | FEM.jl `F_kp`, `p_kp` |
-| `weak_id_robust_ar` | Anderson-Rubin test of the endogenous coefficients | | `e(arf)`, `e(archi2)` | | | | |
-| `weak_id_robust_sw` | Stock-Wright LM S | | `e(sstat)` | | | | |
-| `overid` | Sargan, Basmann, Anderson-Rubin (LIML), score or Hansen J (`name` says which) | `estat overid` | `e(j)`, `e(sargan)` | `iv_sargan` | Sargan; `diagnostic_overid_test` | `sargan`, `basmann`, `anderson_rubin`, `wooldridge_overid` | |
-| `endogeneity` | Durbin, Wu-Hausman, score or C test (`name` says which) | `estat endogenous` | `e(estat)` | `iv_wh` | Wu-Hausman; `diagnostic_endogeneity_test` | `wu_hausman()`, `durbin()`, `wooldridge_score` | |
+| `category` | `name` | Meaning | Stata `ivregress` | ivreg2 / ivreghdfe | fixest | R `ivreg` / estimatr / lfe | linearmodels | pyfixest / FEM.jl |
+|---|---|---|---|---|---|---|---|---|
+| `first_stage` | `f`, `wald` (robust) | first-stage F of the excluded instruments | `estat firststage` F | `e(first)` `F` | `ivf1`; `ivwald1` (robust) | weak-instruments F; `diagnostic_first_stage_fstatistic`; `iv1fstat` | `f.stat` | `_f_stat_1st_stage` |
+| `first_stage` | `sanderson_windmeijer_f`, `angrist_pischke_f` | conditional F per endogenous regressor | | `e(first)` `SWF`, `APF` | | lfe `condfstat` | | |
+| `first_stage` | `effective_f` | Montiel Olea-Pflueger effective F | | | | | | pyfixest `_eff_F` |
+| `underidentification` | `anderson_lm`, `kleibergen_paap_rk_lm`, `kleibergen_paap_rk` | rank test of the first stage | | `e(idstat)`, `e(idp)`, `e(iddf)` | `kpr`* | | | |
+| `weak_identification` | `cragg_donald_f` | Cragg-Donald Wald F (no p-value) | minimum eigenvalue statistic | `e(cdf)` | `cd` | | `cragg_donald_f` | |
+| `weak_identification` | `kleibergen_paap_rk_wald_f` | Kleibergen-Paap rk Wald F (no p-value) | | `e(rkf)` | | | `kleibergen_paap_f` | FEM.jl `F_kp`, `p_kp` |
+| `weak_identification` | `anderson_rubin`, `stock_wright` | weak-instrument-robust tests of the endogenous coefficients | | `e(arf)`, `e(archi2)`; `e(sstat)` | | | | |
+| `overidentification` | `sargan`, `basmann`, `score`, `hansen_j`, `anderson_rubin` (LIML) | overidentifying restrictions | `estat overid` | `e(j)`, `e(sargan)` | `iv_sargan` | Sargan; `diagnostic_overid_test` | `sargan`, `basmann`, `anderson_rubin`, `wooldridge_overid` | |
+| `endogeneity` | `durbin`, `wu_hausman`, `score`, `c` | exogeneity of the endogenous regressors | `estat endogenous` | `e(estat)` | `iv_wh` | Wu-Hausman; `diagnostic_endogeneity_test` | `wu_hausman()`, `durbin()`, `wooldridge_score` | |
+
+\* fixest's `fitstat(, "kpr")` is a chi-squared rank statistic with a p-value, so it is mapped
+here, although fixest's help calls it "the Kleibergen-Paap test for weak instruments". It isn't
+the rk Wald F (`e(rkf)`). To be checked against ivreg2 on the same data.
+
+`structures.first_stage` (`kind: "object"`) keeps the first-stage summaries that aren't tests:
+a `per_endogenous` list, each entry naming its `endogenous` variable, with `r2`, `partial_r2`
+and `shea_partial_r2` (`estat firststage`; ivreg2 `e(first)` `pr2`, `sheapr2`; linearmodels
+`rsquared`, `partial.rsquared`, `shea.rsquared`).
 
 ivreg2's `e(widstat)` is Cragg-Donald under iid errors and Kleibergen-Paap otherwise; writers
 map it to whichever of the two it is.

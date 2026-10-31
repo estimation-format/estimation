@@ -89,6 +89,7 @@ A record has the following top-level members. Each is **required**, **expected**
 | `specification` | expected | what was asked for (4.2) |
 | `provenance` | expected | software, environment, execution, data (4.6) |
 | `structures` | optional | named complex results: vcov, fixed effects, ... (4.5) |
+| `tests` | optional | hypothesis tests: the estimator's own and those added after the fit (4.8) |
 | `publication` | optional | where the result appears in a paper (5) |
 | `validation` | optional | the same model in other software, and comparisons (6) |
 | `attachments` | optional | links to large side files (8) |
@@ -266,7 +267,8 @@ Registered names (profiles define their required shape):
 - `numerics`: whether the algorithm is `iterative`, `algorithm`, `tolerance`, `iterations`,
   `converged`, solver, rank, condition number, collinearity settings.
 - `hyperparameters`: for machine-learning estimators, with tuning results if any.
-- `first_stage`: instrumental-variables diagnostics (see the `iv` profile).
+- `first_stage`: instrumental-variables first-stage summaries that aren't tests (R²s; see the `iv`
+  profile). The first-stage F and the identification tests are in `tests` (4.8).
 
 A structure that is spilled to an attachment keeps its non-data fields (a vcov keeps `type`,
 `ssc`, `cluster`, `default`) and becomes `{kind: "link", attachment, spilled_kind, ...}`.
@@ -348,6 +350,65 @@ remove:
   or `hmac-sha256`), the `fields` changed and, when hashing, a `salt_id` (a short hash that
   names the salt without revealing it), so a reader knows what is missing and which records
   are comparable.
+
+### 4.8 `tests` (optional)
+
+A list of hypothesis tests about the model, one object per test (`$defs/test` in the core
+schema). It holds the tests the estimator reports (the model F, first-stage and
+overidentification tests, a pre-trend test), the tests a user asks for after the fit (a Wald
+test of `x = x2`, Stata `test`, `fixest::wald()`), and single linear combinations (`lincom`).
+Profiles say which tests a kind of model has, by `category`, and don't store tests in their own
+sections.
+
+```json
+"tests": [
+  {"id": "t1", "category": "model", "name": "f", "origin": "estimation",
+   "statistic": 48.9, "distribution": "F", "df1": 2, "df2": 358, "p_value": 1.2e-19},
+  {"id": "t2", "category": "restriction", "name": "wald", "origin": "postestimation",
+   "hypothesis": {"text": "x = x2", "terms": ["x", "x2"],
+                  "restrictions": {"R": [[1, -1]], "q": [0], "labels": ["x", "x2"]}},
+   "statistic": 4.21, "distribution": "F", "df1": 1, "df2": 39, "p_value": 0.047,
+   "vcov": {"type": "CRV1", "cluster": ["id"]},
+   "source": {"name": "estrec", "version": "0.1.0", "call": "add_test(rec, \"x = x2\")"},
+   "added": "2026-10-31T14:20:00Z"},
+  {"id": "t3", "category": "linear_combination", "name": "t", "origin": "postestimation",
+   "hypothesis": {"text": "x + x2 = 0", "restrictions": {"R": [[1, 1]], "q": [0], "labels": ["x", "x2"]}},
+   "estimate": 1.98, "std_error": 0.06, "conf_low": 1.86, "conf_high": 2.10,
+   "statistic": 33.0, "distribution": "t", "df": 39, "p_value": 3.1e-30}
+]
+```
+
+| Field | Status | Content |
+|---|---|---|
+| `name` | required | which test: `f`, `wald`, `t`, `likelihood_ratio`, `score`, `sargan`, `hansen_j`, `wu_hausman`, ... (vocabulary in the schema) |
+| `statistic` or `p_value` | required (one of) | the test statistic; a resampling test may have only a p-value |
+| `id` | recommended | unique within the record, so tools and other tests can refer to it |
+| `category` | recommended | what it tests: `model`, `restriction`, `linear_combination`, `fixed_effects`, `first_stage`, `overidentification`, `pretrend`, `proportional_hazards`, ... Profiles refer to tests by category |
+| `origin` | recommended | `estimation` (computed by the estimating software as part of the fit or its standard output) or `postestimation` (asked for afterwards) |
+| `distribution`, `df`, `df1`, `df2` | expected with `statistic` | the reference distribution (`F`, `chi2`, `t`, `normal`, `empirical`) and its df |
+| `hypothesis` | optional | `text` as written; `terms` (the `parameters[*].term` it involves); `restrictions` `{R, q, labels}` for a linear test H0: R b = q; `alternative` (`two_sided`, `greater`, `less`) |
+| `vcov` | optional | the `structures.vcov` entry used, by `type` (and `cluster`); absent means the default |
+| `estimate`, `std_error`, `conf_low`, `conf_high` | optional | for a single restriction (a linear combination) |
+| `response`, `component`, `terms` | optional | as in `parameters`: which equation (a first stage's endogenous variable), or which terms a per-term test is about |
+| `method` | optional | `wald`, `likelihood_ratio`, `score`, `bootstrap`, `permutation`, `exact`; `resampling` holds a resampling test's settings as in `resampling/0.1` |
+| `p_value_adjusted`, `family` | optional | a p-value adjusted for multiple testing, and its family (`multiple-testing/0.1`) |
+| `options` | optional | test-specific settings (the proportional-hazards time transform) |
+| `records` | optional | the `meta.id` of each record a cross-model test compares (Hausman, `lrtest m1 m2`) |
+| `source`, `added` | optional | `{name, version, call}` of what computed it when that isn't the estimator; when it was added to an existing record |
+| `label`, `tags` | optional | the user's label and tags |
+
+Rules:
+
+- `tests` is **append-only**. Any tool MAY add tests to a record, at any time, without
+  writing a new record: a test doesn't change the results. A tool MUST NOT change or remove a
+  test that another tool wrote, and appends a `history` entry (`action: "extended"`,
+  `sections: ["tests"]`) when it adds one.
+- `tests` is **outside the core digest** (7.2), so adding a test keeps the digest valid.
+- A linear test SHOULD give `hypothesis.restrictions`, so that a reader can recompute it from the
+  record's own `parameters` and `structures.vcov`.
+- Validators check that `id`s are unique and that `restrictions` has one row of `R` per `q`
+  and one column per label, and warn when a named term isn't in `parameters` or a named vcov
+  isn't in `structures.vcov`.
 
 ## 5. `publication` (optional)
 
@@ -449,7 +510,8 @@ replication harness, a cluster accounting tool).
 - A block SHOULD carry `schema` (the schema that validates it), `by` (`{name, version}`)
   and `added`.
 - A namespace belongs to the tool that writes it. A tool MUST add or replace only its own
-  block, never another tool's block or a core section.
+  block, never another tool's block or a core section. The exception is `tests` (4.8), which
+  any tool may append to.
 - A tool that changes results (a new vcov, a new sample) MUST write a **new record** with
   `meta.parent` set, not a block.
 - Each tool that creates, extends, redacts or validates a record SHOULD append to `history`
@@ -471,7 +533,8 @@ opposed to only annotated:
 - `value` is the SHA-256 of the [RFC 8785] (JSON Canonicalization Scheme) serialization of an
   object holding the record's `meta` (without `core_digest`), `specification`, `metrics`,
   `parameters` and `structures`, each only if present, as written (non-finite numbers as
-  strings, spilled structures as links).
+  strings, spilled structures as links). `tests`, `publication`, `validation`, `extensions`
+  and `history` are outside it, so annotating a record, or adding a test to it, keeps it valid.
 - The digest is OPTIONAL. Writers SHOULD compute it by default and MAY let users turn it off.
 - Validators report a missing digest as information and a digest that doesn't match as a
   warning.
@@ -574,7 +637,7 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 |---|---|---|
 | [`inference/0.1`](profiles/inference.md) | standard | `parameters` with `estimate`, `std_error`, `p_value`; a default `vcov` with `type` and `ssc.convention`; `metrics.nobs` and `df_residual` |
 | [`linear-fe/0.1`](profiles/linear-fe.md) | standard | `inference` plus `n_singletons`, `specification.options.drop_singletons`, and `structures.fixed_effects` with `levels` |
-| [`iv/0.1`](profiles/iv.md) | standard | `inference` plus `specification.endogenous` and `instruments`; `structures.first_stage` expected |
+| [`iv/0.1`](profiles/iv.md) | standard | `inference` plus `specification.endogenous` and `instruments`; a `first_stage` test expected |
 | [`dfeols/0.1`](profiles/dfeols.md) | tool | `linear-fe` plus `extensions.dfeols`: the first worked tool profile |
 | [`did/0.1`](profiles/did.md) | standard | `meta.estimator.method`; `specification.did` (time, comparison, cohort or treatment); `metrics.nobs`; `estimate` and `std_error`; a `did` object saying which effect a row is; a default `vcov` with `type`; `structures.did` expected |
 | [`did2s/0.1`](profiles/did2s.md) | tool | `did` plus first- and second-stage specifications, the cluster, and a two-stage GMM or bootstrap vcov |
@@ -588,7 +651,7 @@ profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `pu
 | [`mediation/0.1`](profiles/mediation.md) | standard | `specification.mediation` (treatment, mediators, outcome, inference method); `nobs`; an indirect-effect row; `estimate` with `std_error` or an interval on effect rows |
 | [`mi/0.1`](profiles/mi.md) | standard | `specification.imputation` (`m`, `method`); `estimate`, `std_error` (pooled); `nobs`; a default `vcov` with `type`; per-row Rubin components as vocabulary |
 | [`survey/0.1`](profiles/survey.md) | standard | `specification.survey_design` (weights, strata, PSUs, fpc with its convention, variance method, single-PSU handling); `estimate`, `std_error`; `nobs`; a default `vcov` with `type` |
-| [`multiple-testing/0.1`](profiles/multiple-testing.md) | standard | `specification.multiple_testing` (method, error rate, `n_tests`); `p_value_adjusted` on the tested rows |
+| [`multiple-testing/0.1`](profiles/multiple-testing.md) | standard | `specification.multiple_testing` (method, error rate, `n_tests`); `p_value_adjusted` on the tested rows or tests |
 | [`resampling/0.1`](profiles/resampling.md) | standard | `specification.resampling` (method, `reps`); a row with a `resampling` p-value or interval |
 | [`survival/0.1`](profiles/survival.md) | standard | `meta.estimator.method`; `specification.survival` (time, event); `estimate`, `std_error`; `nobs`, `n_events`; a default `vcov` with `type`; `ties` for Cox/Fine-Gray; distribution and AFT/PH metric for parametric; competing events for Fine-Gray |
 | [`med2s/0.1`](profiles/med2s.md) | tool | `mediation` plus the DiD design, cluster, placebo-adjustment options, bootstrap percentile inference, and `extensions.med2s` (signal test, moments, placebo composition, diagnostics, sensitivity) |
