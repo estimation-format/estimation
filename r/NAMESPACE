@@ -1,0 +1,7 @@
+export(to_estimation)
+export(write_estimation)
+export(is_estimation_record)
+S3method(to_estimation, default)
+S3method(to_estimation, fixest)
+S3method(to_estimation, fixest_multi)
+importFrom(stats, complete.cases, vcov, confint, df.residual, sigma, logLik, as.formula)

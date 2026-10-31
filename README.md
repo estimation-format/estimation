@@ -27,6 +27,7 @@ standard errors, convergence, the software and environment, and the data's check
 | [`spec/profiles/`](spec/profiles/) | the profiles, with field mappings across Stata, R, Python and Julia tools | CC0 1.0 |
 | [`schema/`](schema/) | JSON Schemas (2020-12) for the core and the profiles, the catalog, example records | CC0 1.0 |
 | [`src/estimation_format/`](src/estimation_format/) | `estimation-format`, the reference validator, writer and redactor (Python) | MIT |
+| [`r/`](r/) | `estrec`, an R package that writes records from fitted models (fixest `feols` so far) | MIT |
 
 Schemas are served at `https://estimation-format.github.io/estimation/schema/`.
 
