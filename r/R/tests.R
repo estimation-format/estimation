@@ -7,15 +7,40 @@
 #     standard error, interval and t test against 0). Terms are parameters[*].term; quote names
 #     that aren't syntactic with backticks: "`(Intercept)` = 0";
 #   - a fixest wald() result (a list with stat, p, df1, df2, vcov);
-#   - a test object (a list with name and statistic or p_value), added as is.
+#   - a test object (a list with name and statistic or p_value), added as is;
+#   - a table of results, one test per row: marginaleffects::hypotheses() or any data frame with
+#     broom-style columns (estimate, std.error, statistic, p.value, conf.low, conf.high).
+# A character vector adds one test per element.
+# `keep` instead of `test`: the joint test that the terms matching these regexes are all 0
+# (fixest::wald() semantics: "%" a literal name, "!" negates).
 # `vcov` picks the structures.vcov entry, by type ("HC1") or list(type =, cluster =); NULL is
 # the default one.
 add_test <- function(record, test, vcov = NULL, label = NULL, category = NULL, id = NULL,
-                     tags = NULL, origin = "postestimation", by = estrec_info()) {
+                     tags = NULL, origin = "postestimation", by = estrec_info(), keep = NULL) {
   if (!is_estimation_record(record)) stop("`record` must be an estimation record", call. = FALSE)
+  # keep = regex: the joint test that every matching term is 0, as fixest::wald(fit, keep =)
+  if (!is.null(keep)) {
+    if (!missing(test)) stop("give `test` or `keep`, not both", call. = FALSE)
+    terms <- .est_keep(.est_pick_vcov(record, vcov)$labels, keep)
+    test <- paste(sprintf("`%s` = 0", terms), collapse = ", ")
+    record <- add_test(record, test, vcov = vcov, label = label, category = category, id = id,
+                       tags = tags, origin = origin, by = by)
+    n <- length(record$tests)
+    record$tests[[n]]$hypothesis$text <- sprintf("keep = %s", paste(deparse(keep), collapse = ""))
+    record$tests[[n]]$source$call <- sprintf("add_test(rec, keep = %s)", paste(deparse(keep), collapse = ""))
+    return(record)
+  }
+  # several hypotheses: one test each
+  if (is.character(test) && length(test) > 1L) {
+    if (!is.null(id) || length(label) > 1L) stop("give `id` and `label` one test at a time", call. = FALSE)
+    for (h in test) record <- add_test(record, h, vcov = vcov, label = label, category = category,
+                                       tags = tags, origin = origin, by = by)
+    return(record)
+  }
+  if (inherits(test, "data.frame")) return(.est_add_table(record, test, label, category, tags, origin, by))
   t <- if (is.character(test) && length(test) == 1L) .est_linear_test(record, test, vcov)
-       else if (is.list(test) && !is.null(test$stat)) .est_from_wald(test, record)
-       else if (is.list(test) && !is.null(test$name)) test
+       else if (is.list(test) && !is.null(test[["stat", exact = TRUE]])) .est_from_wald(test, record)
+       else if (is.list(test) && !is.null(test[["name", exact = TRUE]])) test
        else stop("`test` must be a hypothesis string, a fixest wald() result or a test object",
                  call. = FALSE)
   if (!is.null(category)) t$category <- category
@@ -55,7 +80,19 @@ add_test <- function(record, test, vcov = NULL, label = NULL, category = NULL, i
   labels <- as.character(unlist(v$labels))
   V <- do.call(rbind, lapply(v$data, function(r) as.numeric(unlist(r))))
   dimnames(V) <- list(labels, labels)
-  list(entry = v, V = V)
+  list(entry = v, V = V, labels = labels)
+}
+
+# fixest's keep: regexes, any match keeps; "%" starts a literal name, "!" negates a pattern
+.est_keep <- function(labels, keep) {
+  hit <- function(k) {
+    neg <- startsWith(k, "!"); if (neg) k <- substring(k, 2L)
+    m <- if (startsWith(k, "%")) labels == substring(k, 2L) else grepl(k, labels, perl = TRUE)
+    if (neg) !m else m
+  }
+  sel <- Reduce(`|`, lapply(keep, hit), logical(length(labels)))
+  if (!any(sel)) stop("no term matches keep = ", paste(keep, collapse = ", "), call. = FALSE)
+  labels[sel]
 }
 
 # Restrictions R b = q from text, by evaluating each side as a linear function of the terms
@@ -122,12 +159,20 @@ add_test <- function(record, test, vcov = NULL, label = NULL, category = NULL, i
   }
   W <- as.numeric(t(d) %*% solve(RVR, d))
   use_f <- is.numeric(df) && is.finite(df)
-  .est_compact(list(
-    category = "restriction", name = "wald", hypothesis = hyp,
+  # one restriction: also its estimate (Rb - q), SE and interval, as marginaleffects::hypotheses() gives
+  one <- if (J == 1L) {
+    se <- sqrt(RVR[1, 1])
+    lev <- record$metrics$conf_level %||% 0.95
+    crit <- if (use_f) stats::qt(1 - (1 - lev) / 2, df) else stats::qnorm(1 - (1 - lev) / 2)
+    list(estimate = .est_num(d[1]), std_error = .est_num(se),
+         conf_low = .est_num(d[1] - crit * se), conf_high = .est_num(d[1] + crit * se))
+  }
+  .est_compact(c(list(
+    category = "restriction", name = "wald", hypothesis = hyp), one, list(
     statistic = .est_num(if (use_f) W / J else W), distribution = if (use_f) "F" else "chi2",
     df1 = if (use_f) J, df2 = if (use_f) df, df = if (!use_f) J,
     p_value = .est_num(if (use_f) stats::pf(W / J, J, df, lower.tail = FALSE) else stats::pchisq(W, J, lower.tail = FALSE)),
-    method = "wald", vcov = vtag, source = .est_source(text)))
+    method = "wald", vcov = vtag, source = .est_source(text))))
 }
 
 .est_source <- function(text) {
@@ -143,4 +188,43 @@ add_test <- function(record, test, vcov = NULL, label = NULL, category = NULL, i
     vcov = if (!is.null(w$vcov)) .fx_vcov_type(w$vcov),
     source = list(name = "fixest", version = as.character(utils::packageVersion("fixest")),
                   call = "wald()")))
+}
+
+# A results table -> one test per row. marginaleffects::hypotheses() gives one row per
+# hypothesis (estimate, std.error, statistic, p.value, conf.low, conf.high; z tests unless `df`
+# was set), or with joint = TRUE one row with statistic, p.value, df1, df2.
+.est_add_table <- function(record, tab, label, category, tags, origin, by) {
+  tab <- as.data.frame(tab)
+  if (!nrow(tab)) stop("the table has no rows", call. = FALSE)
+  col <- function(i, nm) if (nm %in% names(tab)) { v <- tab[[nm]][i]; if (is.factor(v)) v <- as.character(v); v }
+  is_me <- inherits(tab, "hypotheses") || !is.null(attr(tab, "vcov.type"))
+  src <- if (is_me && requireNamespace("marginaleffects", quietly = TRUE))
+    list(name = "marginaleffects", version = as.character(utils::packageVersion("marginaleffects")),
+         call = "hypotheses()")
+  else if (is_me) list(name = "marginaleffects", call = "hypotheses()")
+  vt <- attr(tab, "vcov.type")
+  for (i in seq_len(nrow(tab))) {
+    text <- col(i, "hypothesis") %||% col(i, "term")
+    joint <- !is.null(col(i, "df1"))
+    df <- col(i, "df")
+    use_t <- is.numeric(df) && is.finite(df)
+    t <- .est_compact(list(
+      category = if (joint) "restriction" else "linear_combination",
+      name = if (joint) "wald" else if (use_t) "t" else "z",
+      hypothesis = if (!is.null(text)) list(text = as.character(text)),
+      estimate = .est_num(col(i, "estimate")), std_error = .est_num(col(i, "std.error")),
+      conf_low = .est_num(col(i, "conf.low")), conf_high = .est_num(col(i, "conf.high")),
+      statistic = .est_num(col(i, "statistic")),
+      distribution = if (joint) (if (is.finite(col(i, "df2") %||% Inf)) "F" else "chi2")
+                     else if (use_t) "t" else "normal",
+      df = if (use_t) df, df1 = if (joint) col(i, "df1"),
+      df2 = if (joint && is.finite(col(i, "df2") %||% Inf)) col(i, "df2"),
+      p_value = .est_num(col(i, "p.value")), method = "wald",
+      # marginaleffects' own vcov label ("by: id", "HC3"), not a structures.vcov type
+      options = if (is.character(vt) && length(vt) == 1L) list(vcov_type = vt),
+      source = src))
+    record <- add_test(record, t, label = label, category = category, tags = tags,
+                       origin = origin, by = by)
+  }
+  record
 }

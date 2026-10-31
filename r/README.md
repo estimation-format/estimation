@@ -30,13 +30,23 @@ rec <- to_estimation(fit)   # the record as a list
 rec <- to_estimation(fit, vcov = list(~firm, "hetero"), tests = c("x1 = x2", "x1 + x2"))
 rec <- add_test(rec, "x1 = 0, x2 = 0", vcov = "HC1")              # Wald F
 rec <- add_test(rec, wald(fit, keep = "^x", print = FALSE))       # a fixest test, as is
+
+# An effect at given values of a moderator: one test per value, with estimate and SE
+rec <- add_test(rec, sprintf("treated + `treated:elite` * %.4f = 0", c(0.25, 0.5)))
+# Event-study pre-trends: the joint test that the matching terms are 0, as wald(fit, keep =)
+rec <- add_test(rec, keep = "^counter::-([2-9]|1[0-9]|20):", label = "pre-trends")
+# Or results from marginaleffects, one test per row
+rec <- add_test(rec, marginaleffects::hypotheses(fit, "b1 + b2 = 0"))
 write_estimation(rec, "fit.estimation.json")
 ```
 
 Tests go in the record's `tests` list: fixest's joint Wald test of the coefficients and, for
 IV, the first-stage and identification tests (`origin: "estimation"`), plus each test you add
 (`origin: "postestimation"`). A restriction with `=` is a Wald test (F with the vcov's t-test
-df). An expression without `=` is a linear combination: estimate, SE, interval and t test.
+df); a single restriction also gets its estimate (left side minus right), SE and interval, as
+`marginaleffects::hypotheses()` reports them. An expression without `=` is a linear
+combination: estimate, SE, interval and t test. `keep =` takes fixest's regexes. A
+`wald()` result doesn't say which terms it tested, so prefer `keep =`, which records them.
 Adding a test doesn't change the results, so it keeps the core digest valid.
 
 ## What a record holds

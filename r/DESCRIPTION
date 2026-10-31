@@ -14,5 +14,5 @@ URL: https://github.com/estimation-format/estimation
 BugReports: https://github.com/estimation-format/estimation/issues
 Depends: R (>= 4.1)
 Imports: jsonlite, stats, utils
-Suggests: fixest (>= 0.12)
+Suggests: fixest (>= 0.12), marginaleffects
 Encoding: UTF-8

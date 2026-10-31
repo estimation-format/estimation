@@ -110,6 +110,33 @@ check(r, "tests")
 stopifnot(inherits(try(add_test(r, "x^2 = 0"), silent = TRUE), "try-error"),
           inherits(try(add_test(r, "nope = 0"), silent = TRUE), "try-error"))
 
+# An interaction at given values, marginaleffects-style: one test per value, each with its
+# estimate and SE; and an event-study pre-trend test by regex, as fixest::wald(keep =)
+d$counter <- sample(-6:3, n, TRUE)
+fe <- feols(y ~ i(counter, x2, ref = -1) + x * x2 | id, d)
+r <- add_test(to_estimation(fe), sprintf("x + `x:x2` * %.4f = 0", c(0.25, 0.5)))
+V <- vcov(fe); g <- c(1, 0.5); nm <- c("x", "x:x2")
+lc <- r$tests[[3]]
+eq(lc$estimate, sum(g * coef(fe)[nm]), 1e-10)
+eq(lc$std_error, sqrt(drop(g %*% V[nm, nm] %*% g)), 1e-10)
+eq(lc$statistic, (lc$estimate / lc$std_error)^2, 1e-10)
+stopifnot(length(r$tests) == 3, lc$name == "wald", lc$conf_low < lc$estimate)
+keep <- "^counter::-[2-6]:"
+r <- add_test(r, keep = keep, label = "pre-trends")
+pt <- r$tests[[4]]
+eq(pt$statistic, wald(fe, keep = keep, print = FALSE)$stat, 1e-10)
+stopifnot(pt$df1 == 5, length(pt$hypothesis$terms) == 5, pt$label == "pre-trends",
+          inherits(try(add_test(r, keep = "^nope"), silent = TRUE), "try-error"))
+# A results table: marginaleffects::hypotheses() output, one test per row
+tab <- structure(data.frame(hypothesis = c("b1 = 0", "b2 = 0"), estimate = c(1, 2),
+                            std.error = c(0.5, 0.4), statistic = c(2, 5), p.value = c(0.05, 1e-6),
+                            conf.low = c(0, 1.2), conf.high = c(2, 2.8)),
+                 class = c("hypotheses", "data.frame"), vcov.type = "HC3")
+r <- add_test(r, tab)
+stopifnot(length(r$tests) == 6, r$tests[[6]]$name == "z", r$tests[[6]]$estimate == 2,
+          r$tests[[6]]$source$name == "marginaleffects", r$tests[[6]]$options$vcov_type == "HC3")
+check(r, "hypotheses")
+
 # Without the data: drops recorded as `other`, with a warning message
 g <- function() { dd <- d; feols(y ~ x + x2 | id, dd) }
 fg <- g()
