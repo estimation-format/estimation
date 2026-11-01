@@ -8,8 +8,8 @@ tests moved. Ted's answers to the questions below:
 3. Linear combinations go in `tests`.
 4. Append-only, outside the digest.
 
-Base tests vs. additional ones: added as `origin` (`estimation` / `postestimation`), plus free
-`tags`. Ted wasn't sure a marker was needed, so it is optional and open to change.
+Base tests vs. additional ones: `origin` (`estimation` / `postestimation`), plus free `tags`.
+Ted agreed (2026-11-01): it is the right way to classify them, and leaves room for other kinds.
 
 ## Problem
 
