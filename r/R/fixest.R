@@ -112,8 +112,8 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   }
   # Tests: fixest's joint Wald test of the coefficients under the default vcov, and for IV the
   # first-stage, identification, endogeneity and overidentification tests
-  fx_tests <- c(list(.fx_model_test(main)), if (is_iv) .fx_iv_tests(fit))
-  fx_tests <- Filter(Negate(is.null), fx_tests)
+  iv_tests <- if (is_iv) .fx_iv_tests(fit)
+  fx_tests <- Filter(Negate(is.null), c(list(.fx_model_test(main)), iv_tests))
 
   provenance <- list(
     software = .est_software("fixest"),
@@ -139,6 +139,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   if (length(collinear))
     messages <- c(messages, list(list(level = "info", code = "collinear", source = "fixest",
                   message = paste("collinear terms dropped:", paste(collinear, collapse = ", ")))))
+  messages <- c(messages, attr(iv_tests, "messages"))
   if (length(messages)) meta$messages <- messages
 
   rec <- list(schema = "estimation/0.1", meta = meta, specification = spec, metrics = metrics,
@@ -319,11 +320,23 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   if (is.numeric(cd) && !is.na(cd))
     out <- c(out, list(list(category = "weak_identification", name = "cragg_donald_f",
                             origin = "estimation", statistic = .est_num(as.numeric(cd)))))
-  # fixest's `kpr` is the Kleibergen-Paap rk statistic, a chi-squared rank test (fixest's help
-  # calls it a weak-instrument test); it isn't the rk Wald F
+  # fixest's `kpr` is the Kleibergen-Paap rk Wald F, ivreg2's e(rkf) x (N - K)/N, but only with
+  # a non-iid vcov and exact identification; otherwise it is wrong (iid) or missing. Its chi2
+  # p-value doesn't fit an F statistic, so only the statistic is kept (docs: iv profile)
+  kpr <- .fx_fitstat(fit, "kpr")$kpr
+  vc_type <- .fx_vcov_type(attr(stats::vcov(fit, attr = TRUE), "vcov_type") %||% "IID")
+  vc_iid <- identical(vc_type, "iid")
+  exact <- length(fit$iv_inst_names_xpd) == length(fit$iv_endo_names)
+  kp_ok <- !vc_iid && exact && is.list(kpr) && !anyNA(kpr$stat)
+  if (kp_ok)
+    out <- c(out, list(list(category = "weak_identification", name = "kleibergen_paap_rk_wald_f",
+                            origin = "estimation", statistic = .est_num(as.numeric(kpr$stat)),
+                            vcov = vc_type)))
+  kp_msg <- if (!kp_ok) list(list(level = "info", code = "kpr_omitted", source = "estrec",
+    message = paste("fixest's Kleibergen-Paap statistic (kpr) left out: it is valid only with a",
+                    "non-iid vcov and exact identification")))
   out <- c(out, list(
-    .fx_test(.fx_fitstat(fit, "kpr")$kpr, "underidentification", "kleibergen_paap_rk", "chi2"),
     .fx_test(.fx_fitstat(fit, "wh")$wh, "endogeneity", "wu_hausman"),
     .fx_test(.fx_fitstat(fit, "sargan")$sargan, "overidentification", "sargan", "chi2")))
-  Filter(Negate(is.null), out)
+  structure(Filter(Negate(is.null), out), messages = kp_msg)
 }

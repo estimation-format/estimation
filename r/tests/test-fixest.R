@@ -80,6 +80,19 @@ eq(fs$statistic, fitstat(fi, ~ivf1)[[1]]$stat)
 stopifnot(fs$response == "x", fs$component == "first_stage", is.null(r$structures$first_stage),
           all(c("model", "weak_identification", "endogeneity", "overidentification") %in% cat_of(r)),
           r$tests[cat_of(r) == "overidentification"][[1]]$name == "sargan")
+# fixest's kpr: kept only with a non-iid vcov and exact identification, as the KP rk Wald F
+# without fixest's chi2 p-value (it matches ivreg2's e(rkf) only there; see the iv profile)
+stopifnot(!"kleibergen_paap_rk_wald_f" %in% vapply(r$tests, `[[`, "", "name"),   # overidentified
+          "kpr_omitted" %in% vapply(r$meta$messages, `[[`, "", "code"))
+fx <- feols(y ~ x2 | id | x ~ z, d, vcov = "hetero")
+rx <- to_estimation(fx)
+kp <- Filter(function(t) t$name == "kleibergen_paap_rk_wald_f", rx$tests)
+stopifnot(length(kp) == 1, kp[[1]]$category == "weak_identification", is.null(kp[[1]]$p_value),
+          kp[[1]]$vcov == "HC1", !"kpr_omitted" %in% vapply(c(list(), rx$meta$messages), `[[`, "", "code"))
+eq(kp[[1]]$statistic, fitstat(fx, ~kpr)$kpr$stat)
+rx <- to_estimation(feols(y ~ x2 | id | x ~ z, d, vcov = "iid"))
+stopifnot(!"kleibergen_paap_rk_wald_f" %in% vapply(rx$tests, `[[`, "", "name"))
+check(rx, "iv_exact_iid")
 
 # Tests: the model Wald test from fixest; test results recorded as given, never computed
 r <- to_estimation(f)

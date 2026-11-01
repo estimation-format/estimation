@@ -16,7 +16,8 @@
   (`metrics.lr_test`, `structures.ph_test`), meta-analysis (Egger, Begg), sem (`chisq`,
   `chisq_baseline` and their df and p), mixed (`lr_vs_fixed`), causal-ml (grf calibration).
   `multiple-testing/0.1` accepts `p_value_adjusted` on tests. fixest's `kpr` is mapped to
-  underidentification, not to the Kleibergen-Paap Wald F.
+  the Kleibergen-Paap rk Wald F (weak identification), valid only with a non-iid vcov and exact
+  identification (checked against ivreg2).
 - Validator: checks test ids, restriction shapes, and term and vcov references; warns on a
   missing expected test category. `estimation_format.add_test()` appends a test and logs it in
   `history`.

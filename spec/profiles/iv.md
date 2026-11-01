@@ -43,16 +43,19 @@ and endogeneity tests, so a record may hold more than one of each.
 | `first_stage` | `f`, `wald` (robust) | first-stage F of the excluded instruments | `estat firststage` F | `e(first)` `F` | `ivf1`; `ivwald1` (robust) | weak-instruments F; `diagnostic_first_stage_fstatistic`; `iv1fstat` | `f.stat` | `_f_stat_1st_stage` |
 | `first_stage` | `sanderson_windmeijer_f`, `angrist_pischke_f` | conditional F per endogenous regressor | | `e(first)` `SWF`, `APF` | | lfe `condfstat` | | |
 | `first_stage` | `effective_f` | Montiel Olea-Pflueger effective F | | | | | | pyfixest `_eff_F` |
-| `underidentification` | `anderson_lm`, `kleibergen_paap_rk_lm`, `kleibergen_paap_rk` | rank test of the first stage | | `e(idstat)`, `e(idp)`, `e(iddf)` | `kpr`* | | | |
+| `underidentification` | `anderson_lm`, `kleibergen_paap_rk_lm` | rank test of the first stage | | `e(idstat)`, `e(idp)`, `e(iddf)` | | | | |
 | `weak_identification` | `cragg_donald_f` | Cragg-Donald Wald F (no p-value) | minimum eigenvalue statistic | `e(cdf)` | `cd` | | `cragg_donald_f` | |
-| `weak_identification` | `kleibergen_paap_rk_wald_f` | Kleibergen-Paap rk Wald F (no p-value) | | `e(rkf)` | | | `kleibergen_paap_f` | FEM.jl `F_kp`, `p_kp` |
+| `weak_identification` | `kleibergen_paap_rk_wald_f` | Kleibergen-Paap rk Wald F (no p-value) | | `e(rkf)` | `kpr`* | | `kleibergen_paap_f` | FEM.jl `F_kp`, `p_kp` |
 | `weak_identification` | `anderson_rubin`, `stock_wright` | weak-instrument-robust tests of the endogenous coefficients | | `e(arf)`, `e(archi2)`; `e(sstat)` | | | | |
 | `overidentification` | `sargan`, `basmann`, `score`, `hansen_j`, `anderson_rubin` (LIML) | overidentifying restrictions | `estat overid` | `e(j)`, `e(sargan)` | `iv_sargan` | Sargan; `diagnostic_overid_test` | `sargan`, `basmann`, `anderson_rubin`, `wooldridge_overid` | |
 | `endogeneity` | `durbin`, `wu_hausman`, `score`, `c` | exogeneity of the endogenous regressors | `estat endogenous` | `e(estat)` | `iv_wh` | Wu-Hausman; `diagnostic_endogeneity_test` | `wu_hausman()`, `durbin()`, `wooldridge_score` | |
 
-\* fixest's `fitstat(, "kpr")` is a chi-squared rank statistic with a p-value, so it is mapped
-here, although fixest's help calls it "the Kleibergen-Paap test for weak instruments". It isn't
-the rk Wald F (`e(rkf)`). To be checked against ivreg2 on the same data.
+\* fixest's `fitstat(, "kpr")` is the Kleibergen-Paap rk Wald F, scaled by (N − K)/N relative
+to ivreg2's `e(rkf)`, where fixest computes it correctly: with a non-iid vcov and exact
+identification (checked against ivreg2 4.1.12, 2026-11-01). fixest still gives it a chi-squared
+p-value, which a writer should drop. Under an iid vcov it matches neither ivreg2 statistic, and
+for overidentified models with a non-iid vcov fixest doesn't compute it; writers should leave
+it out in those cases.
 
 `structures.first_stage` (`kind: "object"`) keeps the first-stage summaries that aren't tests:
 a `per_endogenous` list, each entry naming its `endogenous` variable, with `r2`, `partial_r2`

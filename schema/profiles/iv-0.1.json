@@ -58,11 +58,8 @@
             },
             "underidentification": {
               "description": "Rank test of the first stage: Anderson LM (iid) or Kleibergen-Paap rk LM.",
-              "names": ["anderson_lm", "kleibergen_paap_rk_lm", "kleibergen_paap_rk"],
-              "x-tools": {
-                "ivreg2/ivreghdfe": "e(idstat), e(idp), e(iddf)",
-                "fixest": "fitstat kpr (chi2; fixest's help calls it a weak-instrument test)"
-              }
+              "names": ["anderson_lm", "kleibergen_paap_rk_lm"],
+              "x-tools": {"ivreg2/ivreghdfe": "e(idstat), e(idp), e(iddf)"}
             },
             "weak_identification": {
               "description": "Weak-identification statistics and weak-instrument-robust tests of the endogenous coefficients. Cragg-Donald and Kleibergen-Paap F have no p-value: compare with Stock-Yogo critical values.",
@@ -76,6 +73,7 @@
                 },
                 "kleibergen_paap_rk_wald_f": {
                   "ivreg2/ivreghdfe": "e(rkf)",
+                  "fixest": "fitstat kpr: e(rkf) x (N-K)/N; only with a non-iid vcov and exact identification; drop its chi2 p-value",
                   "linearmodels": "first_stage.kleibergen_paap_f",
                   "FixedEffectModels.jl": "F_kp, p_kp"
                 },
