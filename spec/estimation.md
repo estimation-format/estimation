@@ -52,6 +52,8 @@ item of a list and `*` every key of an object.
 | profile | a named, versioned set of extra rules for a kind of record (section 9) |
 | extension | a block under `extensions`, owned by the tool that wrote it (section 7) |
 | catalog | the registered list of the core schema and the profiles (section 9.3) |
+| collection | an `estimation-collection` document: a set of records with what is true of the set, such as a paper's results or a session's timeline (section 11) |
+| member | one record in a collection, with the collection's label and locator for it |
 
 ## 2. Encoding
 
@@ -667,20 +669,223 @@ components), `ml` (scikit-learn, tidymodels, xgboost).
 ## 10. Schema locations and versions
 
 - The format version is `schema` in each record: `"estimation/0.1"` during the draft, then
-  `"estimation/1"`.
+  `"estimation/1"`. Collections carry `"estimation-collection/0.1"` (section 11), versioned
+  with the format.
 - Schemas are published at
   `https://estimation-format.github.io/estimation/schema/<file>`, which is also each file's
-  `$id` (for example `.../schema/estimation-0.1.json`, `.../schema/profiles/linear-fe-0.1.json`).
+  `$id` (for example `.../schema/estimation-0.1.json`, `.../schema/profiles/linear-fe-0.1.json`,
+  `.../schema/estimation-collection-0.1.json`).
   Profiles refer to the core by relative `$ref`, so a local copy validates offline. These
   locations may change before the first published version; a published `$id` never changes.
 - Validators SHOULD NOT fetch schemas over the network; the reference validator ships them.
 
-## 11. Collections (planned, not yet specified)
+## 11. Collections (`estimation-collection/0.1`)
 
-A planned `estimation-collection` will group records: a paper's results ordered by locator
-(`members`), or the timeline of a session or replication (`events`), with the session's own
-provenance. A collection will be an export built from records; each member stays a
-self-contained record. Comments on this plan are welcome.
+A **collection** is a set of records plus what is true of the set as a whole. It has two main
+uses, and each leans on a different part:
+
+- **A paper's results** (`kind: "paper"`) is organised by `members`: the records behind the
+  paper's numbers, each with where it appears (Table 1 col. 1, col. 2, ...), and the paper's
+  citation in `publication`. It answers "which record is behind each number?".
+- **Replicating results** (`kind: "session"` or `"replication"`) is organised by `events`:
+  the timeline of what was done, in order, including the fits (each fit event names its
+  member). It answers "what exactly happened, so that I can do it again?".
+
+Both parts are always allowed, and a collection can have both; `kind` sets which one a
+validator expects (11.6).
+
+A collection is an **export**: it is built from records and never edited on its own. Each
+member stays a self-contained record that can be pulled out and read alone, and the
+collection never changes a member. Members are carried *in* the collection, embedded or in a
+JSON Lines file beside it (11.3); a collection does not point to record files elsewhere.
+
+### 11.1 Encoding and structure
+
+A collection is a single JSON object in UTF-8, encoded as a record is (section 2: non-finite
+numbers as strings, absent vs `null`, UTC times, resolved values). A collection file SHOULD
+be named `<name>.estimation-collection.json`.
+
+| Member | Status | Content |
+|---|---|---|
+| `schema` | required | `"estimation-collection/0.1"` |
+| `meta` | required | identity and kind of the collection (11.2) |
+| `publication` | optional | the paper a `paper` collection belongs to: the block of section 5, with `citation` and no locator (members carry those) |
+| `session` | optional | what the session was and how it ran (11.4) |
+| `provenance` | optional | the session's or replication's own software, environment, execution, agent and data (11.4) |
+| `members` | required | the records, in order (11.3); may be empty |
+| `events` | optional | what happened, in order (11.5) |
+| `attachments` | optional | side files, as for records (8.1); holds the members file (11.3) |
+| `extensions` | optional | blocks added by tools, as for records (7.1) |
+| `history` | optional | every tool that created, extended or redacted the collection (7.1) |
+
+Writers SHOULD write the members in this order, so a reader sees what the collection is
+before its records, and MUST NOT add others. `extensions` and `history` follow section 7.1;
+a collection's `history` describes the collection, and each member keeps its own.
+
+### 11.2 `meta` (required)
+
+| Field | Status | Content |
+|---|---|---|
+| `id` | required | a UUID identifying this collection |
+| `created` | required | when the collection was written |
+| `kind` | required | `"paper"`, `"session"`, `"replication"`, `"batch"` or `"other"` |
+| `title`, `tags`, `notes` | optional | user labels and free text |
+| `producer` | optional | `{name, version}` of the software that wrote the collection |
+
+`batch` is a set of runs with no paper or session behind it (a grid of specifications, a
+benchmark); `other` is anything else.
+
+### 11.3 `members` (required)
+
+Each member is an object:
+
+| Field | Status | Content |
+|---|---|---|
+| `id` | required | the member record's `meta.id`; unique within the collection |
+| `record` | one of these | the record, embedded whole |
+| `attachment` | one of these | the `id` of the members file in `attachments` that holds the record |
+| `sha256` | optional | SHA-256 (hex) of the record's [RFC 8785] canonical JSON |
+| `created` | optional | the record's `meta.created`, so the order of runs is visible without opening the records |
+| `label` | optional | the collection's own short name for the member (`"baseline"`, `"col3"`) |
+| `locator` or `locators` | optional | where the result appears in the collection's `publication` (5); expected for `kind: "paper"` |
+| `notes` | optional | free text |
+
+- **Order.** The array order is the collection's order. A `paper` collection SHOULD list its
+  members in locator order (Table 1 before Table 2, columns left to right); a `session`
+  SHOULD list them in the order run. A record that appears in several places is **one**
+  member with `locators`, not several members.
+- **Storage.** Each member has exactly one of `record` and `attachment`. Writers SHOULD embed
+  the records. A collection that would pass the 16 MB limit (11.7) keeps its records in a
+  **members file** instead: a [JSON Lines] file of one record per line, named
+  `<name>.members.jsonl`, next to the collection and listed in `attachments` with
+  `role: "members"` and `media_type: "application/jsonl"`. Writers SHOULD switch to a members
+  file automatically above the limit, and MAY do so on request. The member entries stay in
+  `members` either way, so the collection can be read as an index without opening the file. A
+  reader finds a record in the members file by its `meta.id`.
+- **Hash.** `sha256` proves which version of a record the collection holds. It is computed
+  over the record's RFC 8785 serialization (non-finite numbers as strings, as written), the
+  same way wherever the record is stored, so moving a member between the collection and a
+  members file doesn't change it. It covers the whole record, so appending a test to a member
+  (4.8) changes its hash: the collection then no longer holds that version. The hash is
+  OPTIONAL; a validator reports one that doesn't match as a warning.
+- **Locators.** A member's `locator` (or `locators`) is the collection's statement of where
+  the result appears, with the same fields as in section 5. It is separate from the record's
+  own `publication`: a writer MUST NOT copy it into the record (records are often written
+  before tables are numbered, and the collection never changes a member). When the record
+  does carry `publication.locator` or `locators`, the member's locator SHOULD equal one of
+  them on the structured fields present (`label` aside), and a validator warns when it
+  doesn't. A validator also warns when a member record's `publication.citation.DOI` differs
+  from the collection's.
+
+### 11.4 `session` and `provenance` (optional)
+
+`session` describes a session: one process (an interactive session, a manager job) that ran
+several fits.
+
+| Field | Content |
+|---|---|
+| `id` | the session id that member records carry in `provenance.execution.session`; required when `session` is present |
+| `started`, `ended`, `elapsed_seconds` | when it ran |
+| `status` | `"open"`, `"closed"`, `"crashed"` or `"timed_out"` |
+| `clients` | the clients that connected, each `{language, version, host, connected, disconnected}` (a Python and an R client, for example) |
+| `fixed` | what was fixed for the session, in the producer's terms: fixed-effect structure, weights, sample definition, declared variables |
+
+`provenance` has the structure of a record's (4.6) and describes the **session or
+replication process**, not one fit: the software, environment and hardware of the manager
+and workers; the scheduler job that held the session, launch parameters, total wall time,
+worker-seconds, peak memory and idle time (`execution`); the dataset and its checksum, and
+derived data the session persisted (`data`). Members repeat what applies to them, so a member
+read alone loses nothing; the collection-level block shows what changed *during* the session
+(workers replaced after a failure, for example).
+
+The identifying fields of section 4.7 are identifying here too, as is `session.clients[*].host`.
+
+### 11.5 `events` (optional)
+
+`events` is the timeline, in order. Each event is an object:
+
+| Field | Status | Content |
+|---|---|---|
+| `when` | required | when it happened |
+| `type` | required | what happened (below) |
+| `member` | optional | the `id` of the member it produced or concerns; set on every `fit` event |
+| `detail` | optional | an object in the producer's terms: the variables created, the setting changed and its old and new values, the worker lost |
+| `message` | optional | text, e.g. an error message |
+
+`type` has a recommended vocabulary (in the schema), but any string is valid: `fit`,
+`data_loaded`, `variable_created`, `setting_changed`, `demeaned_persisted`,
+`demeaned_loaded`, `worker_lost`, `worker_added`, `client_connected`,
+`client_disconnected`, `command` (code run, in a replication), `error`, `note`.
+
+Replaying the events in order should reproduce the members. Events SHOULD be in time order;
+a validator warns when `when` goes backwards.
+
+### 11.6 What a validator checks
+
+A validator checks the collection against `estimation-collection/0.1` and **each member as a
+record**, against the core and the profiles that member claims (section 9), reporting a
+member's issues under `members[<i>]`. In addition:
+
+| Check | Level |
+|---|---|
+| a member without `id`, with both or neither of `record` and `attachment`, or with an `id` used twice | error |
+| an `attachment` that names no entry in `attachments` | error |
+| a member record whose `meta.id` is not the member's `id` | error |
+| an event whose `member` names no member | error |
+| `kind: "session"` without `session.id` | error |
+| a `sha256` that doesn't match the record | warning |
+| a member locator that matches none of its record's locators; a citation DOI that differs from the collection's | warning |
+| a members file whose `sha256` doesn't match it, or that lacks a member's record | warning |
+| events out of time order | warning |
+| expected for the kind but missing (below) | warning |
+| a members file that can't be found, so its members weren't checked | information |
+
+| `kind` | Expected |
+|---|---|
+| `paper` | at least one member; `publication.citation`; a `locator` or `locators` on each member |
+| `session` | `events`; a `fit` event for each member; each member's `provenance.execution.session` equal to `session.id` |
+| `replication` | `events`; `publication` |
+| `batch`, `other` | nothing beyond the structure |
+
+### 11.7 Size and redaction
+
+- **Size.** A collection file above 16 MB is an error, as for a record. The 1 MB and
+  10,000-element warnings (8.2) apply to the collection *without* its embedded records, and
+  each member record is checked against the record limits as if it stood alone. A members
+  file has no overall limit.
+- **Attachments.** A member record's attachment paths are relative to the folder of the
+  collection (or of its members file, which sits beside it), so a collection and its
+  members' side files move together.
+- **Redaction.** Redacting a collection redacts its own identifying fields (those the
+  collection schema marks `x-identifying`, which include a record's provenance fields) and
+  every member record (under the member's own profiles, 4.7) with the same method and salt,
+  updates each member's `sha256` that is present, and appends a `history` entry to each
+  member and to the collection.
+- **Integrity.** A collection has no digest of its own in 0.1. Each member keeps its core
+  digest (7.2), and member hashes pin which versions the collection holds.
+
+### 11.8 Example: a paper's results, minimal
+
+```json
+{"schema": "estimation-collection/0.1",
+ "meta": {"id": "c0110000-...", "created": "2026-11-01T12:00:00Z", "kind": "paper",
+          "title": "Table 2"},
+ "publication": {"citation": {"type": "report", "title": "An illustrative working paper",
+                              "DOI": "10.0000/example.wp1"}},
+ "members": [
+   {"id": "2b7e6e56-...", "label": "baseline", "locator": {"table": "2", "column": "1"},
+    "sha256": "...", "record": {"schema": "estimation/0.1", "meta": {"id": "2b7e6e56-...", ...}, ...}},
+   {"id": "380a95f5-...", "label": "full",
+    "locators": [{"table": "2", "column": "3"}, {"table": "A1", "column": "1"}],
+    "sha256": "...", "record": {...}}]}
+```
+
+[`schema/examples/`](../schema/examples/) has complete collections: a paper, a session with
+its events, and a replication whose members are in a members file.
+
+A flat table of `parameters` across members (Parquet or CSV, with the member id, label,
+locator, response and term) is a convenient export for tables and plots. It is not part of
+the format.
 
 ## 12. Example: base R `lm`, minimal
 
@@ -741,6 +946,7 @@ this format borrows from them:
 - [Package URL]: purl specification.
 - [CSL-JSON]: Citation Style Language data schema.
 - [CC0 1.0]: Creative Commons CC0 1.0 Universal.
+- [JSON Lines]: one JSON value per line.
 
 [RFC 2119]: https://www.rfc-editor.org/rfc/rfc2119
 [RFC 8174]: https://www.rfc-editor.org/rfc/rfc8174
@@ -751,3 +957,4 @@ this format borrows from them:
 [Package URL]: https://github.com/package-url/purl-spec
 [CSL-JSON]: https://github.com/citation-style-language/schema
 [CC0 1.0]: https://creativecommons.org/publicdomain/zero/1.0/
+[JSON Lines]: https://jsonlines.org/

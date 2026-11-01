@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estimation-format contributors
-"""Reference tools for the `estimation` format: write, read, validate and redact records.
+"""Reference tools for the `estimation` format: write, read, validate and redact records
+and collections of records.
 
     import estimation_format as ef
     rec = ef.new_record(parameters, estimator={"family": "linear", "method": "ols"})
@@ -12,6 +13,20 @@ The specification is spec/estimation.md in https://github.com/estimation-format/
 
 __version__ = "0.1.0.dev0"
 
+from .collection import (
+    COLLECTION_SCHEMA,
+    add_event,
+    is_collection,
+    iter_members,
+    loads_collection,
+    member_sha256,
+    new_collection,
+    new_member,
+    read_collection,
+    redact_collection,
+    validate_collection,
+    write_collection,
+)
 from .records import (
     CORE,
     DEFAULT_IDENTIFYING,
@@ -50,6 +65,7 @@ from .records import (
 )
 
 __all__ = [
+    "COLLECTION_SCHEMA",
     "CORE",
     "DEFAULT_IDENTIFYING",
     "FAIL_BYTES",
@@ -62,6 +78,7 @@ __all__ = [
     "Schemas",
     "__version__",
     "add_digest",
+    "add_event",
     "add_test",
     "attachment",
     "attachment_path",
@@ -71,18 +88,28 @@ __all__ = [
     "count_elements",
     "decode_nonfinite",
     "identifying_paths",
+    "is_collection",
+    "iter_members",
     "jsonschema_check",
     "load_schemas",
     "load_structure",
     "loads",
+    "loads_collection",
     "main",
+    "member_sha256",
+    "new_collection",
+    "new_member",
     "new_record",
     "prepare",
     "read",
+    "read_collection",
     "record_identifying_paths",
     "redact",
+    "redact_collection",
     "spill",
     "to_json",
     "validate",
+    "validate_collection",
     "write",
+    "write_collection",
 ]

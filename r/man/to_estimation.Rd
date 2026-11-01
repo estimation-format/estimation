@@ -2,6 +2,7 @@
 \alias{to_estimation}
 \alias{to_estimation.fixest}
 \alias{to_estimation.fixest_multi}
+\alias{to_estimation.list}
 \alias{to_estimation.default}
 \alias{is_estimation_record}
 \title{Convert a fitted model to an estimation record}
@@ -9,6 +10,10 @@
 Returns the record as a list, in the \code{estimation} format (\code{estimation/0.1}):
 parameters, metrics, vcov with its small-sample correction, sample drops by reason, fixed
 effects, and provenance. A \code{fixest_multi} gives a list of records, one per model.
+
+A plain list of fits (or records) gives a flat list of records, named as the list is; a
+\code{fixest_multi} element contributes one record per model, named \code{<name>.1},
+\code{<name>.2}, ... A record passes through unchanged.
 }
 \usage{
 to_estimation(fit, ...)
@@ -20,7 +25,8 @@ to_estimation(fit, ...)
 is_estimation_record(x)
 }
 \arguments{
-\item{fit}{a fitted model: a \code{fixest} \code{feols} fit (OLS or IV) or a \code{fixest_multi}.}
+\item{fit}{a fitted model: a \code{fixest} \code{feols} fit (OLS or IV) or a \code{fixest_multi};
+or a list of them.}
 \item{data}{the data the model was fitted on, to split sample drops by reason (missing,
 non-finite, zero weights, singletons). By default it is recovered from the fit's call
 environment; without it, drops are recorded as \code{other}.}
@@ -46,5 +52,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   fit <- fixest::feols(mpg ~ wt | cyl, mtcars)
   rec <- to_estimation(fit, vcov = list("hetero", "iid"))
   rec$parameters[[1]]$std_error
+  recs <- to_estimation(list(base = fit, full = fixest::feols(mpg ~ wt + hp | cyl, mtcars)))
+  names(recs)
 }
 }

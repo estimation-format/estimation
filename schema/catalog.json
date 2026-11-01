@@ -9,6 +9,18 @@
     "maintainer": "jemather",
     "examples": ["examples/lm-minimal.estimation.json"]
   },
+  "collection": {
+    "name": "estimation-collection/0.1",
+    "file": "estimation-collection-0.1.json",
+    "status": "draft",
+    "maintainer": "jemather",
+    "description": "A set of records: a paper's results (members with locators) or a session's or replication's timeline (events).",
+    "examples": [
+      "examples/paper.estimation-collection.json",
+      "examples/session.estimation-collection.json",
+      "examples/replication.estimation-collection.json"
+    ]
+  },
   "profiles": [
     {
       "name": "inference/0.1",

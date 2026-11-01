@@ -7,12 +7,13 @@ Authors@R: person("Ted", "Matherly", role = c("aut", "cre"),
 Description: Writes fitted models as records in the 'estimation' format, a JSON
     file for one statistical estimation run: what was estimated, what came out,
     and how and where it ran. Version 0.1 writes 'fixest' 'feols' fits (OLS and IV,
-    including multiple estimations, 'split' and 'subset'), and adds hypothesis tests
-    and linear combinations to records.
+    including multiple estimations, 'split' and 'subset'), adds hypothesis tests
+    and linear combinations to records, and writes sets of records as collections
+    (a paper's results, a session or a replication).
 License: MIT + file LICENSE
 URL: https://github.com/estimation-format/estimation
 BugReports: https://github.com/estimation-format/estimation/issues
 Depends: R (>= 4.1)
 Imports: jsonlite, stats, utils
-Suggests: fixest (>= 0.12), marginaleffects
+Suggests: fixest (>= 0.12), marginaleffects, openssl
 Encoding: UTF-8

@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/estimation-collection-0.1.json",
+  "title": "estimation-collection/0.1",
+  "x-license": "CC0-1.0",
+  "description": "A set of estimation records plus what is true of the set: a paper's results (members with locators) or a session's or replication's timeline (events). Specification: spec/estimation.md section 11. A collection is an export built from records; each member stays a self-contained record, embedded or in a JSON Lines members file listed in attachments. Each member record is validated as an estimation record (core plus its claimed profiles) by the validator, not by this schema. Encoding, x-identifying, x-expected and x-vocabulary are as in estimation-0.1.json.",
+  "type": "object",
+  "required": ["schema", "meta", "members"],
+  "properties": {
+    "schema": {"const": "estimation-collection/0.1"},
+    "meta": {"$ref": "#/$defs/meta"},
+    "members": {"type": "array", "items": {"$ref": "#/$defs/member"}},
+    "publication": {"$ref": "estimation-0.1.json#/$defs/publication"},
+    "session": {"$ref": "#/$defs/session"},
+    "provenance": {"$ref": "estimation-0.1.json#/$defs/provenance"},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+    "attachments": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/attachment"}},
+    "extensions": {
+      "type": "object",
+      "additionalProperties": {"$ref": "estimation-0.1.json#/$defs/extension"}
+    },
+    "history": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/history_entry"}}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"meta": {"properties": {"kind": {"const": "session"}}, "required": ["kind"]}}},
+      "then": {"required": ["session"]}
+    }
+  ],
+  "x-expected-by-kind": {
+    "description": "Checked by validators (spec 11.6): a warning when missing.",
+    "paper": ["members[0]", "publication.citation", "members[*].locator|locators"],
+    "session": ["events", "a fit event per member", "members[*].record.provenance.execution.session = session.id"],
+    "replication": ["events", "publication"]
+  },
+  "x-size-limits": {
+    "warn_bytes": 1000000,
+    "warn_elements": 10000,
+    "fail_bytes": 16000000,
+    "description": "fail_bytes applies to the collection file; the warnings to the collection without its embedded records; each member record is checked against the record limits as if alone. A members file has no overall limit."
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "required": ["id", "created", "kind"],
+      "properties": {
+        "id": {"description": "UUID of this collection.", "type": "string", "format": "uuid"},
+        "created": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
+        "kind": {
+          "description": "Sets which parts a validator expects: paper -> members with locators and a citation; session -> session and events; replication -> events and publication.",
+          "enum": ["paper", "session", "replication", "batch", "other"]
+        },
+        "title": {"type": "string"},
+        "tags": {"$ref": "estimation-0.1.json#/$defs/strings"},
+        "notes": {"type": "string"},
+        "producer": {"$ref": "estimation-0.1.json#/$defs/tool"}
+      }
+    },
+    "member": {
+      "description": "One record: embedded (record) or in the members file (attachment). Array order is the collection's order.",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"description": "The record's meta.id; unique in the collection.", "type": "string"},
+        "record": {"description": "The record, embedded whole; validated as an estimation record.", "type": "object"},
+        "attachment": {"description": "id of the members file (attachments, role members) that holds the record.", "type": "string"},
+        "sha256": {"description": "SHA-256 of the record's RFC 8785 canonical JSON, however it is stored. Optional.", "$ref": "estimation-0.1.json#/$defs/sha256"},
+        "created": {"description": "The record's meta.created.", "$ref": "estimation-0.1.json#/$defs/timestamp"},
+        "label": {"description": "The collection's own short name for the member.", "type": "string"},
+        "locator": {"description": "Where the result appears in the collection's publication; the collection's statement, not copied into the record.", "$ref": "estimation-0.1.json#/$defs/locator"},
+        "locators": {"type": "array", "minItems": 2, "items": {"$ref": "estimation-0.1.json#/$defs/locator"}},
+        "notes": {"type": "string"}
+      },
+      "oneOf": [{"required": ["record"]}, {"required": ["attachment"]}],
+      "not": {"required": ["locator", "locators"]}
+    },
+    "session": {
+      "description": "One process that ran several fits (an interactive session, a manager job).",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"description": "The id member records carry in provenance.execution.session.", "type": "string"},
+        "started": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
+        "ended": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
+        "elapsed_seconds": {"$ref": "estimation-0.1.json#/$defs/number"},
+        "status": {"enum": ["open", "closed", "crashed", "timed_out"]},
+        "clients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "language": {"type": "string"},
+              "version": {"type": "string"},
+              "host": {"x-identifying": true, "type": "string"},
+              "connected": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
+              "disconnected": {"$ref": "estimation-0.1.json#/$defs/timestamp"}
+            }
+          }
+        },
+        "fixed": {"description": "What was fixed for the session, in the producer's terms: FE structure, weights, sample, declared variables.", "type": "object"}
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["when", "type"],
+      "properties": {
+        "when": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
+        "type": {
+          "type": "string",
+          "x-vocabulary": [
+            "fit", "data_loaded", "variable_created", "setting_changed", "demeaned_persisted",
+            "demeaned_loaded", "worker_lost", "worker_added", "client_connected",
+            "client_disconnected", "command", "error", "note"
+          ]
+        },
+        "member": {"description": "id of the member it produced or concerns; set on every fit event.", "type": "string"},
+        "detail": {"description": "In the producer's terms.", "type": "object"},
+        "message": {"type": "string"}
+      }
+    }
+  }
+}

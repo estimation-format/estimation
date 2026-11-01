@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Collections: `estimation-collection/0.1` (spec section 11, `schema/estimation-collection-0.1.json`,
+  catalog entry `collection`), a set of records plus what is true of the set. `meta.kind` is
+  `paper`, `session`, `replication`, `batch` or `other` and sets what a validator expects: a
+  paper's members with locators and the citation; a session's `session` block (its id on every
+  member's `provenance.execution.session`) and `events`; a replication's `events` and
+  `publication`. Members are the records themselves, embedded or (above 16 MB) in a JSON Lines
+  members file beside the collection; each has the record's `meta.id`, an optional `sha256` of
+  its RFC 8785 canonical JSON, a `label` and the collection's own `locator`/`locators`, which
+  must match the record's publication locators where it has them. Events are
+  `{when, type, member, detail, message}` with an open `type` vocabulary. Size limits apply to
+  the file and to the collection without its records; each member is checked as a record.
+  Redaction covers the collection and its members. Examples: a paper, a session and a
+  replication with a members file.
+- Validator and tools: `new_collection`, `write_collection`, `read_collection`,
+  `validate_collection` (each member validated as a record, under `members[<i>].record`),
+  `redact_collection`, `member_sha256`, `add_event`, `iter_members`; `estimation validate`,
+  `redact` and `digest` take collections.
+- estrec: `write_collection()` (embedded or JSON Lines members; member hashes with the optional
+  `openssl` package) and `to_estimation()` for a plain list of fits, which flattens
+  `fixest_multi` elements. RFC 8785 canonical JSON in R, checked against the Python reference.
+
 - Core: an optional top-level `tests` list (spec 4.8, `$defs/test`) for every hypothesis test
   about the model: the estimator's own, those asked for after the fit, and linear
   combinations. Each test has a `name`, a `statistic` or `p_value`, and optionally a

@@ -57,7 +57,7 @@ packages = ["estimation_format", "estimation_format.schema"]
 "estimation_format.schema" = "schema"
 
 [tool.setuptools.package-data]
-"estimation_format.schema" = ["*.json", "LICENSE", "profiles/*.json", "examples/*.json"]
+"estimation_format.schema" = ["*.json", "LICENSE", "profiles/*.json", "examples/*.json", "examples/*.jsonl"]
 
 [tool.setuptools.dynamic]
 version = { attr = "estimation_format.__version__" }

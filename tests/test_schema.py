@@ -99,15 +99,25 @@ def doc_blocks():
     return out
 
 
+def block_kind(b):
+    """A block's first key; a collection (spec 11) is "collection", not "schema"."""
+    first = b[0]
+    return (
+        "collection"
+        if str(first.get("schema", "")).startswith("estimation-collection/")
+        else next(iter(first))
+    )
+
+
 def doc_examples():
     """The spec's JSON blocks by the first key of their first object."""
-    return {next(iter(b[0])): b for b in doc_blocks()}
+    return {block_kind(b): b for b in doc_blocks()}
 
 
 def test_doc_blocks_found():
-    kinds = [next(iter(b[0])) for b in doc_blocks()]
+    kinds = [block_kind(b) for b in doc_blocks()]
     assert sorted(kinds) == sorted(
-        ["term", "vcov", "tests", "publication", "comparisons", "id", "extensions", "schema"]
+        ["term", "vcov", "tests", "publication", "comparisons", "id", "extensions", "schema", "collection"]
     )
 
 
@@ -126,6 +136,8 @@ def test_doc_examples_validate():
     assert errors(CORE, ext[0]["extensions"]["harness"], "extension") == []
     assert errors(PROFILES["dfeols/0.1"], ext[0]["extensions"]["dfeols"], "extension") == []
     assert profile_errors(record[0]) == []
+    # the collection's own structure (its member records are elided in the spec)
+    assert errors("estimation-collection-0.1.json", ex["collection"][0]) == []
 
 
 def test_doc_lm_example_matches_file():

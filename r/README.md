@@ -25,6 +25,7 @@ fits <- feols(c(y1, y2) ~ csw(x1, x2) | firm, data, split = ~region)
 write_estimation(fits, "fits.estimation.json")
 
 rec <- to_estimation(fit)   # the record as a list
+recs <- to_estimation(list(base = fit, full = fit2))   # a list of fits: a list of records
 
 # Test results: run the test with the function you use, and record its result
 rec <- add_test(rec, wald(fit, keep = "^counter::-([2-9]|1[0-9]|20):"), label = "pre-trends")
@@ -50,6 +51,27 @@ p-value, vcov and hypothesis that the result carries, and the call that made it.
 as_estimation_test.my_test <- function(x, ...)
   list(list(name = "wald", statistic = x$W, distribution = "chi2", df = x$k, p_value = x$p))
 ```
+
+## Collections
+
+`write_collection()` writes several records as one `estimation-collection` file (spec section
+11): a paper's results with where each appears, a session or replication with its timeline,
+or a batch of runs. The records are embedded whole and never changed; the locators stay in the
+collection.
+
+```r
+write_collection(list(baseline = f1, full = f2), "table2.estimation-collection.json",
+                 kind = "paper",
+                 locators = list("Table 2, col. (1)", list(table = "2", column = "2")),
+                 publication = list(citation = list(type = "article-journal", title = "...",
+                                                    DOI = "10.1257/...")))
+write_collection(fits, "batch.estimation-collection.json", kind = "batch",
+                 members = "jsonl")   # records in batch.members.jsonl, one per line
+```
+
+Labels default to the list's names. With the `openssl` package installed, each member carries
+the SHA-256 of its record's RFC 8785 canonical JSON, which shows which version of the record the
+collection holds; without it the hashes are left out (they are optional).
 
 ## What a record holds
 
@@ -81,13 +103,15 @@ estimation redact fit.estimation.json -o shareable.estimation.json   # drops use
 python -c "import estimation_format as ef, sys; p = sys.argv[1]; ef.write(ef.read(p), p)" fit.estimation.json  # adds the core digest
 ```
 
-estrec doesn't write the core digest (`meta.core_digest`, optional) yet: it needs RFC 8785
-canonical JSON.
+estrec doesn't write the core digest (`meta.core_digest`, optional) yet. It now has RFC 8785
+canonical JSON (for collections), so the digest needs only `openssl`.
 
 ## Not yet
 
 - `feglm`/`fepois` (`glm/0.1`), `lm`/`glm` and other classes through `insight`.
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
-- Tests: `tests/test-fixest.R` (base R). It validates every record when the `estimation` CLI
-  is on `PATH` or `ESTREC_VALIDATOR` names it.
+- Tests: `tests/test-fixest.R` and `tests/test-collection.R` (base R). They validate every
+  record and collection when the `estimation` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
+  with `ESTREC_PYTHON` (a Python with `estimation_format`), the collection test also checks that
+  estrec's canonical JSON equals the reference implementation's.

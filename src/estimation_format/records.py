@@ -21,7 +21,8 @@ fields marked `x-identifying` in the core and each claimed profile. Without the
 `jsonschema` package (`pip install 'estimation-format[jsonschema]'`), `validate` falls back
 to built-in checks and says so.
 
-Command line: `estimation {validate,redact,digest} ...` (also `python -m estimation_format`).
+Command line: `estimation {validate,redact,digest} ...` (also `python -m estimation_format`);
+each command also takes collections (collection.py).
 """
 
 from __future__ import annotations
@@ -898,10 +899,18 @@ class Schemas:
     """The core schema and the profiles by name: the packaged catalog's, plus drafts found
     in local folders. Build it with `load_schemas`; treat it as read-only."""
 
-    def __init__(self, catalog: dict, core: dict, profiles: dict[str, dict], local: Iterable[str] = ()):
+    def __init__(
+        self,
+        catalog: dict,
+        core: dict,
+        profiles: dict[str, dict],
+        local: Iterable[str] = (),
+        collection: dict | None = None,
+    ):
         self.catalog = catalog
         self.core = core
         self.profiles = profiles
+        self.collection = collection  # estimation-collection schema (spec 11), if catalogued
         self.local = frozenset(local)  # names from local folders, not the catalog
         self._checks: dict[str | None, Callable[[dict], list[Issue]]] = {}
 
@@ -940,6 +949,7 @@ def _load_schemas(packaged: str, folders: tuple[str, ...]) -> Schemas | None:
         return None
     catalog = _read_json(root / "catalog.json")
     core = _read_json(root / catalog["core"]["file"])
+    collection = _read_json(root / catalog["collection"]["file"]) if "collection" in catalog else None
     profiles: dict[str, dict] = {}
     for entry in catalog["profiles"]:
         doc = _read_json(root / entry["file"])
@@ -954,15 +964,15 @@ def _load_schemas(packaged: str, folders: tuple[str, ...]) -> Schemas | None:
             except (OSError, ValueError):
                 continue
             name = doc.get("title") if isinstance(doc, dict) else None
-            if not name or "$id" not in doc or "estimation/" in name or "catalog" in doc:
-                continue  # not a profile (the core, a catalog, an example record)
+            if not name or "$id" not in doc or name.startswith("estimation") or "catalog" in doc:
+                continue  # not a profile (the core or collection schema, a catalog, an example)
             if name in profiles:
                 which = "the catalog's" if name not in local else "one found earlier"
                 warnings.warn(f"{f}: profile {name!r} is ignored; {which} takes precedence")
                 continue
             profiles[name] = doc
             local.append(name)
-    return Schemas(catalog, core, profiles, local)
+    return Schemas(catalog, core, profiles, local, collection)
 
 
 def load_schemas(
@@ -1414,7 +1424,7 @@ def _cli_schemas(ap: argparse.ArgumentParser, folders: list[str], off: bool) -> 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="estimation", description="estimation record tools")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    v = sub.add_parser("validate", help="check records; exit 1 on errors")
+    v = sub.add_parser("validate", help="check records and collections; exit 1 on errors")
     v.add_argument("files", nargs="+")
     v.add_argument(
         "--schema-path",
@@ -1425,7 +1435,7 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--no-schema", action="store_true", help="built-in checks only")
     v.add_argument("--schema", help="another JSON Schema to check against as well")
     v.add_argument("-q", "--quiet", action="store_true", help="errors only")
-    r = sub.add_parser("redact", help="remove or hash identifying fields")
+    r = sub.add_parser("redact", help="remove or hash identifying fields (a collection's and its members')")
     r.add_argument("file")
     r.add_argument("-o", "--output", required=True)
     r.add_argument(
@@ -1437,16 +1447,25 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
     r.add_argument("--schema", help="take the fields from this one schema's x-identifying marks")
     r.add_argument("--path", action="append", default=[], help="also redact this path (repeatable)")
-    d = sub.add_parser("digest", help="print the core digest and whether it matches")
+    d = sub.add_parser(
+        "digest", help="print the core digest and whether it matches (each member's, for a collection)"
+    )
     d.add_argument("file")
     args = ap.parse_args(argv)
+
+    from . import collection as coll  # imports this module
 
     if args.cmd == "validate":
         bad = 0
         schemas = _cli_schemas(ap, args.schema_path, args.no_schema)
         for f in args.files:
-            rec = loads(Path(f).read_bytes(), nonfinite="string")
-            issues = validate(rec, schema=schemas, base_dir=Path(f).parent)
+            rec = json.loads(Path(f).read_bytes(), parse_constant=_reject_constant)
+            if coll.is_collection(rec):
+                issues = coll.validate_collection(rec, schema=schemas, base_dir=Path(f).parent)
+            elif isinstance(rec, dict):
+                issues = validate(rec, schema=schemas, base_dir=Path(f).parent)
+            else:
+                issues = [Issue("error", "", "an estimation record is a JSON object")]
             if args.schema:
                 issues += jsonschema_check(args.schema)(rec)
             for i in issues:
@@ -1459,7 +1478,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if bad else 0
 
     if args.cmd == "redact":
-        rec = loads(Path(args.file).read_bytes(), nonfinite="string")
+        rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)
         salt = None
         if args.hash:
             if args.salt_file:
@@ -1468,6 +1487,19 @@ def main(argv: list[str] | None = None) -> int:
                 salt = os.environ.get("ESTIMATION_REDACT_SALT", "").encode() or None
             if not salt:
                 ap.error("--hash needs a salt: --salt-file or $ESTIMATION_REDACT_SALT")
+        if not isinstance(rec, dict):
+            ap.error(f"{args.file}: not a JSON object")
+        if coll.is_collection(rec):
+            if args.schema:
+                ap.error("--schema applies to records; a collection uses its own and its members' schemas")
+            schemas = _cli_schemas(ap, args.schema_path, False)
+            out = coll.redact_collection(
+                rec, salt=salt, schema=schemas, base_dir=Path(args.file).parent, paths=args.path
+            )
+            written = coll.write_collection(out, args.output, members="auto")
+            n = len(written.get("members") or [])
+            print(f"{args.output}: collection and {n} member records {out['history'][-1]['method']}")
+            return 0
         if args.schema:
             paths = identifying_paths(json.loads(Path(args.schema).read_text(encoding="utf-8")))
         else:
@@ -1484,7 +1516,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{args.output}: {len(out['history'][-1]['fields'])} fields {out['history'][-1]['method']}")
         return 0
 
-    rec = loads(Path(args.file).read_bytes(), nonfinite="string")
+    rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)
+    if coll.is_collection(rec):
+        # no digest of its own (spec 11.7): each member's core digest and its sha256
+        bad = False
+        for i, m, r in coll.iter_members(rec, Path(args.file).parent):
+            if r is None:
+                print(f"members[{i}] {m.get('id') if isinstance(m, dict) else ''}: record not found")
+                continue
+            ok = check_digest(r)
+            h = coll.member_sha256(r)
+            same = None if not isinstance(m.get("sha256"), str) else m["sha256"] == h
+            bad |= ok is False or same is False
+            print(
+                f"members[{i}] {m.get('id')}: core digest "
+                + {None: "absent", True: "matches", False: "DOES NOT MATCH"}[ok]
+                + f"; sha256 {h} "
+                + {None: "(none in collection)", True: "matches", False: "DOES NOT MATCH"}[same]
+            )
+        return 1 if bad else 0
+    if not isinstance(rec, dict):
+        ap.error(f"{args.file}: not a JSON object")
     ok = check_digest(rec)
     print(core_digest(rec), {None: "(no digest in record)", True: "matches", False: "DOES NOT MATCH"}[ok])
     return 1 if ok is False else 0

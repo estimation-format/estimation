@@ -8,11 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from estimation_format import read_collection, validate_collection
 from estimation_format import records as est
 
 ROOT = est.PACKAGED_SCHEMAS
 CATALOG = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
-ENTRIES = [CATALOG["core"], *CATALOG["profiles"]]
+COLLECTION = CATALOG["collection"]
+ENTRIES = [CATALOG["core"], COLLECTION, *CATALOG["profiles"]]
 PROFILES = {e["name"]: e for e in CATALOG["profiles"]}
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]*/\d+\.\d+$")
 ID_BASE = "https://estimation-format.github.io/estimation/schema/"
@@ -46,7 +48,11 @@ def test_entries_are_complete_and_unique():
 
 def test_every_schema_file_is_listed():
     listed = {e["file"] for e in ENTRIES}
-    on_disk = {"estimation-0.1.json", *(f"profiles/{p.name}" for p in (ROOT / "profiles").glob("*.json"))}
+    on_disk = {
+        "estimation-0.1.json",
+        "estimation-collection-0.1.json",
+        *(f"profiles/{p.name}" for p in (ROOT / "profiles").glob("*.json")),
+    }
     assert on_disk == listed, "files in profiles/ and catalog.json entries must match"
     examples = {x for e in ENTRIES for x in e["examples"]}
     assert examples <= {f"examples/{p.name}" for p in (ROOT / "examples").glob("*.json")}
@@ -60,7 +66,7 @@ def test_schema_file(entry):
     assert doc["title"] == entry["name"]
     assert doc.get("x-license") == "CC0-1.0", "schemas in the catalog are CC0 (see LICENSE)"
     assert doc["$id"] == ID_BASE + entry["file"], "$id must match the file's place in the repository"
-    if entry is not CATALOG["core"]:
+    if entry is not CATALOG["core"] and entry is not COLLECTION:
         assert "rules" in doc.get("$defs", {}), "a profile keeps its own rules in $defs/rules"
 
 
@@ -82,6 +88,11 @@ def test_examples_validate_and_departures_are_declared(entry):
     pytest.importorskip("jsonschema")
     sc = est.load_schemas()
     for rel in entry["examples"]:
+        if entry is COLLECTION:
+            issues = validate_collection(read_collection(ROOT / rel), schema=sc, base_dir=ROOT / "examples")
+            bad = [str(i) for i in issues if i.level in ("error", "warning") and ".record" not in i.path]
+            assert bad == [], rel
+            continue
         rec = est.read(ROOT / rel)
         name = entry["name"]
         if entry is not CATALOG["core"]:
@@ -105,7 +116,7 @@ def test_published_files_never_change(entry):
 def test_package_includes_the_schemas():
     """pyproject.toml's package-data must cover every catalog file."""
     text = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
-    for pattern in ("*.json", "LICENSE", "profiles/*.json", "examples/*.json"):
+    for pattern in ("*.json", "LICENSE", "profiles/*.json", "examples/*.json", "examples/*.jsonl"):
         assert f'"{pattern}"' in text
     assert '"estimation_format.schema" = "schema"' in text  # schema/ is mapped into the package
     assert '"schema/LICENSE"' in text  # license-files

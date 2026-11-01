@@ -25,7 +25,7 @@ standard errors, convergence, the software and environment, and the data's check
 |---|---|---|
 | [`spec/estimation.md`](spec/estimation.md) | the specification | CC0 1.0 |
 | [`spec/profiles/`](spec/profiles/) | the profiles, with field mappings across Stata, R, Python and Julia tools | CC0 1.0 |
-| [`schema/`](schema/) | JSON Schemas (2020-12) for the core and the profiles, the catalog, example records | CC0 1.0 |
+| [`schema/`](schema/) | JSON Schemas (2020-12) for the core, the profiles and collections; the catalog; example records and collections | CC0 1.0 |
 | [`src/estimation_format/`](src/estimation_format/) | `estimation-format`, the reference validator, writer and redactor (Python) | MIT |
 | [`r/`](r/) | `estrec`, an R package that writes records from fitted models (fixest `feols` so far) | MIT |
 
@@ -72,6 +72,18 @@ for issue in ef.validate(ef.read("model.estimation.json")):
 
 It needs only the standard library; `jsonschema` adds full schema validation and `pyarrow`
 writes large structures as Parquet attachments.
+
+A **collection** (`estimation-collection/0.1`, spec section 11) holds a set of records: a
+paper's results with where each appears, or a session's or replication's timeline. The same
+commands validate, redact and digest collections.
+
+```python
+coll = ef.new_collection({"baseline": rec1, "full": rec2}, kind="paper",
+                         locators=["Table 2, col. (1)", {"table": "2", "column": "2"}],
+                         publication={"citation": {"type": "report", "title": "..."}})
+ef.write_collection(coll, "table2.estimation-collection.json")   # records embedded
+issues = ef.validate_collection(ef.read_collection("table2.estimation-collection.json"), base_dir=".")
+```
 
 ## Contributing
 
