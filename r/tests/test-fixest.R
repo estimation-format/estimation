@@ -80,8 +80,8 @@ eq(fs$statistic, fitstat(fi, ~ivf1)[[1]]$stat)
 stopifnot(fs$response == "x", fs$component == "first_stage", is.null(r$structures$first_stage),
           all(c("model", "weak_identification", "endogeneity", "overidentification") %in% cat_of(r)),
           r$tests[cat_of(r) == "overidentification"][[1]]$name == "sargan")
-# fixest's kpr: kept only with a non-iid vcov and exact identification, as the KP rk Wald F
-# without fixest's chi2 p-value (it matches ivreg2's e(rkf) only there; see the iv profile)
+# fixest's kpr: kept only with a non-iid vcov, one endogenous variable and one instrument, as the
+# KP rk Wald F without fixest's chi2 p-value (it matches ivreg2's e(rkf) only there; iv profile)
 stopifnot(!"kleibergen_paap_rk_wald_f" %in% vapply(r$tests, `[[`, "", "name"),   # overidentified
           "kpr_omitted" %in% vapply(r$meta$messages, `[[`, "", "code"))
 fx <- feols(y ~ x2 | id | x ~ z, d, vcov = "hetero")
@@ -93,6 +93,16 @@ eq(kp[[1]]$statistic, fitstat(fx, ~kpr)$kpr$stat)
 rx <- to_estimation(feols(y ~ x2 | id | x ~ z, d, vcov = "iid"))
 stopifnot(!"kleibergen_paap_rk_wald_f" %in% vapply(rx$tests, `[[`, "", "name"))
 check(rx, "iv_exact_iid")
+# two endogenous, exactly identified, hetero: fixest's kpr is computed but unreliable, so left out
+# (finite rows, no FE: with any row dropped, as an NA, Inf or a singleton, fixest's kpr errors for
+# 2+ endogenous variables)
+dc <- d[Reduce(`&`, lapply(d[c("y", "x", "x2", "z", "z2")], is.finite)), ]
+f2 <- feols(y ~ 1 | x + x2 ~ z + z2, dc, vcov = "hetero")
+stopifnot(is.finite(fitstat(f2, ~kpr)$kpr$stat))
+rx <- to_estimation(f2)
+stopifnot(!"kleibergen_paap_rk_wald_f" %in% vapply(rx$tests, `[[`, "", "name"),
+          "kpr_omitted" %in% vapply(rx$meta$messages, `[[`, "", "code"))
+check(rx, "iv_exact2_hetero")
 
 # Tests: the model Wald test from fixest; test results recorded as given, never computed
 r <- to_estimation(f)

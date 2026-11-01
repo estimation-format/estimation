@@ -51,11 +51,13 @@ and endogeneity tests, so a record may hold more than one of each.
 | `endogeneity` | `durbin`, `wu_hausman`, `score`, `c` | exogeneity of the endogenous regressors | `estat endogenous` | `e(estat)` | `iv_wh` | Wu-Hausman; `diagnostic_endogeneity_test` | `wu_hausman()`, `durbin()`, `wooldridge_score` | |
 
 \* fixest's `fitstat(, "kpr")` is the Kleibergen-Paap rk Wald F, scaled by (N − K)/N relative
-to ivreg2's `e(rkf)`, where fixest computes it correctly: with a non-iid vcov and exact
-identification (checked against ivreg2 4.1.12, 2026-11-01). fixest still gives it a chi-squared
-p-value, which a writer should drop. Under an iid vcov it matches neither ivreg2 statistic, and
-for overidentified models with a non-iid vcov fixest doesn't compute it; writers should leave
-it out in those cases.
+to ivreg2's `e(rkf)`, where fixest computes it correctly: with a non-iid vcov, one endogenous
+variable and one instrument (fixest 0.14.2 checked against ivreg2 4.1.12, 2026-11-01). fixest
+still gives it a chi-squared p-value, which a writer should drop. Under an iid vcov it matches
+neither ivreg2 statistic; with two or more endogenous variables it is wrong even when exactly
+identified (its SVD step takes a row where ranktest takes a column); for overidentified models
+with a non-iid vcov fixest doesn't compute it; and clustered fits can fail with an error.
+Writers should leave it out in all those cases.
 
 `structures.first_stage` (`kind: "object"`) keeps the first-stage summaries that aren't tests:
 a `per_endogenous` list, each entry naming its `endogenous` variable, with `r2`, `partial_r2`

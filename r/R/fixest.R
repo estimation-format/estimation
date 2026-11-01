@@ -321,20 +321,22 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     out <- c(out, list(list(category = "weak_identification", name = "cragg_donald_f",
                             origin = "estimation", statistic = .est_num(as.numeric(cd)))))
   # fixest's `kpr` is the Kleibergen-Paap rk Wald F, ivreg2's e(rkf) x (N - K)/N, but only with
-  # a non-iid vcov and exact identification; otherwise it is wrong (iid) or missing. Its chi2
-  # p-value doesn't fit an F statistic, so only the statistic is kept (docs: iv profile)
+  # one endogenous variable, one instrument and a non-iid vcov. Otherwise it is wrong (iid; 2+
+  # endogenous: kp_stat takes row k of V for column k), missing (overidentified, non-iid) or an
+  # error (clustered unless #coefs = k x l). Its chi2 p-value doesn't fit an F statistic, so only
+  # the statistic is kept (docs: iv profile; checked against ivreg2 4.1.12, fixest 0.14.2)
   kpr <- .fx_fitstat(fit, "kpr")$kpr
   vc_type <- .fx_vcov_type(attr(stats::vcov(fit, attr = TRUE), "vcov_type") %||% "IID")
   vc_iid <- identical(vc_type, "iid")
-  exact <- length(fit$iv_inst_names_xpd) == length(fit$iv_endo_names)
-  kp_ok <- !vc_iid && exact && is.list(kpr) && !anyNA(kpr$stat)
+  one <- length(fit$iv_endo_names) == 1 && length(fit$iv_inst_names_xpd) == 1
+  kp_ok <- !vc_iid && one && is.list(kpr) && !anyNA(kpr$stat)
   if (kp_ok)
     out <- c(out, list(list(category = "weak_identification", name = "kleibergen_paap_rk_wald_f",
                             origin = "estimation", statistic = .est_num(as.numeric(kpr$stat)),
                             vcov = vc_type)))
   kp_msg <- if (!kp_ok) list(list(level = "info", code = "kpr_omitted", source = "estrec",
     message = paste("fixest's Kleibergen-Paap statistic (kpr) left out: it is valid only with a",
-                    "non-iid vcov and exact identification")))
+                    "non-iid vcov, one endogenous variable and one instrument")))
   out <- c(out, list(
     .fx_test(.fx_fitstat(fit, "wh")$wh, "endogeneity", "wu_hausman"),
     .fx_test(.fx_fitstat(fit, "sargan")$sargan, "overidentification", "sargan", "chi2")))

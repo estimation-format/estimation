@@ -73,7 +73,7 @@
                 },
                 "kleibergen_paap_rk_wald_f": {
                   "ivreg2/ivreghdfe": "e(rkf)",
-                  "fixest": "fitstat kpr: e(rkf) x (N-K)/N; only with a non-iid vcov and exact identification; drop its chi2 p-value",
+                  "fixest": "fitstat kpr: e(rkf) x (N-K)/N; only with a non-iid vcov, one endogenous variable and one instrument; drop its chi2 p-value",
                   "linearmodels": "first_stage.kleibergen_paap_f",
                   "FixedEffectModels.jl": "F_kp, p_kp"
                 },
