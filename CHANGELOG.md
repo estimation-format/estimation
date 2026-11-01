@@ -26,6 +26,10 @@
   and link, offset, deviance, McFadden pseudo R², AIC/BIC, dispersion, convergence, z tests
   without `df_t`, and fixest's perfect-fit removals split into `singletons` and `separated`
   (checked against the rows fixest kept). `fenegbin` and `femlm` still fail with a clear error.
+- estrec: `meta.core_digest` on every record when `openssl` is installed (`digest = FALSE` to
+  leave it out), equal to the Python reference's. Software purls follow each package's origin
+  (`pkg:cran`, `pkg:github/...@<commit>#<subdir>` from remotes/pak metadata, else
+  `pkg:generic`); estrec no longer claims to come from CRAN.
 
 - Core: an optional top-level `tests` list (spec 4.8, `$defs/test`) for every hypothesis test
   about the model: the estimator's own, those asked for after the fit, and linear

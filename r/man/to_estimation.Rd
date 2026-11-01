@@ -20,7 +20,7 @@ to_estimation(fit, ...)
 
 \method{to_estimation}{fixest}(fit, data = NULL, vcov = NULL, conf_level = 0.95,
   tests = NULL, title = NULL, notes = NULL, tags = NULL, publication = NULL, call = TRUE,
-  identifying = TRUE, ...)
+  identifying = TRUE, digest = NULL, ...)
 
 is_estimation_record(x)
 }
@@ -43,6 +43,8 @@ weak-identification, endogeneity and overidentification tests.}
 \item{call}{include the call as written.}
 \item{identifying}{include the user, host and command line (removable later with
 \code{estimation redact}).}
+\item{digest}{write \code{meta.core_digest} (spec 7.2). By default it is written when the
+\code{openssl} package is installed; \code{TRUE} requires it, \code{FALSE} leaves it out.}
 \item{x}{an object.}
 \item{...}{passed to methods.}
 }

@@ -180,6 +180,30 @@ stopifnot(dropped(r)$other == n - fg$nobs, r$meta$messages[[1]]$code == "sample_
 r <- to_estimation(rm_env, data = d)
 stopifnot(dropped(r)$singletons == 1)
 
+# The core digest (spec 7.2): present with openssl, checked by the reference tool, broken by
+# an edit to the results but not by a test added later
+if (requireNamespace("openssl", quietly = TRUE)) {
+  r <- to_estimation(f)
+  stopifnot(r$meta$core_digest$algorithm == "sha256", nchar(r$meta$core_digest$value) == 64,
+            identical(r$meta$core_digest$value, estrec:::.est_core_digest(r)))
+  r2 <- r; r2$metrics$nobs <- r2$metrics$nobs + 1L
+  stopifnot(!identical(r$meta$core_digest$value, estrec:::.est_core_digest(r2)))
+  r3 <- add_test(r, list(name = "t", statistic = 1, p_value = 0.3))
+  stopifnot(identical(r$meta$core_digest$value, estrec:::.est_core_digest(r3)))
+  if (nzchar(validator)) {
+    path <- check(r3, "digest")
+    res <- system2(validator, c("digest", path), stdout = TRUE, stderr = TRUE)
+    stopifnot(any(grepl("matches", res)))
+  }
+}
+stopifnot(is.null(to_estimation(f, digest = FALSE)$meta$core_digest))
+
+# provenance.software: purls follow where each package came from
+sw <- to_estimation(f)$provenance$software
+stopifnot(sw[[1]]$purl == sprintf("pkg:cran/fixest@%s", packageVersion("fixest")),
+          startsWith(sw[[3]]$purl, "pkg:github/estimation-format/estimation"),
+          sw[[3]]$name == "estrec")
+
 # Writing a record leaves the caller's random numbers alone
 set.seed(42); a <- runif(1); set.seed(42); invisible(to_estimation(f)); stopifnot(runif(1) == a)
 

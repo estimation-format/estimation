@@ -98,11 +98,8 @@ write_estimation <- function(x, path, ...) {
 .est_software <- function(estimator) {
   base <- rownames(utils::installed.packages(priority = "base"))
   pkgs <- setdiff(loadedNamespaces(), c(base, estimator, "estrec"))
-  comp <- function(p, role) {
-    v <- as.character(utils::packageVersion(p))
-    list(name = p, version = v, purl = sprintf("pkg:cran/%s@%s", p, v), role = role,
-         source = "CRAN")
-  }
+  comp <- function(p, role) c(list(name = p, version = as.character(utils::packageVersion(p))),
+                               .est_origin(p), list(role = role))
   r <- paste(R.version$major, R.version$minor, sep = ".")
   c(list(comp(estimator, "estimator"),
          list(name = "R", version = r, purl = sprintf("pkg:generic/r@%s", r), role = "language"),
@@ -122,4 +119,48 @@ write_estimation <- function(x, path, ...) {
 .est_agent <- function() {
   si <- Sys.info()
   list(user = unname(si[["user"]]), host = unname(si[["nodename"]]))
+}
+
+# Where an installed package came from, from its DESCRIPTION: CRAN (Repository: CRAN), GitHub
+# (remotes/pak/devtools record RemoteType, RemoteUsername, RemoteRepo, RemoteSha and
+# RemoteSubdir), or a local install with no recorded origin. estrec's own home is known, so a
+# local estrec still gets its GitHub purl, without a commit.
+.est_origin <- function(p) {
+  d <- utils::packageDescription(p)
+  v <- d$Version
+  if (identical(d$Repository, "CRAN"))
+    return(list(purl = sprintf("pkg:cran/%s@%s", p, v), source = "CRAN"))
+  if (identical(tolower(d$RemoteType %||% ""), "github") && !is.null(d$RemoteRepo)) {
+    sha <- d$RemoteSha
+    purl <- sprintf("pkg:github/%s/%s%s%s", tolower(d$RemoteUsername), tolower(d$RemoteRepo),
+                    if (!is.null(sha)) paste0("@", sha) else "",
+                    if (!is.null(d$RemoteSubdir)) paste0("#", d$RemoteSubdir) else "")
+    return(list(purl = purl, source = .est_compact(list(
+      repository = sprintf("https://github.com/%s/%s", d$RemoteUsername, d$RemoteRepo),
+      commit = sha, ref = d$RemoteRef, subdir = d$RemoteSubdir))))
+  }
+  if (identical(p, "estrec"))
+    return(list(purl = "pkg:github/estimation-format/estimation#r", source = "local"))
+  if (!is.null(d$Repository))
+    return(list(purl = sprintf("pkg:generic/%s@%s", p, v), source = d$Repository))
+  list(purl = sprintf("pkg:generic/%s@%s", p, v), source = "local")
+}
+
+# meta.core_digest (spec 7.2): sha256 of the RFC 8785 form of meta (without core_digest),
+# specification, metrics, parameters and structures, as written
+.est_core_digest <- function(rec) {
+  view <- rec[intersect(c("meta", "specification", "metrics", "parameters", "structures"), names(rec))]
+  view$meta$core_digest <- NULL
+  .est_sha256(.est_canonical_json(view))
+}
+
+.est_add_digest <- function(rec, digest = NULL) {
+  if (is.null(digest)) digest <- requireNamespace("openssl", quietly = TRUE)
+  else if (isTRUE(digest) && !requireNamespace("openssl", quietly = TRUE))
+    stop("digest = TRUE needs the 'openssl' package", call. = FALSE)
+  if (!isTRUE(digest)) return(rec)
+  rec$meta$core_digest <- NULL
+  rec$meta$core_digest <- list(algorithm = "sha256", canonicalization = "RFC8785",
+                               value = .est_core_digest(rec))
+  rec
 }

@@ -109,15 +109,22 @@ The Python reference tools validate, digest and redact records:
 pip install "estimation-format[jsonschema] @ git+https://github.com/estimation-format/estimation"
 estimation validate fit.estimation.json
 estimation redact fit.estimation.json -o shareable.estimation.json   # drops user, host, argv
-python -c "import estimation_format as ef, sys; p = sys.argv[1]; ef.write(ef.read(p), p)" fit.estimation.json  # adds the core digest
+estimation digest fit.estimation.json                                  # checks the core digest
 ```
 
-estrec doesn't write the core digest (`meta.core_digest`, optional) yet. It now has RFC 8785
-canonical JSON (for collections), so the digest needs only `openssl`.
+**Core digest.** With the `openssl` package installed, every record carries
+`meta.core_digest` (spec 7.2): the SHA-256 of the RFC 8785 form of `meta`, `specification`,
+`metrics`, `parameters` and `structures`. Editing a result breaks it; adding a test, a
+publication or a note in `history` doesn't. `digest = FALSE` leaves it out.
+
+**Software.** Each package's purl follows where it was installed from: `pkg:cran/...` for
+CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages installed by
+`remotes`/`pak` from GitHub, `pkg:generic/...` otherwise. A local install of estrec is
+`pkg:github/estimation-format/estimation#r` with `source: "local"`.
 
 ## Not yet
 
-- `feglm`/`fepois` (`glm/0.1`), `lm`/`glm` and other classes through `insight`.
+- `fenegbin`/`femlm`, `lm`/`glm` and other classes through `insight`.
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
 - Tests: `tests/test-fixest.R` and `tests/test-collection.R` (base R). They validate every

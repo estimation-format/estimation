@@ -12,7 +12,8 @@ to_estimation.fixest_multi <- function(fit, ...) {
 
 to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.95,
                                  tests = NULL, title = NULL, notes = NULL, tags = NULL,
-                                 publication = NULL, call = TRUE, identifying = TRUE, ...) {
+                                 publication = NULL, call = TRUE, identifying = TRUE,
+                                 digest = NULL, ...) {
   tests_expr <- substitute(tests); tests_env <- parent.frame()
   is_glm <- fit$method %in% c("feglm", "fepois")
   if (!is_glm && fit$method != "feols")
@@ -198,7 +199,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     for (i in seq_along(tests))
       rec <- .est_add_test(rec, tests[[i]], exprs[[i]], tests_env)
   }
-  rec
+  .est_add_digest(rec, digest)
 }
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
