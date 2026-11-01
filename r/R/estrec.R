@@ -9,7 +9,7 @@ to_estimation <- function(fit, ...) UseMethod("to_estimation")
 
 to_estimation.default <- function(fit, ...) {
   stop("estrec has no writer for class ", paste(class(fit), collapse = "/"),
-       "; it writes fixest feols fits for now", call. = FALSE)
+       "; it writes fixest feols, feglm and fepois fits for now", call. = FALSE)
 }
 
 is_estimation_record <- function(x) {

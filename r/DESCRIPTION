@@ -6,8 +6,9 @@ Authors@R: person("Ted", "Matherly", role = c("aut", "cre"),
     email = "jemather@gmail.com")
 Description: Writes fitted models as records in the 'estimation' format, a JSON
     file for one statistical estimation run: what was estimated, what came out,
-    and how and where it ran. Version 0.1 writes 'fixest' 'feols' fits (OLS and IV,
-    including multiple estimations, 'split' and 'subset'), adds hypothesis tests
+    and how and where it ran. Version 0.1 writes 'fixest' fits: 'feols' (OLS and IV)
+    and 'feglm'/'fepois' (GLMs), including multiple estimations, 'split' and
+    'subset'; adds hypothesis tests
     and linear combinations to records, and writes sets of records as collections
     (a paper's results, a session or a replication).
 License: MIT + file LICENSE

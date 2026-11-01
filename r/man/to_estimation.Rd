@@ -25,10 +25,10 @@ to_estimation(fit, ...)
 is_estimation_record(x)
 }
 \arguments{
-\item{fit}{a fitted model: a \code{fixest} \code{feols} fit (OLS or IV) or a \code{fixest_multi};
+\item{fit}{a fitted model: a \code{fixest} \code{feols} (OLS or IV), \code{feglm} or \code{fepois} fit, or a \code{fixest_multi};
 or a list of them.}
 \item{data}{the data the model was fitted on, to split sample drops by reason (missing,
-non-finite, zero weights, singletons). By default it is recovered from the fit's call
+non-finite, zero weights, singletons and, for GLMs, separated). By default it is recovered from the fit's call
 environment; without it, drops are recorded as \code{other}.}
 \item{vcov}{\code{NULL} for the fit's own vcov, or a list of \code{vcov} arguments for
 \code{summary.fixest} (e.g. \code{list("hetero", ~firm)}). Each is recorded; the first is

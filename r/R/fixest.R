@@ -1,5 +1,5 @@
-# fixest feols fits -> records (inference/0.1, linear-fe/0.1 with fixed effects, iv/0.1 for IV).
-# Written against fixest 0.14.2.
+# fixest fits -> records. feols: inference/0.1, linear-fe/0.1 with fixed effects, iv/0.1 for IV.
+# feglm and fepois: glm/0.1 and inference/0.1. Written against fixest 0.14.2.
 #
 # fixest keeps one set of removed rows (`obs_selection`) and reports the singleton count only
 # in a message. To split the drops by reason, the writer needs the data the model was fitted
@@ -14,8 +14,9 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
                                  tests = NULL, title = NULL, notes = NULL, tags = NULL,
                                  publication = NULL, call = TRUE, identifying = TRUE, ...) {
   tests_expr <- substitute(tests); tests_env <- parent.frame()
-  if (fit$method != "feols")
-    stop("estrec writes feols fits for now; a ", fit$method, " fit needs the glm/0.1 writer",
+  is_glm <- fit$method %in% c("feglm", "fepois")
+  if (!is_glm && fit$method != "feols")
+    stop("estrec writes feols, feglm and fepois fits; ", fit$method, " isn't supported yet",
          call. = FALSE)
   is_iv <- isTRUE(fit$is_iv)
   if (is_iv && !identical(fit$iv_stage, 2))
@@ -57,14 +58,18 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   vcovs <- lapply(seq_along(fits), function(i) .fx_vcov(fits[[i]], data, used, default = i == 1L))
 
   # Metrics (fixest's own values)
-  metrics <- list(nobs = fit$nobs, df_residual = df.residual(fit),
-                  r2 = .est_num(fixest::r2(fit, "r2")), adj_r2 = .est_num(fixest::r2(fit, "ar2")),
-                  sigma = .est_num(sigma(fit)), rss = .est_num(fit$ssr),
-                  tss = .est_num(fit$ssr_null), log_lik = .est_num(as.numeric(logLik(fit))),
-                  log_lik_null = .est_num(fit$ll_null), sq_corr_fitted = .est_num(fit$sq.cor),
-                  conf_level = conf_level)
+  if (is_glm) {
+    metrics <- .fx_glm_metrics(fit, sample, conf_level)
+  } else {
+    metrics <- list(nobs = fit$nobs, df_residual = df.residual(fit),
+                    r2 = .est_num(fixest::r2(fit, "r2")), adj_r2 = .est_num(fixest::r2(fit, "ar2")),
+                    sigma = .est_num(sigma(fit)), rss = .est_num(fit$ssr),
+                    tss = .est_num(fit$ssr_null), log_lik = .est_num(as.numeric(logLik(fit))),
+                    log_lik_null = .est_num(fit$ll_null), sq_corr_fitted = .est_num(fit$sq.cor),
+                    conf_level = conf_level)
+  }
   if (!is.null(sample$dropped$singletons)) metrics$n_singletons <- sample$dropped$singletons
-  if (has_fe) {
+  if (has_fe && !is_glm) {
     metrics$r2_within <- .est_num(fixest::r2(fit, "wr2"))
     metrics$adj_r2_within <- .est_num(fixest::r2(fit, "war2"))
     metrics$log_lik_fe_only <- .est_num(fit$ll_fe_only)
@@ -76,7 +81,16 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   collin_tol <- if (!is.null(fit$call$collin.tol)) eval(fit$call$collin.tol, fit$call_env) else 1e-10
   options <- list(drop_singletons = has_fe && fixef_rm != "none", fixef_rm = fixef_rm,
                   collinearity_tolerance = collin_tol)
-  if (has_fe) {
+  if (is_glm) {
+    glm_ctl <- .fx_glm_control(fit)
+    options$separation <- I(.fx_separation(fit, fixef_rm))
+    options$tolerance <- glm_ctl$tol
+    options$max_iterations <- glm_ctl$iter
+    if (has_fe) {
+      options$fixef_tolerance <- fit$fixef.tol
+      options$fixef_max_iterations <- as.integer(fit$fixef.iter)
+    }
+  } else if (has_fe) {
     options$tolerance <- fit$fixef.tol
     options$max_iterations <- fit$fixef.iter
   }
@@ -92,6 +106,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
                sample = sample[c("restriction", "rows_input", "dropped")],
                options = options)
   if (is.null(spec$sample$restriction)) spec$sample["restriction"] <- list(NULL)
+  if (is_glm) spec["offset"] <- list(.fx_offset(fit))
   if (is_iv) {
     spec$endogenous <- I(fit$iv_endo_names)
     spec$instruments <- I(fit$iv_inst_names_xpd)
@@ -103,6 +118,16 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   if (has_fe) {
     structures$fixed_effects <- lapply(names(fit$fixef_sizes), function(n)
       list(kind = "object", name = n, levels = unname(fit$fixef_sizes[[n]])))
+  }
+  if (is_glm) {
+    structures$numerics <- .est_compact(list(
+      kind = "object", iterative = TRUE, algorithm = "irls", converged = isTRUE(fit$convStatus),
+      tolerance = glm_ctl$tol, max_iterations = glm_ctl$iter,
+      iterations = if (length(fit$iterations)) max(fit$iterations),
+      fixef_algorithm = if (has_fe) "map", fixef_tolerance = if (has_fe) fit$fixef.tol,
+      fixef_max_iterations = if (has_fe) as.integer(fit$fixef.iter), collinearity_tolerance = collin_tol,
+      collinear_terms = I(collinear), collinearity_min_norm = .est_num(fit$collin.min_norm)))
+  } else if (has_fe) {
     it <- fit$iterations
     structures$numerics <- .est_compact(list(
       kind = "object", iterative = TRUE, algorithm = "map", tolerance = fit$fixef.tol,
@@ -125,14 +150,25 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     provenance$execution <- list(invocation = list(argv = I(commandArgs())))
   }
 
-  profiles <- c("inference/0.1", if (has_fe) "linear-fe/0.1", if (is_iv) "iv/0.1")
+  profiles <- c("inference/0.1", if (is_glm) "glm/0.1", if (has_fe && !is_glm) "linear-fe/0.1",
+                if (is_iv) "iv/0.1")
+  estimator <- if (is_glm) .fx_glm_estimator(fit)
+               else list(family = "linear", method = if (is_iv) "2sls" else "ols")
   meta <- .est_compact(list(
-    id = .est_uuid(), created = .est_now(), status = "ok",
-    estimator = list(family = "linear", method = if (is_iv) "2sls" else "ols"),
+    id = .est_uuid(), created = .est_now(), status = if (is_glm && !isTRUE(fit$convStatus)) "warning" else "ok",
+    estimator = estimator,
     responses = I(fit$model_info$lhs %||% all.vars(fit$fml_all$linear)[1]),
     profiles = I(profiles), title = title %||% .fx_title(fit, text), tags = if (length(tags)) I(tags),
     notes = notes, producer = estrec_info()))
   messages <- sample$messages
+  if (is_glm && !isTRUE(fit$convStatus))
+    messages <- c(messages, list(list(level = "warning", code = "not_converged", source = "fixest",
+                  message = sprintf("the IRLS iterations did not converge (%d iterations)",
+                                    as.integer(max(fit$iterations))))))
+  if (!is.null(sample$dropped$separated) && sample$dropped$separated > 0)
+    messages <- c(messages, list(list(level = "info", code = "separated", source = "fixest",
+                  message = sprintf("%d rows dropped in fixed-effect levels whose outcomes are all at a bound",
+                                    sample$dropped$separated))))
   if (!is.null(sample$dropped$singletons) && sample$dropped$singletons > 0)
     messages <- c(messages, list(list(level = "info", code = "singletons", source = "fixest",
                   message = sprintf("%d singleton rows dropped", sample$dropped$singletons))))
@@ -225,9 +261,21 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     if (any(zero_w)) dropped$zero_weights <- sum(zero_w)
     rest <- n_restricted - sum(miss) - sum(nonfin) - sum(zero_w) - fit$nobs
     has_fe <- !is.null(fit$fixef_vars)
-    if (has_fe) dropped$singletons <- max(rest, 0L)
+    split <- NULL
+    if (has_fe && fit$method %in% c("feglm", "fepois") && rest > 0) {
+      cand <- which(keep)[!(miss | nonfin | zero_w)]
+      split <- .fx_glm_removed(fit, data, cand)
+      if (is.null(split)) {  # couldn't reproduce fixest's removals: `other`
+        dropped$other <- rest
+        messages <- list(list(level = "warning", code = "sample_unclassified", source = "estrec",
+          message = "rows removed by the fixed effects couldn't be split into singletons and separated rows; they are recorded as `other`"))
+      } else { dropped$singletons <- split$singletons; dropped$separated <- split$separated }
+    } else if (has_fe) {
+      dropped$singletons <- max(rest, 0L)
+      if (fit$method %in% c("feglm", "fepois") && rest == 0) dropped$separated <- 0L
+    }
     if (rest < 0 || (!has_fe && rest != 0)) {
-      dropped$singletons <- NULL
+      dropped$singletons <- NULL; dropped$separated <- NULL
       dropped$other <- n_restricted - fit$nobs - sum(miss) - sum(nonfin) - sum(zero_w)
       messages <- list(list(level = "warning", code = "sample_unclassified", source = "estrec",
         message = "sample counts don't add up by reason; the rest are recorded as `other`"))
@@ -278,7 +326,9 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
                   formula = "K.adj: (n-1)/(n-K) (n/(n-K)... per vcov type); G.adj: G/(G-1)",
                   factors = .est_compact(unclass(ssc)[c("K.adj", "K.fixef", "G.adj", "G.df", "t.df", "K.exact")]),
                   K_counts = .est_compact(list(df.K = attr(vc, "df.K"), K.fixef = ssc$K.fixef)))
-  out$df_t <- if (!is.null(attr(vc, "df.t"))) attr(vc, "df.t") else df.residual(f)
+  # GLMs with a known dispersion (Poisson, binomial) use z tests: no df
+  z <- identical(colnames(fixest::coeftable(f))[3], "z value")
+  out$df_t <- if (z) NULL else if (!is.null(attr(vc, "df.t"))) attr(vc, "df.t") else df.residual(f)
   out$default <- default
   out
 }
@@ -341,4 +391,113 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     .fx_test(.fx_fitstat(fit, "wh")$wh, "endogeneity", "wu_hausman"),
     .fx_test(.fx_fitstat(fit, "sargan")$sargan, "overidentification", "sargan", "chi2")))
   structure(Filter(Negate(is.null), out), messages = kp_msg)
+}
+
+# --- GLMs (feglm, fepois) ---------------------------------------------------------------------
+
+# glm.tol and glm.iter aren't stored in the fit: from the call, else fixest's defaults
+.fx_glm_control <- function(fit) {
+  get <- function(arg, default) {
+    v <- fit$call[[arg]]
+    if (is.null(v)) default else eval(v, fit$call_env)
+  }
+  list(tol = get("glm.tol", 1e-8), iter = as.integer(get("glm.iter", 25L)))
+}
+
+# meta.estimator. A quasi family has the base distribution, with its dispersion estimated
+.fx_glm_estimator <- function(fit) {
+  fam <- fit$family$family
+  quasi <- startsWith(fam, "quasi")
+  dist <- if (quasi) sub("^quasi", "", fam) else fam
+  if (identical(dist, "")) dist <- "quasi"  # quasi(): the variance function is the user's
+  .est_compact(list(family = "glm", method = "irls", distribution = dist,
+                    link = fit$family$link, quasi = if (quasi) TRUE))
+}
+
+# fixef.rm -> options.separation. fixest checks separation only through the fixed effects
+# (levels whose outcomes are all 0, or all 0 or 1 for binomial): ppmlhdfe's "fe" method
+.fx_separation <- function(fit, fixef_rm) {
+  if (is.null(fit$fixef_vars) || !fixef_rm %in% c("perfect_fit", "infinite_coef")) return(character(0))
+  "fe"
+}
+
+# Offset: offset = ~x, or offset(x) in the formula. fixest uses it as given (no exposure)
+.fx_offset <- function(fit) {
+  v <- fit$call$offset
+  if (!is.null(v)) {
+    v <- eval(v, fit$call_env)
+    if (inherits(v, "formula")) return(list(variable = paste(deparse(v[[length(v)]]), collapse = ""), exposure = FALSE))
+    return(list(variable = paste(deparse(fit$call$offset), collapse = ""), exposure = FALSE))
+  }
+  tt <- attr(stats::terms(fit$fml_all$linear), "offset")
+  if (length(tt)) {
+    vars <- attr(stats::terms(fit$fml_all$linear), "variables")
+    e <- vars[[tt[1] + 1L]][[2]]
+    return(list(variable = paste(deparse(e), collapse = ""), exposure = FALSE))
+  }
+  NULL
+}
+
+.fx_glm_metrics <- function(fit, sample, conf_level) {
+  fs <- .fx_fitstat(fit, "pr2")
+  dist <- .fx_glm_estimator(fit)$distribution
+  m <- list(nobs = fit$nobs, df_residual = df.residual(fit),
+            log_lik = .est_num(as.numeric(logLik(fit))), log_lik_null = .est_num(fit$ll_null),
+            log_lik_fe_only = .est_num(fit$ll_fe_only), deviance = .est_num(fit$deviance),
+            # fitstat's pr2 is McFadden's; the fit's own pseudo_r2 element is the adjusted one
+            pseudo_r2 = if (!is.null(fs$pr2)) .est_num(unname(fs$pr2)),
+            aic = .est_num(stats::AIC(fit)), bic = .est_num(stats::BIC(fit)),
+            dispersion = .est_num(fit$dispersion), sq_corr_fitted = .est_num(fit$sq.cor),
+            conf_level = conf_level)
+  d <- sample$dropped
+  if (!is.null(fit$fixef_vars)) m$n_separated <- d$separated
+  if (!is.null(d$singletons) || !is.null(d$separated))
+    m$nobs_full <- fit$nobs + (d$singletons %||% 0L) + (d$separated %||% 0L)
+  .est_compact(m)
+}
+
+# fixest removes the rows of fixed-effect levels that the FEs fit perfectly, without saying
+# why. This repeats the removal on the rows the fit started from (`cand`): levels whose outcomes
+# are all at a bound (0 for Poisson, 0 or 1 for binomial) are `separated`, other one-row levels
+# `singletons`; a one-row level at a bound counts as separated. NULL when the FEs can't be
+# rebuilt from `data` or the rows don't match the fit's.
+.fx_glm_removed <- function(fit, data, cand) {
+  fe <- fit$fixef_vars
+  if (!all(fe %in% names(data)) || length(fit$fixef_terms) || length(fit$slope_flag) && any(fit$slope_flag != 0))
+    return(NULL)
+  y <- tryCatch(eval(fit$fml_all$linear[[2]], data, fit$call_env), error = function(e) NULL)
+  if (length(y) != nrow(data)) return(NULL)
+  y <- as.numeric(y)
+  fixef_rm <- if (!is.null(fit$call$fixef.rm)) eval(fit$call$fixef.rm, fit$call_env) else "perfect_fit"
+  dist <- .fx_glm_estimator(fit)$distribution
+  bound_check <- fixef_rm %in% c("perfect_fit", "infinite_coef") && dist %in% c("poisson", "binomial")
+  single_check <- fixef_rm %in% c("perfect_fit", "singletons")
+  codes <- lapply(fe, function(v) match(data[[v]], unique(data[[v]])))
+  alive <- cand
+  sep <- integer(0); sgl <- integer(0)
+  repeat {
+    changed <- FALSE
+    for (k in seq_along(codes)) {
+      cd <- codes[[k]][alive]
+      if (bound_check) {
+        ya <- y[alive]
+        lo <- tapply(ya, cd, min); hi <- tapply(ya, cd, max)
+        at <- if (dist == "poisson") hi == 0 else (hi == 0) | (lo == 1)
+        bad <- as.integer(names(at)[at])
+        if (length(bad)) {
+          drop <- alive[cd %in% bad]
+          sep <- c(sep, drop); alive <- setdiff(alive, drop); changed <- TRUE
+          cd <- codes[[k]][alive]
+        }
+      }
+      if (single_check) {
+        n <- tabulate(cd, nbins = max(codes[[k]], na.rm = TRUE))
+        drop <- alive[n[cd] == 1L]
+        if (length(drop)) { sgl <- c(sgl, drop); alive <- setdiff(alive, drop); changed <- TRUE }
+      }
+    }
+    if (!changed) break
+  }
+  if (!setequal(alive, fixest::obs(fit))) return(NULL)
+  list(separated = length(sep), singletons = length(sgl))
 }

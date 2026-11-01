@@ -1,9 +1,9 @@
 # estrec (R)
 
 Writes fitted models as `estimation` records: one JSON file per model, holding what was
-estimated, what came out, and how and where it ran. Version 0.1 writes **fixest `feols`**
-fits: OLS and IV, with or without fixed effects, including multiple estimations
-(`c(y1, y2)`, `csw()`, `split`, `fsplit`, `subset`). MIT.
+estimated, what came out, and how and where it ran. Version 0.1 writes **fixest** fits:
+`feols` (OLS and IV) and `feglm`/`fepois` (GLMs), with or without fixed effects, including
+multiple estimations (`c(y1, y2)`, `csw()`, `split`, `fsplit`, `subset`). MIT.
 
 ```r
 # install.packages("remotes")
@@ -78,13 +78,22 @@ collection holds; without it the hashes are left out (they are optional).
 | Section | From fixest |
 |---|---|
 | `parameters` | estimates, SEs, t, p, CIs (`conf_level`), canonical term names; collinear terms marked `dropped` |
-| `metrics` | `nobs`, `n_singletons`, `df_residual`, R², within R², sigma, RSS/TSS, log-likelihoods |
-| `specification` | call, formula, terms, fixed effects, clusters, weights, endogenous/instruments; `sample`: rows in, the `subset`/`split` restriction, and rows dropped by reason (missing, non-finite, zero weights, singletons); options (`fixef.rm`, tolerances) |
+| `metrics` | `nobs`, `n_singletons`, `df_residual`, R², within R², sigma, RSS/TSS, log-likelihoods; for GLMs deviance, McFadden pseudo R², AIC/BIC, dispersion, `n_separated` |
+| `specification` | call, formula, terms, fixed effects, clusters, weights, offset, endogenous/instruments; `sample`: rows in, the `subset`/`split` restriction, and rows dropped by reason (missing, non-finite, zero weights, singletons, separated); options (`fixef.rm`, separation, tolerances) |
 | `structures` | each vcov with its type, clusters and cluster counts, df for t tests and the small-sample correction (`ssc`); fixed-effect level counts; convergence |
 | `tests` | fixest's joint Wald test; IV first-stage F and Wald F, Cragg-Donald, Kleibergen-Paap, Wu-Hausman and Sargan; tests you add |
 | `provenance` | fixest, R and loaded package versions; OS, BLAS/LAPACK, threads; user, host and command line (`identifying = FALSE` leaves these out) |
 
 Records claim `inference/0.1`, plus `linear-fe/0.1` with fixed effects and `iv/0.1` for IV.
+`feglm` and `fepois` records claim `inference/0.1` and `glm/0.1` (with any fixed effects in
+`structures.fixed_effects`). Poisson and binomial fits use z tests, so their vcovs have no
+`df_t`; a quasi family is recorded as its base distribution with `quasi: true`.
+
+**GLM drops.** With `fixef.rm = "perfect_fit"` (the default) fixest removes singletons and
+fixed-effect levels whose outcomes are all 0 (or all 0 or 1 for binomial) in one count. estrec
+repeats that removal on the data to split it into `singletons` and `separated` (a one-row
+level at a bound counts as separated), and keeps the split only if the rows left match the
+fit's; otherwise they are recorded as `other`.
 
 **Sample drops need the data.** fixest stores only which rows it removed, not why. To split
 the drops by reason, estrec looks at the data the model was fitted on: it takes `data =`, or

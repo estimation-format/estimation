@@ -22,6 +22,10 @@
 - estrec: `write_collection()` (embedded or JSON Lines members; member hashes with the optional
   `openssl` package) and `to_estimation()` for a plain list of fits, which flattens
   `fixest_multi` elements. RFC 8785 canonical JSON in R, checked against the Python reference.
+- estrec: fixest `feglm` and `fepois` fits, as `glm/0.1` and `inference/0.1` records: family
+  and link, offset, deviance, McFadden pseudo R², AIC/BIC, dispersion, convergence, z tests
+  without `df_t`, and fixest's perfect-fit removals split into `singletons` and `separated`
+  (checked against the rows fixest kept). `fenegbin` and `femlm` still fail with a clear error.
 
 - Core: an optional top-level `tests` list (spec 4.8, `$defs/test`) for every hypothesis test
   about the model: the estimator's own, those asked for after the fit, and linear

@@ -183,7 +183,39 @@ stopifnot(dropped(r)$singletons == 1)
 # Writing a record leaves the caller's random numbers alone
 set.seed(42); a <- runif(1); set.seed(42); invisible(to_estimation(f)); stopifnot(runif(1) == a)
 
+# GLMs: glm/0.1 and inference/0.1; z tests (no df_t); rows the FEs fit perfectly split into
+# separated (all-zero outcomes) and singletons, checked against the rows fixest kept
+d$cnt <- rpois(n, exp(0.3 * ifelse(is.finite(d$x2), d$x2, 0)))
+d$cnt[d$id == 7] <- 0L; d$expo <- runif(n, 1, 2)
+p <- suppressMessages(fepois(cnt ~ x + offset(log(expo)) | id + yr, d, cluster = ~id))
+r <- to_estimation(p)
+check(r, "fepois")
+stopifnot(identical(r$meta$profiles, I(c("inference/0.1", "glm/0.1"))),
+          r$meta$estimator$distribution == "poisson", r$meta$estimator$link == "log",
+          is.null(r$structures$vcov[[1]]$df_t), isTRUE(r$structures$numerics$converged),
+          r$specification$offset$variable == "log(expo)",
+          identical(r$specification$options$separation, I("fe")))
+eq(sapply(r$parameters, `[[`, "estimate"), coef(p))
+eq(sapply(r$parameters, `[[`, "p_value"), 2 * pnorm(-abs(coef(p) / se(p))))
+eq(r$metrics$deviance, p$deviance); eq(r$metrics$log_lik, logLik(p))
+eq(r$metrics$pseudo_r2, 1 - logLik(p) / p$ll_null)
+stopifnot(dropped(r)$separated == sum(d$id == 7 & is.finite(d$x2) & !is.na(d$y)),
+          dropped(r)$singletons == 1, r$metrics$n_separated == dropped(r)$separated,
+          r$specification$sample$rows_input - sum(unlist(dropped(r))) == p$nobs,
+          r$metrics$nobs_full == p$nobs + 1 + dropped(r)$separated)
+b <- suppressMessages(feglm(I(y > 0) ~ x | yr, d, family = binomial("probit"), vcov = "hetero"))
+r <- to_estimation(b)
+check(r, "probit")
+stopifnot(r$meta$estimator$distribution == "binomial", r$meta$estimator$link == "probit",
+          r$structures$vcov[[1]]$type == "HC1", dropped(r)$separated == 0)
+# a quasi family: t tests, the dispersion estimated, no likelihood
+q <- suppressMessages(feglm(cnt ~ x, d, family = quasipoisson()))
+r <- to_estimation(q)
+check(r, "quasipoisson")
+stopifnot(isTRUE(r$meta$estimator$quasi), r$structures$vcov[[1]]$df_t == df.residual(q),
+          is.null(r$metrics$log_lik), !identical(r$metrics$dispersion, 1))
+
 # Unsupported fits fail clearly
-stopifnot(inherits(try(to_estimation(fepois(round(abs(y)) ~ x | id, d)), silent = TRUE), "try-error"),
+stopifnot(inherits(try(to_estimation(fenegbin(cnt ~ x | id, d)), silent = TRUE), "try-error"),
           inherits(try(to_estimation(lm(y ~ x, d)), silent = TRUE), "try-error"))
 cat("estrec tests passed", if (nzchar(validator)) "(records validated)" else "(validator not found)", "\n")
