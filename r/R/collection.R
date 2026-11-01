@@ -196,12 +196,13 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
   paste0(sign, substr(digits, 1, 1), frac, "e", if (e > 0) "+" else "-", abs(e))
 }
 
+# openssl's hashes keep their class through as.character(), which jsonlite can't write
 .est_sha256 <- function(text) {
-  as.character(openssl::sha256(charToRaw(enc2utf8(text))))
+  as.vector(unclass(as.character(openssl::sha256(charToRaw(enc2utf8(text))))))
 }
 
 .est_sha256_file <- function(path) {
   con <- file(path, open = "rb")
   on.exit(close(con))
-  as.character(openssl::sha256(con))
+  as.vector(unclass(as.character(openssl::sha256(con))))
 }
