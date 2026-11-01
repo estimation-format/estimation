@@ -26,28 +26,30 @@ write_estimation(fits, "fits.estimation.json")
 
 rec <- to_estimation(fit)   # the record as a list
 
-# Hypothesis tests, computed from the record's own coefficients and vcov
-rec <- to_estimation(fit, vcov = list(~firm, "hetero"), tests = c("x1 = x2", "x1 + x2"))
-rec <- add_test(rec, "x1 = 0, x2 = 0", vcov = "HC1")              # Wald F
-rec <- add_test(rec, wald(fit, keep = "^x", print = FALSE))       # a fixest test, as is
-
-# An effect at given values of a moderator: one test per value, with estimate and SE
-rec <- add_test(rec, sprintf("treated + `treated:elite` * %.4f = 0", c(0.25, 0.5)))
-# Event-study pre-trends: the joint test that the matching terms are 0, as wald(fit, keep =)
-rec <- add_test(rec, keep = "^counter::-([2-9]|1[0-9]|20):", label = "pre-trends")
-# Or results from marginaleffects, one test per row
-rec <- add_test(rec, marginaleffects::hypotheses(fit, "b1 + b2 = 0"))
+# Test results: run the test with the function you use, and record its result
+rec <- add_test(rec, wald(fit, keep = "^counter::-([2-9]|1[0-9]|20):"), label = "pre-trends")
+rec <- add_test(rec, marginaleffects::hypotheses(fit, "b1 + b2 * 0.25 = 0"))
+rec <- add_test(rec, car::linearHypothesis(fit, "x1 = x2"))
+rec <- to_estimation(fit, tests = list(wald(fit, keep = "^x")))   # or when writing the record
 write_estimation(rec, "fit.estimation.json")
 ```
 
 Tests go in the record's `tests` list: fixest's joint Wald test of the coefficients and, for
-IV, the first-stage and identification tests (`origin: "estimation"`), plus each test you add
-(`origin: "postestimation"`). A restriction with `=` is a Wald test (F with the vcov's t-test
-df); a single restriction also gets its estimate (left side minus right), SE and interval, as
-`marginaleffects::hypotheses()` reports them. An expression without `=` is a linear
-combination: estimate, SE, interval and t test. `keep =` takes fixest's regexes. A
-`wald()` result doesn't say which terms it tested, so prefer `keep =`, which records them.
-Adding a test doesn't change the results, so it keeps the core digest valid.
+IV, the first-stage and identification tests (`origin: "estimation"`), plus each test result you
+add (`origin: "postestimation"`). estrec doesn't run tests; it records the statistic, df,
+p-value, vcov and hypothesis that the result carries, and the call that made it.
+`fixest::wald()` doesn't return which terms it tested, so estrec reads them from the call's
+`keep`/`drop`. Adding a test doesn't change the results, so it keeps the core digest valid.
+
+`as_estimation_test()` reads a result into test objects. It has methods for `wald()`,
+`marginaleffects::hypotheses()` and other broom-style data frames, `anova` comparisons
+(`anova(m1, m2)`, `car::linearHypothesis()`, `lmtest::waldtest()`/`lrtest()`) and `htest`
+(`t.test()` and friends). To record results of another kind, write a method for their class:
+
+```r
+as_estimation_test.my_test <- function(x, ...)
+  list(list(name = "wald", statistic = x$W, distribution = "chi2", df = x$k, p_value = x$p))
+```
 
 ## What a record holds
 
@@ -84,7 +86,8 @@ canonical JSON.
 
 ## Not yet
 
-- `feglm`/`fepois` (`glm/0.1`), `lm`/`glm` and other classes through `insight`, nonlinear
-  tests (`nlcom`-style, by the delta method).
+- `feglm`/`fepois` (`glm/0.1`), `lm`/`glm` and other classes through `insight`.
+- The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
+  output but not yet checked against them (they aren't installed where estrec was built).
 - Tests: `tests/test-fixest.R` (base R). It validates every record when the `estimation` CLI
   is on `PATH` or `ESTREC_VALIDATOR` names it.

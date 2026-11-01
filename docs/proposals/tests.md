@@ -132,16 +132,15 @@ memory and still needs checking:
 4. **Append-only outside the digest** (point 3): OK? It's the one exception to "a tool MUST NOT
    change a core section".
 
-## In estrec, once agreed
+## In estrec
+
+estrec records test results; it doesn't run tests (Ted, 2026-10-31). `add_test(rec, result)`
+reads the result through the generic `as_estimation_test()`, which has a method per kind of
+result (fixest `wald()`, `marginaleffects::hypotheses()` and broom-style tables, `anova`
+comparisons, `htest`). Support for another tool's results is one method, in estrec or
+outside it.
 
 ```r
-rec <- to_estimation(fit, tests = list(
-  wald = fixest::wald(fit, keep = "^x", print = FALSE),   # a fixest test, converted
-  "x = x2"                                                # computed from the record's b and V
-))
-rec <- add_test(rec, "x + x2 = 1", vcov = "hetero")       # append to an existing record
+rec <- add_test(rec, wald(fit, keep = "^counter::-([2-9]|1[0-9]|20):"))
+rec <- to_estimation(fit, tests = list(wald(fit, keep = "^x"), t.test(resid(fit))))
 ```
-
-A linear restriction given as text is computed from the record's own `parameters` and
-`vcov` (W = (Rb − q)'(RVR')⁻¹(Rb − q) / J against F(J, `df_t`)). It then always matches the vcov
-the record holds, and any language's writer gives the same answer.

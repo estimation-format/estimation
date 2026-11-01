@@ -1,47 +1,65 @@
 \name{add_test}
 \alias{add_test}
-\title{Add a hypothesis test to an estimation record}
+\alias{as_estimation_test}
+\alias{as_estimation_test.default}
+\alias{as_estimation_test.list}
+\alias{as_estimation_test.htest}
+\alias{as_estimation_test.anova}
+\alias{as_estimation_test.data.frame}
+\title{Record a hypothesis test result in an estimation record}
 \description{
-Appends one test to the record's \code{tests} (spec 4.8) and a \code{history} entry. A test
-given as text is computed from the record's own parameters and vcov, so it always matches
-the vcov the record holds. \code{tests} is append-only and outside the core digest.
+\code{add_test} appends the result of a test to the record's \code{tests} (spec 4.8), with a
+\code{history} entry. estrec doesn't run tests: run the test with the function you use, and
+pass its result. \code{tests} is append-only and outside the core digest.
+
+\code{as_estimation_test} reads a test result into test objects. It is a generic: to record
+the results of another function, write a method for its class that returns a list of test
+objects (each a list with \code{name} and \code{statistic} or \code{p_value}, and as many of
+the spec's fields as the result gives).
 }
 \usage{
-add_test(record, test, vcov = NULL, label = NULL, category = NULL, id = NULL,
-  tags = NULL, origin = "postestimation", by = estrec_info(), keep = NULL)
+add_test(record, test, label = NULL, category = NULL, hypothesis = NULL, vcov = NULL,
+  id = NULL, tags = NULL, origin = "postestimation", by = estrec_info())
+
+as_estimation_test(x, record = NULL, call = NULL, expr = NULL, env = parent.frame(), ...)
 }
 \arguments{
 \item{record}{an estimation record (from \code{\link{to_estimation}}).}
-\item{test}{a hypothesis as text: restrictions with \code{=}, separated by commas
-(\code{"x = x2"}, \code{"x = 0, x2 = 0"}, \code{"2*x - x2 = 1"}), give a Wald test, F with
-the vcov's \code{df_t} (chi-squared when it has none); an expression without \code{=}
-(\code{"x + x2"}) gives a linear combination: estimate, standard error, interval and t test
-against 0. A single restriction also records its estimate (left side minus right), standard
-error and interval, as \code{marginaleffects::hypotheses()} does. Terms are
-\code{parameters[*].term}; quote non-syntactic names with backticks
-(\code{"`x:elite` = 0"}). A character vector adds one test per element.
-Or a \code{fixest::wald()} result; a \code{marginaleffects::hypotheses()} result or another
-data frame with broom-style columns (one test per row); or a test object (a list with
-\code{name} and \code{statistic} or \code{p_value}).}
-\item{keep}{instead of \code{test}: regexes picking terms, as in \code{fixest::wald(fit, keep =)}
-(\code{"\%"} starts a literal name, \code{"!"} negates); the joint Wald test that they are all 0.}
-\item{vcov}{the \code{structures.vcov} entry to use: a type (\code{"HC1"}) or
-\code{list(type =, cluster =)}; \code{NULL} for the default.}
+\item{test, x}{a test result. Methods are included for:
+\itemize{
+\item a \code{fixest::wald()} result. \code{wald()} doesn't return which terms it tested, so
+they are read from the call's \code{keep} and \code{drop}, matched against the record's terms;
+\item \code{marginaleffects::hypotheses()}, or any data frame with broom-style columns
+(\code{estimate}, \code{std.error}, \code{statistic}, \code{p.value}, \code{conf.low},
+\code{conf.high}): one test per row;
+\item an \code{anova} comparison table (\code{anova(m1, m2)}, \code{car::linearHypothesis()},
+\code{lmtest::waldtest()}, \code{lmtest::lrtest()}): the test in its last row;
+\item an \code{htest} (\code{t.test()}, \code{chisq.test()}, ...);
+\item a test object, or a list of them, added as is.
+}}
 \item{label, tags}{the user's label and tags.}
-\item{category}{overrides the category (\code{restriction}, \code{linear_combination}).}
+\item{category}{what the test is about (\code{restriction}, \code{pretrend}, ...).}
+\item{hypothesis}{the hypothesis as text, when the result doesn't carry it.}
+\item{vcov}{the \code{structures.vcov} entry the test used, when the result doesn't say: a
+type (\code{"HC1"}) or \code{list(type =, cluster =)}. Recorded only.}
 \item{id}{the test's id; by default \code{t<n>}.}
 \item{origin}{\code{"postestimation"} (default) or \code{"estimation"}.}
 \item{by}{the tool recorded in \code{history}.}
+\item{call, expr, env}{for methods: the call that made the result, as text and unevaluated,
+and the environment to evaluate its arguments in.}
+\item{...}{for methods.}
 }
-\value{The record, with the test appended.}
+\value{\code{add_test}: the record, with the tests appended. \code{as_estimation_test}: a
+list of test objects.}
 \examples{
 if (requireNamespace("fixest", quietly = TRUE)) {
   fit <- fixest::feols(mpg ~ wt + hp | cyl, mtcars)
-  rec <- to_estimation(fit, vcov = list("iid", "hetero"))
-  rec <- add_test(rec, "wt = 0, hp = 0")
-  rec <- add_test(rec, "wt + 100*hp", vcov = "HC1", label = "wt plus 100 hp")
-  rec <- add_test(rec, sprintf("wt + hp * \%.1f = 0", c(10, 100)))
-  rec <- add_test(rec, keep = "^(wt|hp)$", label = "both slopes")
-  rec$tests[[3]]$estimate
+  rec <- to_estimation(fit)
+  rec <- add_test(rec, fixest::wald(fit, keep = "^(wt|hp)$", print = FALSE),
+                  label = "both slopes")
+  rec$tests[[2]]$hypothesis$terms
 }
+# Results of your own test function: a method returning test objects
+as_estimation_test.my_test <- function(x, ...)
+  list(list(name = "wald", statistic = x$W, distribution = "chi2", df = x$k, p_value = x$p))
 }

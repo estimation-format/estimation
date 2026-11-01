@@ -13,6 +13,7 @@ to_estimation.fixest_multi <- function(fit, ...) {
 to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.95,
                                  tests = NULL, title = NULL, notes = NULL, tags = NULL,
                                  publication = NULL, call = TRUE, identifying = TRUE, ...) {
+  tests_expr <- substitute(tests); tests_env <- parent.frame()
   if (fit$method != "feols")
     stop("estrec writes feols fits for now; a ", fit$method, " fit needs the glm/0.1 writer",
          call. = FALSE)
@@ -148,9 +149,18 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   if (!is.null(publication)) rec$publication <- publication
   rec$history <- list(list(when = meta$created, by = estrec_info(), action = "created",
                            sections = I(setdiff(names(rec), "schema"))))
-  # Tests asked for in the call: hypotheses as text or fixest wald() results (see add_test)
-  if (is.list(tests) && (!is.null(tests$stat) || !is.null(tests$name))) tests <- list(tests)
-  for (t in if (is.character(tests)) as.list(tests) else tests) rec <- add_test(rec, t)
+  # Test results given in the call, one or a list (see add_test). The calls that made them are
+  # kept, so a wald() test records its terms and each test its call.
+  if (!is.null(tests)) {
+    exprs <- tests_expr
+    one <- !is.list(tests) || is.data.frame(tests) || inherits(tests, "htest") ||
+      !is.null(tests[["stat", exact = TRUE]]) || !is.null(tests[["name", exact = TRUE]])
+    if (one) { tests <- list(tests); exprs <- list(exprs) }
+    else exprs <- if (is.call(exprs) && identical(exprs[[1L]], quote(list))) as.list(exprs)[-1L]
+                  else vector("list", length(tests))
+    for (i in seq_along(tests))
+      rec <- .est_add_test(rec, tests[[i]], exprs[[i]], tests_env)
+  }
   rec
 }
 

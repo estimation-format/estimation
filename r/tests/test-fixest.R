@@ -81,53 +81,33 @@ stopifnot(fs$response == "x", fs$component == "first_stage", is.null(r$structure
           all(c("model", "weak_identification", "endogeneity", "overidentification") %in% cat_of(r)),
           r$tests[cat_of(r) == "overidentification"][[1]]$name == "sargan")
 
-# Tests: the model Wald test from fixest; hypotheses added from the record's own b and V
+# Tests: the model Wald test from fixest; test results recorded as given, never computed
 r <- to_estimation(f)
 mt <- r$tests[[1]]
 stopifnot(mt$category == "model", mt$name == "wald", mt$origin == "estimation", mt$vcov == "CRV1")
 eq(mt$statistic, fitstat(f, ~wald)$wald$stat)
-r2 <- add_test(r, "x = 0, x2 = 0")
-w <- r2$tests[[2]]
-eq(w$statistic, wald(f, keep = "^x", print = FALSE)$stat, 1e-10)   # same restrictions, same vcov
-stopifnot(w$category == "restriction", w$df1 == 2, w$df2 == r$structures$vcov[[1]]$df_t,
-          w$origin == "postestimation", !is.null(w$added), r2$history[[2]]$action == "extended")
-r2 <- add_test(r2, "x + x2", label = "total effect")
-lc <- r2$tests[[3]]
-V <- vcov(f)
-eq(lc$estimate, sum(coef(f)[c("x", "x2")]))
-eq(lc$std_error, sqrt(V["x", "x"] + V["x2", "x2"] + 2 * V["x", "x2"]))
-stopifnot(lc$category == "linear_combination", lc$name == "t", lc$label == "total effect",
-          lc$conf_low < lc$estimate, lc$conf_high > lc$estimate)
-r3 <- try(add_test(r2, "x = x2", vcov = "HC1"), silent = TRUE)   # the record has no HC1 vcov
-stopifnot(inherits(r3, "try-error"))
-r <- to_estimation(f, vcov = list(~id, "hetero"),
-                   tests = list("x = x2", wald(f, keep = "^x2$", print = FALSE)))
-r <- add_test(r, "2*x - x2 = 1", vcov = "HC1")
-stopifnot(length(r$tests) == 4, r$tests[[4]]$vcov$type == "HC1",
-          identical(as.numeric(r$tests[[4]]$hypothesis$restrictions$R[[1]]), c(2, -1)),
-          r$tests[[4]]$hypothesis$restrictions$q == 1, r$tests[[3]]$source$name == "fixest")
-check(r, "tests")
-stopifnot(inherits(try(add_test(r, "x^2 = 0"), silent = TRUE), "try-error"),
-          inherits(try(add_test(r, "nope = 0"), silent = TRUE), "try-error"))
+stopifnot(inherits(try(add_test(r, "x = 0"), silent = TRUE), "try-error"),   # no tests run here
+          inherits(try(add_test(r, 3), silent = TRUE), "try-error"),
+          inherits(try(add_test(list(), wald(f, print = FALSE)), silent = TRUE), "try-error"))
 
-# An interaction at given values, marginaleffects-style: one test per value, each with its
-# estimate and SE; and an event-study pre-trend test by regex, as fixest::wald(keep =)
+# fixest wald(): the terms come from the call's keep/drop, the rest from the result
 d$counter <- sample(-6:3, n, TRUE)
-fe <- feols(y ~ i(counter, x2, ref = -1) + x * x2 | id, d)
-r <- add_test(to_estimation(fe), sprintf("x + `x:x2` * %.4f = 0", c(0.25, 0.5)))
-V <- vcov(fe); g <- c(1, 0.5); nm <- c("x", "x:x2")
-lc <- r$tests[[3]]
-eq(lc$estimate, sum(g * coef(fe)[nm]), 1e-10)
-eq(lc$std_error, sqrt(drop(g %*% V[nm, nm] %*% g)), 1e-10)
-eq(lc$statistic, (lc$estimate / lc$std_error)^2, 1e-10)
-stopifnot(length(r$tests) == 3, lc$name == "wald", lc$conf_low < lc$estimate)
+fe <- feols(y ~ i(counter, x2, ref = -1) + x * x2 | id, d, cluster = ~id)
 keep <- "^counter::-[2-6]:"
-r <- add_test(r, keep = keep, label = "pre-trends")
-pt <- r$tests[[4]]
-eq(pt$statistic, wald(fe, keep = keep, print = FALSE)$stat, 1e-10)
-stopifnot(pt$df1 == 5, length(pt$hypothesis$terms) == 5, pt$label == "pre-trends",
-          inherits(try(add_test(r, keep = "^nope"), silent = TRUE), "try-error"))
-# A results table: marginaleffects::hypotheses() output, one test per row
+w <- wald(fe, keep = keep, print = FALSE)
+r <- add_test(to_estimation(fe), wald(fe, keep = keep, print = FALSE), label = "pre-trends")
+pt <- r$tests[[2]]
+stopifnot(pt$statistic == w$stat, pt$p_value == w$p, pt$df1 == 5, pt$df2 == w$df2,
+          length(pt$hypothesis$terms) == 5, all(grepl("^counter::-[2-6]:", pt$hypothesis$terms)),
+          identical(pt$vcov$cluster, I("id")), pt$source$name == "fixest",
+          grepl("wald(fe, keep = keep", pt$source$call, fixed = TRUE),
+          pt$origin == "postestimation", r$history[[2]]$action == "extended")
+r <- add_test(r, wald(fe, keep = "^x", drop = ":", print = FALSE))
+stopifnot(identical(as.character(r$tests[[3]]$hypothesis$terms), c("x", "x2")), r$tests[[3]]$df1 == 2)
+r <- add_test(r, w)                                    # no call to read: no terms
+stopifnot(is.null(r$tests[[4]]$hypothesis), r$tests[[4]]$statistic == w$stat)
+
+# marginaleffects::hypotheses()-shaped results: one test per row
 tab <- structure(data.frame(hypothesis = c("b1 = 0", "b2 = 0"), estimate = c(1, 2),
                             std.error = c(0.5, 0.4), statistic = c(2, 5), p.value = c(0.05, 1e-6),
                             conf.low = c(0, 1.2), conf.high = c(2, 2.8)),
@@ -135,7 +115,37 @@ tab <- structure(data.frame(hypothesis = c("b1 = 0", "b2 = 0"), estimate = c(1, 
 r <- add_test(r, tab)
 stopifnot(length(r$tests) == 6, r$tests[[6]]$name == "z", r$tests[[6]]$estimate == 2,
           r$tests[[6]]$source$name == "marginaleffects", r$tests[[6]]$options$vcov_type == "HC3")
-check(r, "hypotheses")
+
+# anova comparison and htest
+dl <- d[is.finite(d$x2) & !is.na(d$y), ]
+m0 <- lm(y ~ x, dl); m1 <- lm(y ~ x + x2 + z, dl)
+av <- anova(m0, m1)
+r <- add_test(r, av, category = "restriction")
+at <- r$tests[[7]]
+stopifnot(at$name == "f", at$statistic == av$F[2], at$df1 == 2, at$df2 == av$Res.Df[2],
+          at$p_value == av$`Pr(>F)`[2])
+tt <- t.test(d$x2, mu = 0.1)
+r <- add_test(r, tt)
+ht <- r$tests[[8]]
+stopifnot(ht$name == "t", ht$df == tt$parameter, ht$p_value == tt$p.value,
+          ht$hypothesis$alternative == "two_sided", ht$label == "One Sample t-test")
+
+# Any other result: a method for its class, or a test object
+as_estimation_test.my_test <- function(x, ...)
+  list(list(name = "wald", statistic = x$W, distribution = "chi2", df = x$k, p_value = x$p))
+registerS3method("as_estimation_test", "my_test", as_estimation_test.my_test)
+r <- add_test(r, structure(list(W = 3.2, k = 2, p = 0.2), class = "my_test"))
+r <- add_test(r, list(name = "hansen_j", statistic = 1.1, distribution = "chi2", df = 1, p_value = 0.29),
+              category = "overidentification", id = "j")
+stopifnot(r$tests[[9]]$df == 2, r$tests[[10]]$id == "j",
+          inherits(try(add_test(r, list(name = "x", statistic = 1), id = "j"), silent = TRUE), "try-error"))
+
+# Results given to to_estimation()
+r <- to_estimation(fe, tests = list(wald(fe, keep = keep, print = FALSE), tt))
+stopifnot(length(r$tests) == 3, length(r$tests[[2]]$hypothesis$terms) == 5, r$tests[[3]]$name == "t")
+r1 <- to_estimation(fe, tests = wald(fe, keep = keep, print = FALSE))
+stopifnot(length(r1$tests) == 2, length(r1$tests[[2]]$hypothesis$terms) == 5)
+check(r, "tests")
 
 # Without the data: drops recorded as `other`, with a warning message
 g <- function() { dd <- d; feols(y ~ x + x2 | id, dd) }

@@ -63,7 +63,7 @@ write_estimation <- function(x, path, ...) {
   x <- unname(x)
   if (length(x) == 1L && is.numeric(x) && !is.finite(x)) {
     if (is.na(x) && !is.nan(x)) return(NULL)
-    return(if (is.nan(x)) "NaN" else if (x > 0) "Infinity" else "-Infinity")
+    return(if (is.nan(x)) "NaN" else if (x > 0) "Inf" else "-Inf")
   }
   x
 }

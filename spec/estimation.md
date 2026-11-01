@@ -369,7 +369,7 @@ sections.
                   "restrictions": {"R": [[1, -1]], "q": [0], "labels": ["x", "x2"]}},
    "statistic": 4.21, "distribution": "F", "df1": 1, "df2": 39, "p_value": 0.047,
    "vcov": {"type": "CRV1", "cluster": ["id"]},
-   "source": {"name": "estrec", "version": "0.1.0", "call": "add_test(rec, \"x = x2\")"},
+   "source": {"name": "car", "version": "3.1-3", "call": "linearHypothesis(fit, \"x = x2\")"},
    "added": "2026-10-31T14:20:00Z"},
   {"id": "t3", "category": "linear_combination", "name": "t", "origin": "postestimation",
    "hypothesis": {"text": "x + x2 = 0", "restrictions": {"R": [[1, 1]], "q": [0], "labels": ["x", "x2"]}},
