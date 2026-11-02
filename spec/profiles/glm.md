@@ -40,7 +40,7 @@ fixest, statsmodels) claim `inference/0.1` too.
 | `options.separation` | — | `e(separation)` | — | `fixef.rm` | — | `separation_check` |
 | `options.tolerance` | `tolerance()` etc. | `tolerance()` 1e-8 | `control$epsilon` 1e-8 | `glm.tol` 1e-8 | `tol` 1e-8 | `iwls_tol` 1e-8 |
 | `options.max_iterations` | `iterate()` | `maxiterations()` 10000 | `control$maxit` 25 | `glm.iter` 25 | `maxiter` 100 | `iwls_maxiter` 25 |
-| `options.fixef_tolerance` | | `itolerance()` (as `inner_tolerance`) | | `fixef.tol` 1e-6 | | `fixef_tol` |
+| `options.fixef_tolerance` | | `itolerance()` | | `fixef.tol` 1e-6 | | `fixef_tol` |
 | `options.fixef_max_iterations` | | | | `fixef.iter` 10000 | | `fixef_maxiter` |
 
 `specification.offset` is `{variable, exposure}` or `null`; `exposure: true` means the tool
@@ -48,7 +48,8 @@ took the log of the variable.
 
 `options.tolerance` and `max_iterations` are the IRLS (or ML) iterations'. With absorbed fixed
 effects, the solver that partials them out inside each iteration has its own settings,
-`fixef_tolerance` and `fixef_max_iterations`.
+`fixef_tolerance` and `fixef_max_iterations`, and `structures.numerics.fixef_iterations` counts
+its iterations (ppmlhdfe `e(ic2)`, summed over the IRLS steps).
 
 A quasi-likelihood family (R and fixest `quasipoisson`, `quasibinomial`) is recorded as its
 base `distribution` with `meta.estimator.quasi: true`: the estimates are the base family's,

@@ -30,7 +30,7 @@
                 "separation": {"x-tools": {"ppmlhdfe": "e(separation): default \"fe simplex relu\"; separation(all) adds mu; separation(none) is []"}},
                 "drop_singletons": {"type": "boolean", "x-tools": {"ppmlhdfe": "e(drop_singletons) (keepsingletons turns it off)"}},
                 "tolerance": {"x-tools": {"ppmlhdfe": "tolerance() (1e-8)"}},
-                "inner_tolerance": {"description": "Tolerance of the fixed-effect partialling inside each IRLS step.", "type": "number", "x-tools": {"ppmlhdfe": "itolerance()"}},
+                "fixef_tolerance": {"x-tools": {"ppmlhdfe": "itolerance()"}},
                 "max_iterations": {"x-tools": {"ppmlhdfe": "maxiterations() (10000)"}},
                 "guess": {"type": "string", "x-vocabulary": ["simple", "ols"], "x-tools": {"ppmlhdfe": "guess() (simple)"}}
               }
@@ -68,7 +68,7 @@
               }
             },
             "numerics": {
-              "x-tools": {"converged": {"ppmlhdfe": "e(converged)"}, "iterations": {"ppmlhdfe": "e(ic)"}, "inner_iterations": {"ppmlhdfe": "e(ic2)"}}
+              "x-tools": {"converged": {"ppmlhdfe": "e(converged)"}, "iterations": {"ppmlhdfe": "e(ic)"}, "fixef_iterations": {"ppmlhdfe": "e(ic2), summed over the IRLS steps"}}
             }
           }
         }

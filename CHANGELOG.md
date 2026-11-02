@@ -26,6 +26,10 @@
   and link, offset, deviance, McFadden pseudo R², AIC/BIC, dispersion, convergence, z tests
   without `df_t`, and fixest's perfect-fit removals split into `singletons` and `separated`
   (checked against the rows fixest kept). `fenegbin` and `femlm` still fail with a clear error.
+- Profiles: `ppmlhdfe/0.1` uses `glm/0.1`'s names for the fixed-effect solver inside each IRLS
+  step, as fixest `fepois` records do: `itolerance()` is `options.fixef_tolerance` (was
+  `inner_tolerance`) and `e(ic2)` is `structures.numerics.fixef_iterations` (was
+  `inner_iterations`).
 - estrec: `meta.core_digest` on every record when `openssl` is installed (`digest = FALSE` to
   leave it out), equal to the Python reference's. Software purls follow each package's origin
   (`pkg:cran`, `pkg:github/...@<commit>#<subdir>` from remotes/pak metadata, else

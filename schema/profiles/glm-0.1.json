@@ -58,7 +58,7 @@
                 },
                 "tolerance": {"description": "Convergence tolerance of the IRLS / ML iterations.", "type": "number", "x-tools": {"ppmlhdfe": "tolerance() (1e-8)", "fixest": "glm.tol (1e-8)", "pyfixest": "iwls_tol (1e-8)", "R glm": "control$epsilon (1e-8)", "statsmodels": "tol (1e-8)", "Stata ML": "tolerance(), ltolerance(), nrtolerance()"}},
                 "max_iterations": {"type": "integer", "x-tools": {"ppmlhdfe": "maxiterations() (10000)", "fixest": "glm.iter (25)", "pyfixest": "iwls_maxiter (25)", "R glm": "control$maxit (25)", "statsmodels": "maxiter (100)", "Stata ML": "iterate()"}},
-                "fixef_tolerance": {"description": "Tolerance of the solver that partials out absorbed fixed effects inside each iteration.", "type": "number", "x-tools": {"fixest": "fixef.tol (1e-6)", "pyfixest": "fixef_tol", "ppmlhdfe": "itolerance() (recorded as inner_tolerance)"}},
+                "fixef_tolerance": {"description": "Tolerance of the solver that partials out absorbed fixed effects inside each iteration.", "type": "number", "x-tools": {"fixest": "fixef.tol (1e-6)", "pyfixest": "fixef_tol", "ppmlhdfe": "itolerance()"}},
                 "fixef_max_iterations": {"type": "integer", "x-tools": {"fixest": "fixef.iter (10000)", "pyfixest": "fixef_maxiter"}}
               }
             }
@@ -123,7 +123,8 @@
               "required": ["converged"],
               "x-tools": {
                 "converged": {"Stata": "e(converged)", "R glm": "converged", "fixest": "convStatus", "statsmodels": "converged", "pyfixest": "_convergence"},
-                "iterations": {"Stata": "e(ic)", "R glm": "iter", "fixest": "iterations", "statsmodels": "fit_history[\"iteration\"]"}
+                "iterations": {"Stata": "e(ic)", "R glm": "iter", "fixest": "iterations", "statsmodels": "fit_history[\"iteration\"]"},
+                "fixef_iterations": {"ppmlhdfe": "e(ic2), summed over the IRLS steps"}
               }
             },
             "fixed_effects": {"description": "Absorbed fixed effects, as in linear-fe/0.1: one {kind: \"object\", name, levels} per FE."}

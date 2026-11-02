@@ -36,10 +36,15 @@ The fixed-effect fields use [`linear-fe/0.1`](linear-fe.md)'s names; the profile
 | `e(r2_p)` | `metrics.pseudo_r2` as `{value, definition: "1 - ll/ll_0, ll_0 FE-only"}` |
 | `e(chi2)`, `e(chi2type)` | `metrics.chi2` (Wald) |
 | `e(separation)` | `options.separation`: default `["fe", "simplex", "relu"]`; `separation(all)` adds `mu`; `none` is `[]`; `ir` is recorded as `relu` |
-| `tolerance()`, `itolerance()`, `maxiterations()`, `guess()` | `options.tolerance` (1e-8), `inner_tolerance`, `max_iterations` (10000), `guess` (`simple`) |
-| `e(ic)`, `e(ic2)`, `e(converged)` | `structures.numerics.iterations`, `inner_iterations`, `converged` |
+| `tolerance()`, `itolerance()`, `maxiterations()`, `guess()` | `options.tolerance` (1e-8), `fixef_tolerance`, `max_iterations` (10000), `guess` (`simple`) |
+| `e(ic)`, `e(ic2)`, `e(converged)` | `structures.numerics.iterations`, `fixef_iterations`, `converged` |
 | `e(vce)`, `e(clustvar)`, `e(N_clust)` | vcov `type`, `cluster`, `n_clusters` |
 | `e(offset)` | `specification.offset` (`exposure: true` with `exposure()`) |
+
+`tolerance()` and `maxiterations()` are the IRLS iterations'; `itolerance()` is the tolerance of
+the reghdfe solver that partials out the fixed effects inside each one, recorded under
+`glm/0.1`'s name `fixef_tolerance` (the name fixest `fepois` records `fixef.tol` under), and
+`e(ic2)`, the inner iterations summed over the IRLS steps, is `fixef_iterations`.
 
 `e(converged)` is always 1 in a posted result: ppmlhdfe stops with an error instead of
 posting an unconverged fit.
