@@ -223,3 +223,51 @@ def test_estimation_cli_subcommands(capsys):
     assert capsys.readouterr().out.split("\n")[0].split() == ["baseline", "horsepower", "full"]
     assert main(["validate", str(SPEC)]) == 0
     assert "valid (0 errors)" in capsys.readouterr().out
+
+
+def test_several_lines_under_estimates():
+    s = spec()
+    s["uncertainty"] = ["std_error", "[{p_value}]", "t = {statistic}"]
+    t = et.build_table(s, base_dir=EXAMPLES)
+    assert [r["kind"] for r in t["rows"][:4]] == ["estimate", "uncertainty", "uncertainty", "uncertainty"]
+    assert [r["cells"][0] for r in t["rows"][:4]] == ["-3.206***", "(0.754)", "[0.000]", "t = -4.252"]
+    assert t["rows"][5]["cells"][0] == ""  # Horsepower isn't in column (1): every line blank
+    assert "Under each estimate: (standard error); [p-value]; t = test statistic." in t["notes"]
+
+
+@pytest.mark.parametrize(
+    "fmt,want",
+    [
+        ({}, "[0.000]"),
+        ({"p_style": "less_than"}, "[<0.001]"),
+        ({"p_digits": 4}, "[0.0002]"),
+        ({"p_digits": 2, "p_style": "less_than"}, "[<0.01]"),
+        ({"p_digits": 4, "p_style": "less_than"}, "[0.0002]"),
+    ],
+)
+def test_p_value_format(fmt, want):
+    s = spec()
+    s["uncertainty"] = "[{p_value}]"
+    s["format"] = {"digits": 3, **fmt}
+    t = et.build_table(s, base_dir=EXAMPLES)
+    assert t["rows"][1]["cells"][0] == want
+
+
+def test_p_style_applies_to_test_rows():
+    s = spec()
+    s["format"] = {"digits": 3, "p_style": "less_than"}
+    assert cells(et.build_table(s, base_dir=EXAMPLES), "Wald p") == ["<0.001", "<0.001", "<0.001"]
+
+
+def test_bad_lines_are_errors():
+    s = spec()
+    s["uncertainty"] = ["({stderr})", "bogus", "no placeholders {}"]
+    msgs = [i.message for i in et.validate_table(s, schema=None) if i.level == "error"]
+    assert any("unknown placeholder {stderr}" in m for m in msgs)
+    assert any("'bogus' is neither a name" in m for m in msgs)
+    assert len(msgs) == 3
+    pytest.importorskip("jsonschema")
+    ok = spec()
+    ok["uncertainty"] = ["std_error", "p = {p_value}"]
+    ok["format"] = {"p_digits": 4, "p_style": "less_than"}
+    assert et.validate_table(ok) == []

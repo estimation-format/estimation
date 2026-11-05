@@ -31,13 +31,21 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
   big <- fmt$thousands %||% ","
   missing <- fmt$missing %||% ""
   unc <- if ("uncertainty" %in% names(spec)) spec$uncertainty else "std_error"
+  lines <- .tab_lines(unc)
+  p_digits <- fmt$p_digits %||% digits
+  p_style <- fmt$p_style %||% "fixed"
 
+  # each line under the estimates is filled here, by the spec's rules, into a text column
+  # (line1, line2, ...) that modelsummary's `statistic` templates name
   tidies <- lapply(seq_along(cols), function(i) {
     c <- cols[[i]]
     vc <- c$vcov
     if (is.numeric(vc)) vc <- vc + 1   # the spec counts from 0, tidy() from 1
     t <- tidy.estimation_record(found[[i]], vcov = vc, component = c$component)
     if (!is.null(c$response) && "response" %in% names(t)) t <- t[t$response %in% c$response, , drop = FALSE]
+    for (k in seq_along(lines))
+      t[[paste0("line", k)]] <- vapply(seq_len(nrow(t)), function(j)
+        .tab_fill(lines[[k]], t[j, , drop = FALSE], digits, p_digits, p_style, missing), "")
     t
   })
   headers <- vapply(seq_along(cols), function(i) {
@@ -104,8 +112,10 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
         tt <- Filter(function(t) identical(t$label, s$test), rec$tests %||% list())
         if (!length(tt)) tt <- Filter(function(t) identical(t$name, s$test), rec$tests %||% list())
         if (!length(tt)) return(missing)
-        v <- .est_dbl(tt[[1]][[s$value %||% "statistic"]])
-        return(if (is.na(v)) missing else formatC(v, digits = d, format = "f"))
+        which <- s$value %||% "statistic"
+        v <- .est_dbl(tt[[1]][[which]])
+        if (is.na(v)) return(missing)
+        return(if (which == "p_value") .tab_p(v, s$digits %||% p_digits, p_style) else .tab_fixed(v, d))
       }
       missing
     }, "")
@@ -127,12 +137,8 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
     sym <- unlist(fmt$star_symbols) %||% strrep("*", seq_along(stars))
     star_arg <- stats::setNames(stars, sym)
   }
-  statistic <- switch(unc %||% "none", std_error = "({std.error})", statistic = "({statistic})",
-                      p_value = "[{p.value}]", conf_int = "[{conf.low}, {conf.high}]", none = NULL)
-  notes <- c(unlist(spec$notes),
-             switch(unc %||% "none", std_error = "Standard errors in parentheses.",
-                    statistic = "Test statistics in parentheses.", p_value = "p-values in brackets.",
-                    conf_int = "Confidence intervals in brackets.", none = NULL))
+  statistic <- if (length(lines)) sprintf("{line%d}", seq_along(lines)) else NULL
+  notes <- c(unlist(spec$notes), .tab_unc_note(unc, lines))
   args <- list(models, output = output, coef_map = coef_map, statistic = statistic,
                stars = star_arg, fmt = digits, gof_omit = ".*", add_rows = add_rows)
   if (!is.null(spec$title)) args$title <- spec$title
@@ -146,6 +152,73 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
 
 `%|NA|%` <- function(a, b) if (length(a) != 1L || is.na(a)) b else a
 
+# lines under each estimate (spec/table.md section 5)
+.tab_named_lines <- c(std_error = "({std_error})", statistic = "({statistic})", p_value = "[{p_value}]",
+                      conf_int = "[{conf_low}, {conf_high}]")
+.tab_placeholders <- c(estimate = "estimate", std_error = "std.error", statistic = "statistic",
+                       p_value = "p.value", conf_low = "conf.low", conf_high = "conf.high")
+
+.tab_lines <- function(unc) {
+  if (is.null(unc)) return(character())
+  items <- unlist(unc)
+  vapply(seq_along(items), function(j) {
+    x <- items[[j]]
+    if (x %in% names(.tab_named_lines)) return(unname(.tab_named_lines[x]))
+    if (!grepl("{", x, fixed = TRUE))
+      stop("uncertainty[", j - 1, "]: '", x, "' is neither a name (",
+           paste(names(.tab_named_lines), collapse = ", "), ") nor a template", call. = FALSE)
+    ph <- regmatches(x, gregexpr("\\{([^{}]*)\\}", x))[[1]]
+    ph <- substr(ph, 2, nchar(ph) - 1)
+    bad <- setdiff(ph, names(.tab_placeholders))
+    if (length(bad)) stop("uncertainty[", j - 1, "]: unknown placeholder {", bad[1], "}; use ",
+                          paste(names(.tab_placeholders), collapse = ", "), call. = FALSE)
+    if (!length(ph)) stop("uncertainty[", j - 1, "]: a template needs at least one placeholder", call. = FALSE)
+    x
+  }, "")
+}
+
+.tab_fixed <- function(x, digits) {
+  if (is.na(x)) return("")
+  if (!is.finite(x)) return(if (x > 0) "Inf" else "-Inf")
+  s <- formatC(x, digits = digits, format = "f")
+  if (startsWith(s, "-") && as.numeric(s) == 0) s <- substring(s, 2)
+  s
+}
+
+.tab_p <- function(p, digits, style) {
+  if (is.na(p)) return("")
+  if (identical(style, "less_than") && p < 10^-digits) return(paste0("<", .tab_fixed(10^-digits, digits)))
+  .tab_fixed(p, digits)
+}
+
+.tab_fill <- function(template, row, digits, p_digits, p_style, missing) {
+  ph <- regmatches(template, gregexpr("\\{([^{}]*)\\}", template))[[1]]
+  out <- template
+  for (m in unique(ph)) {
+    name <- substr(m, 2, nchar(m) - 1)
+    x <- row[[.tab_placeholders[[name]]]]
+    if (is.null(x) || is.na(x)) return(missing)
+    val <- if (name == "p_value") .tab_p(x, p_digits, p_style) else .tab_fixed(x, digits)
+    out <- gsub(m, val, out, fixed = TRUE)
+  }
+  out
+}
+
+.tab_unc_note <- function(unc, lines) {
+  if (is.null(unc) || !length(lines)) return(NULL)
+  named <- c(std_error = "Standard errors in parentheses.", statistic = "Test statistics in parentheses.",
+             p_value = "p-values in brackets.", conf_int = "Confidence intervals in brackets.")
+  if (is.character(unc) && length(unc) == 1L && unc %in% names(named)) return(unname(named[unc]))
+  words <- c(estimate = "estimate", std_error = "standard error", statistic = "test statistic",
+             p_value = "p-value", conf_low = "lower bound", conf_high = "upper bound")
+  parts <- vapply(lines, function(t) {
+    t <- sub("{conf_low}, {conf_high}", "confidence interval", t, fixed = TRUE)
+    for (w in names(words)) t <- gsub(paste0("{", w, "}"), words[[w]], t, fixed = TRUE)
+    t
+  }, "")
+  paste0("Under each estimate: ", paste(parts, collapse = "; "), ".")
+}
+
 .tab_value <- function(v, digits, big, missing) {
   if (is.null(v) || length(v) != 1L || (is.atomic(v) && is.na(v) && !is.nan(v))) return(missing)
   if (is.logical(v)) return(if (v) "Yes" else "No")
@@ -154,7 +227,7 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
   if (is.finite(v) && v == round(v) && abs(v) < 1e15)
     return(formatC(v, format = "d", big.mark = big))
   if (!is.finite(v)) return(if (v > 0) "Inf" else "-Inf")
-  formatC(v, digits = digits, format = "f")
+  .tab_fixed(v, digits)
 }
 
 # Records a spec can use, keyed by meta.id and by "<source>\r<meta.id>"

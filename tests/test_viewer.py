@@ -51,6 +51,15 @@ def specs():
     s["drop"] = []
     s["rows"] = [{"terms": ["hp", "wt"], "label": "hp or wt"}]
     out.append(s)
+    for unc, f in [
+        (["std_error", "[{p_value}]"], {"p_style": "less_than"}),
+        (["({std_error})", "p = {p_value}", "[{conf_low}, {conf_high}]"], {"digits": 2, "p_digits": 4}),
+        ("t = {statistic}", {"p_digits": 2, "p_style": "less_than"}),
+    ]:
+        s = copy.deepcopy(base)
+        s["uncertainty"] = unc
+        s["format"] = f
+        out.append(s)
     coll = ef.read_collection(EXAMPLES / "session.estimation-collection.json")
     s = et.new_table(coll, stats=["nobs", "r2", "r2_within", {"vcov": "type"}, {"vcov": "n_clusters"}])
     s["columns"].append(dict(s["columns"][0], header="iid", vcov="iid"))

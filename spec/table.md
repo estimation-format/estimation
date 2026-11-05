@@ -25,7 +25,7 @@ key words MUST, SHOULD and MAY are as in `spec/estimation.md` section 1.1. Schem
    {"term": "hhi", "label": "HHI"},
    {"terms": ["price_log", "fit_price_log"], "label": "log(price)"}],
  "drop": ["^year::"],
- "uncertainty": "std_error",
+ "uncertainty": ["std_error", "[{p_value}]"],
  "stars": [0.1, 0.05, 0.01],
  "stats": [
    {"metric": "nobs", "label": "N"},
@@ -34,7 +34,7 @@ key words MUST, SHOULD and MAY are as in `spec/estimation.md` section 1.1. Schem
    {"fixed_effect": "carrier", "label": "Carrier FE"},
    {"test": "pre-trends", "value": "p_value", "label": "Pre-trends p"},
    {"label": "Controls", "values": ["No", "Yes"]}],
- "format": {"digits": 3},
+ "format": {"digits": 3, "p_style": "less_than"},
  "notes": ["Standard errors clustered by route in parentheses."]}
 ```
 
@@ -49,7 +49,7 @@ key words MUST, SHOULD and MAY are as in `spec/estimation.md` section 1.1. Schem
 | `columns` | required | one entry per column, left to right (3) |
 | `rows` | optional | the terms to show, in order, with labels (4) |
 | `keep`, `drop`, `keep_unlisted` | optional | which other terms to show (4) |
-| `uncertainty` | optional | what goes under each estimate (5); default `"std_error"` |
+| `uncertainty` | optional | the lines under each estimate (5); default `"std_error"` |
 | `stars` | optional | significance thresholds (5); default none |
 | `stats` | optional | rows under the estimates (6) |
 | `format` | optional | number display (7) |
@@ -90,16 +90,31 @@ syntax, searched anywhere in `term`) that filter these unlisted terms: with `kee
 matching one are shown; then terms matching a `drop` pattern are left out. Listed rows are
 always shown. Dropped terms (`parameters[*].dropped`) are never shown.
 
-## 5. Estimates, uncertainty and stars
+## 5. Estimates, the lines under them, and stars
 
-Each estimate row shows the estimate, with stars. Under it, `uncertainty` is one of
-`"std_error"` (in parentheses), `"statistic"` (in parentheses), `"p_value"` (in brackets),
-`"conf_int"` (`[low, high]`), or `null` (no second line).
+Each estimate row shows the estimate, with stars. `uncertainty` says what goes under it, one
+row per line:
+
+- a **name**: `"std_error"` (in parentheses), `"statistic"` (in parentheses), `"p_value"`
+  (in brackets) or `"conf_int"` (`[low, high]`);
+- a **template**: text with placeholders `{estimate}`, `{std_error}`, `{statistic}`,
+  `{p_value}`, `{conf_low}` and `{conf_high}`, such as `"[{p_value}]"`, `"p = {p_value}"` or
+  `"({conf_low} to {conf_high})"`;
+- a **list** of names and templates, one row each, in order: `["std_error", "[{p_value}]"]`;
+- `null`: no lines.
+
+The default is `"std_error"`. A line is blank in a column when any value it needs is missing.
+Other placeholders are an error.
+
+p-values, in lines and in test rows (6), take `format.p_digits` decimals (default
+`format.digits`) and `format.p_style`: `"fixed"` (the default) shows them as rounded,
+`0.000`; `"less_than"` shows a p-value below the smallest the decimals can show as `<0.001`
+(for three decimals).
 
 `stars` is a list of p-value thresholds, largest first: `[0.1, 0.05, 0.01]` marks p < 0.1
 with `*`, p < 0.05 with `**`, p < 0.01 with `***`. `format.star_symbols` MAY give other
 symbols, one per threshold. `null` or absent means no stars. Renderers add a note saying what
-the stars mean.
+the stars and the lines under the estimates are.
 
 ## 6. Statistics rows
 
@@ -118,9 +133,10 @@ Every kind takes an optional `label` (default: the metric, fixed effect or test 
 
 ## 7. Format
 
-`format` holds `digits` (decimals for estimates, uncertainty and statistics; default 3),
-`thousands` (separator for whole numbers in statistics rows; default `","`), `missing` (a
-blank cell; default `""`), `fe_yes`, `fe_no` and `star_symbols`.
+`format` holds `digits` (decimals for estimates, the lines under them and statistics; default
+3), `p_digits` and `p_style` (p-values, section 5), `thousands` (separator for whole numbers in
+statistics rows; default `","`), `missing` (a blank cell; default `""`), `fe_yes`, `fe_no` and
+`star_symbols`.
 
 Rounding is the renderer's own: a browser, R and Python may differ in the last digit on exact
 ties (0.125 to two decimals). That is presentation, not estimation.
@@ -137,6 +153,7 @@ reference readers' `tidy`.
 
 A validator reports, as **errors**: a spec that fails the schema, a column whose record can't
 be found, a `source` naming no source, duplicate source ids, a `keep`/`drop` pattern that
-doesn't compile, and a literal row whose `values` don't match the columns. As **warnings**: a
+doesn't compile, a literal row whose `values` don't match the columns, and an `uncertainty`
+line that is neither a name nor a template, or uses an unknown placeholder. As **warnings**: a
 column whose record's hash isn't its `sha256`, a vcov a record doesn't have, a row term that
 no column has, and a metric, fixed effect or test that no column's record has.

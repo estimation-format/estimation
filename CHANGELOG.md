@@ -23,6 +23,13 @@
 - estrec `render_table(spec, output, records)`: renders a table spec through modelsummary (each
   column a model from the record's `tidy()` with its vcov; statistics rows by the spec's rules
   as `add_rows`). The example spec gives the same cells as the Python and browser renderers.
+- Table specs: several lines under each estimate (Ted, 2026-11-05). `uncertainty` may be a
+  list of names and templates, one row each (`["std_error", "[{p_value}]"]`, `"p = {p_value}"`,
+  `"[{conf_low}, {conf_high}]"`; placeholders `{estimate}`, `{std_error}`, `{statistic}`,
+  `{p_value}`, `{conf_low}`, `{conf_high}`). `format.p_digits` sets p-value decimals and
+  `format.p_style` shows small ones as `0.000` (`"fixed"`) or `<0.001` (`"less_than"`), in
+  these lines and in test p-value rows. Python, the viewer (a line editor) and estrec
+  `render_table()` agree cell for cell; existing specs render as before.
 - CLI: `estimation show` (the quick look) and `estimation table` (render or `--check` a table
   spec); `estimation validate` also takes table specs. `ef.show` and `ef.table` are available
   from `import estimation_format as ef`.

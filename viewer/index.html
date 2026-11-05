@@ -129,6 +129,8 @@ label.stack { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
 .addrow { display: flex; gap: 6px; }
 .addrow select { flex: 1; }
 .empty { color: var(--muted); font-size: 13px; padding: 4px 0; }
+.hint-line { margin: 0; font-size: 12px; color: var(--muted); }
+.hint-line code { font-size: 11.5px; }
 
 /* the table preview: a journal table */
 .preview-wrap { min-width: 0; display: grid; gap: 14px; }
@@ -139,7 +141,8 @@ table.estimation-table thead th { border-top: 1.5px solid var(--ink); border-bot
 table.estimation-table th, table.estimation-table td { padding: 1px 14px; white-space: nowrap; }
 table.estimation-table tbody th { text-align: left; font-weight: 400; }
 table.estimation-table td { text-align: center; }
-table.estimation-table tr.uncertainty td { padding-bottom: 5px; color: var(--muted); }
+table.estimation-table tr.uncertainty td { color: var(--muted); }
+table.estimation-table tbody tr.estimate:not(:first-child) th, table.estimation-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
 table.estimation-table tr.first-stat th, table.estimation-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
 table.estimation-table tbody tr:last-child th, table.estimation-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
 table.estimation-table tfoot td { font-size: 12.5px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
@@ -226,15 +229,6 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
             <legend>Table</legend>
             <label class="stack">Title<input type="text" id="opt-title" placeholder="Table 2: ..."></label>
             <div class="row2">
-              <label class="stack">Under estimates
-                <select id="opt-unc">
-                  <option value="std_error">Std. errors</option>
-                  <option value="statistic">t / z statistics</option>
-                  <option value="p_value">p-values</option>
-                  <option value="conf_int">Confidence intervals</option>
-                  <option value="">Nothing</option>
-                </select>
-              </label>
               <label class="stack">Stars
                 <select id="opt-stars">
                   <option value="0.1,0.05,0.01">0.1 / 0.05 / 0.01</option>
@@ -242,12 +236,35 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
                   <option value="">None</option>
                 </select>
               </label>
-            </div>
-            <div class="row2">
               <label class="stack">Decimals<input type="number" id="opt-digits" min="0" max="8" value="3"></label>
-              <label class="stack">FE marker<input type="text" id="opt-feyes" value="Yes"></label>
             </div>
+            <label class="stack">FE marker<input type="text" id="opt-feyes" value="Yes"></label>
             <label class="stack">Notes (one per line)<textarea id="opt-notes" rows="2"></textarea></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Under each estimate</legend>
+            <div id="lines"></div>
+            <div class="addrow">
+              <select id="line-add" aria-label="Line to add">
+                <option value="({std_error})">Standard error: (0.754)</option>
+                <option value="[{p_value}]">p-value: [0.012]</option>
+                <option value="({statistic})">t / z statistic: (-4.25)</option>
+                <option value="[{conf_low}, {conf_high}]">Confidence interval: [-4.75, -1.66]</option>
+                <option value="p = {p_value}">p-value: p = 0.012</option>
+              </select>
+              <button class="btn small" id="line-add-btn" type="button">Add line</button>
+            </div>
+            <p class="hint-line">Each line is a row under the estimate. Edit a line to change its format, using <code>{std_error}</code>, <code>{p_value}</code>, <code>{statistic}</code>, <code>{conf_low}</code>, <code>{conf_high}</code> or <code>{estimate}</code>.</p>
+            <div class="row2">
+              <label class="stack">p-value decimals<input type="number" id="opt-pdigits" min="0" max="8" placeholder="as above"></label>
+              <label class="stack">Small p-values
+                <select id="opt-pstyle">
+                  <option value="fixed">Rounded: 0.000</option>
+                  <option value="less_than">Bounded: &lt;0.001</option>
+                </select>
+              </label>
+            </div>
           </fieldset>
 
           <fieldset>
@@ -688,7 +705,6 @@ function readOptions() {
   const s = state.spec;
   const t = $("opt-title").value.trim();
   if (t) s.title = t; else delete s.title;
-  s.uncertainty = $("opt-unc").value || null;
   const st = $("opt-stars").value;
   if (st) s.stars = st.split(",").map(Number); else delete s.stars;
   s.format = Object.assign({}, s.format || {});
@@ -696,6 +712,9 @@ function readOptions() {
   if (Number.isFinite(d) && d >= 0 && d <= 12) s.format.digits = d;
   const fe = $("opt-feyes").value;
   if (fe && fe !== "Yes") s.format.fe_yes = fe; else delete s.format.fe_yes;
+  const pd = parseInt($("opt-pdigits").value, 10);
+  if (Number.isFinite(pd) && pd >= 0 && pd <= 12) s.format.p_digits = pd; else delete s.format.p_digits;
+  if ($("opt-pstyle").value === "less_than") s.format.p_style = "less_than"; else delete s.format.p_style;
   if (!Object.keys(s.format).length) delete s.format;
   const notes = $("opt-notes").value.split("\n").map((x) => x.trim()).filter(Boolean);
   if (notes.length) s.notes = notes; else delete s.notes;
@@ -704,12 +723,35 @@ function readOptions() {
 function writeOptions() {
   const s = state.spec;
   $("opt-title").value = s.title || "";
-  $("opt-unc").value = s.uncertainty === null ? "" : s.uncertainty || "std_error";
   const st = (s.stars || []).join(",");
   $("opt-stars").value = [...$("opt-stars").options].some((o) => o.value === st) ? st : st ? (() => { $("opt-stars").append(el("option", { value: st, text: (s.stars || []).join(" / ") })); return st; })() : "";
   $("opt-digits").value = (s.format || {}).digits !== undefined ? s.format.digits : 3;
   $("opt-feyes").value = (s.format || {}).fe_yes || "Yes";
+  $("opt-pdigits").value = (s.format || {}).p_digits !== undefined ? s.format.p_digits : "";
+  $("opt-pstyle").value = (s.format || {}).p_style === "less_than" ? "less_than" : "fixed";
   $("opt-notes").value = (s.notes || []).join("\n");
+}
+
+// the lines under each estimate: spec.uncertainty as a list in the editor
+function lineList() {
+  const u = state.spec.uncertainty === undefined ? "std_error" : state.spec.uncertainty;
+  return u === null ? [] : Array.isArray(u) ? u.slice() : [u];
+}
+
+function setLines(arr) {
+  state.spec.uncertainty = arr.length === 0 ? null : arr.length === 1 ? arr[0] : arr.slice();
+}
+
+function renderLines() {
+  const box = $("lines");
+  box.replaceChildren();
+  const arr = lineList();
+  if (!arr.length) box.append(el("p", { class: "empty", text: "No lines: estimates only." }));
+  arr.forEach((x, i) => {
+    const inp = el("input", { type: "text", id: `line-${i}`, value: E.NAMED_LINES[x] || x, "aria-label": `Line ${i + 1} under each estimate`, spellcheck: "false", class: "mono" });
+    inp.addEventListener("input", () => { arr[i] = inp.value; setLines(arr); update({ keepControls: true }); });
+    box.append(el("div", { class: "item" }, el("div", { class: "fields" }, inp), toolButtons(arr, i, () => { setLines(arr); update(); })));
+  });
 }
 
 let lastTable = null;
@@ -723,7 +765,7 @@ async function renderTable({ keepControls = false } = {}) {
     return;
   }
   const idx = index();
-  if (!keepControls) { writeOptions(); renderColumns(idx); renderRows(idx); renderStats(idx); }
+  if (!keepControls) { writeOptions(); renderLines(); renderColumns(idx); renderRows(idx); renderStats(idx); }
   if (!state.spec.columns.length) {
     $("preview").replaceChildren(el("p", { class: "empty", text: "No columns yet: add records with + Table." }));
     lastTable = null; renderExport(); return;
@@ -912,8 +954,14 @@ $("spec-input").addEventListener("change", async (e) => {
     renderAll();
   } catch (err) { state.loadMsgs = [{ level: "error", message: err.message }]; renderTable(); }
 });
-for (const id of ["opt-title", "opt-notes", "opt-feyes", "opt-digits"]) $(id).addEventListener("input", () => update({ keepControls: true }));
-for (const id of ["opt-unc", "opt-stars"]) $(id).addEventListener("change", () => update({ keepControls: true }));
+for (const id of ["opt-title", "opt-notes", "opt-feyes", "opt-digits", "opt-pdigits"]) $(id).addEventListener("input", () => update({ keepControls: true }));
+for (const id of ["opt-stars", "opt-pstyle"]) $(id).addEventListener("change", () => update({ keepControls: true }));
+$("line-add-btn").addEventListener("click", () => {
+  const arr = lineList();
+  arr.push($("line-add").value);
+  setLines(arr);
+  update();
+});
 $("opt-unlisted").addEventListener("change", () => {
   const s = state.spec;
   if ($("opt-unlisted").checked) s.keep_unlisted = true;

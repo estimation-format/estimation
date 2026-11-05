@@ -46,6 +46,83 @@ STAT_LABELS = {
 }
 
 
+# lines under each estimate (spec/table.md section 5)
+NAMED_LINES = {
+    "std_error": "({std_error})",
+    "statistic": "({statistic})",
+    "p_value": "[{p_value}]",
+    "conf_int": "[{conf_low}, {conf_high}]",
+}
+PLACEHOLDERS = ("estimate", "std_error", "statistic", "p_value", "conf_low", "conf_high")
+_PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
+_NAMED_NOTES = {
+    "std_error": "Standard errors in parentheses.",
+    "statistic": "Test statistics in parentheses.",
+    "p_value": "p-values in brackets.",
+    "conf_int": "Confidence intervals in brackets.",
+}
+_WORDS = {
+    "estimate": "estimate",
+    "std_error": "standard error",
+    "statistic": "test statistic",
+    "p_value": "p-value",
+    "conf_low": "lower bound",
+    "conf_high": "upper bound",
+}
+
+
+def uncertainty_lines(spec: dict) -> list[str]:
+    """The templates for the lines under each estimate: `uncertainty` as a name, a list of
+    names and templates, or None (no lines)."""
+    unc = spec.get("uncertainty", "std_error")
+    if unc is None:
+        return []
+    items = [unc] if isinstance(unc, str) else list(unc)
+    return [NAMED_LINES.get(x, x) for x in items]
+
+
+def _line_issues(spec: dict) -> list[Issue]:
+    unc = spec.get("uncertainty", "std_error")
+    if unc is None:
+        return []
+    items = [unc] if isinstance(unc, str) else unc
+    if not isinstance(items, list):
+        return [Issue("error", "uncertainty", "a name, a list of names and templates, or null")]
+    out = []
+    for j, x in enumerate(items):
+        path = "uncertainty" if isinstance(unc, str) else f"uncertainty[{j}]"
+        if not isinstance(x, str):
+            out.append(Issue("error", path, "a name or a template string"))
+        elif x in NAMED_LINES:
+            continue
+        elif "{" not in x:
+            out.append(
+                Issue("error", path, f"{x!r} is neither a name ({', '.join(NAMED_LINES)}) nor a template")
+            )
+        else:
+            bad = [m for m in _PLACEHOLDER.findall(x) if m not in PLACEHOLDERS]
+            if bad:
+                out.append(
+                    Issue("error", path, f"unknown placeholder {{{bad[0]}}}; use {', '.join(PLACEHOLDERS)}")
+                )
+            elif not _PLACEHOLDER.search(x):
+                out.append(Issue("error", path, "a template needs at least one placeholder"))
+    return out
+
+
+def _uncertainty_note(spec: dict, lines: list[str]) -> str | None:
+    unc = spec.get("uncertainty", "std_error")
+    if unc is None or not lines:
+        return None
+    if isinstance(unc, str) and unc in _NAMED_NOTES:
+        return _NAMED_NOTES[unc]
+    parts = []
+    for t in lines:
+        t = t.replace("{conf_low}, {conf_high}", "confidence interval")
+        parts.append(_PLACEHOLDER.sub(lambda m: _WORDS.get(m.group(1), m.group(1)), t))
+    return "Under each estimate: " + "; ".join(parts) + "."
+
+
 # ---------------------------------------------------------------- records
 
 
@@ -126,7 +203,7 @@ def new_table(
     headers: Iterable[str] | None = None,
     rows: Iterable[dict | str] | None = None,
     stats: Iterable[dict | str] | None = ("nobs", "r2", {"vcov": "type"}),
-    uncertainty: str | None = "std_error",
+    uncertainty: str | list[str] | None = "std_error",
     stars: list[float] | None = DEFAULT_STARS,
     title: str | None = None,
     sources: Iterable[dict] | None = None,
@@ -232,6 +309,7 @@ def _structural(spec: dict) -> list[Issue]:
                 re.compile(pat)
             except re.error as e:
                 out.append(Issue("error", f"{key}[{j}]", f"pattern doesn't compile: {e}"))
+    out += _line_issues(spec)
     for j, s in enumerate(spec.get("stats") or []):
         if "values" in s and len(s["values"]) != len(cols):
             out.append(
@@ -340,6 +418,28 @@ def _stat_value(x: Any, digits: int, thousands: str) -> str:
     return _fixed(x, digits)
 
 
+def _p_value(p: float, digits: int, style: str) -> str:
+    """A p-value: fixed decimals ("0.000"), or with style "less_than", "<0.001" below the
+    smallest value the decimals can show."""
+    if p is None or math.isnan(p):
+        return ""
+    if style == "less_than" and p < 10.0**-digits:
+        return "<" + _fixed(10.0**-digits, digits)
+    return _fixed(p, digits)
+
+
+def _fill(template: str, row: dict, digits: int, p_digits: int, p_style: str, missing: str) -> str:
+    """A line under an estimate: the template with its placeholders filled; `missing` when
+    any value it needs is missing."""
+    vals = {}
+    for name in _PLACEHOLDER.findall(template):
+        x = row.get(name, math.nan)
+        if x is None or math.isnan(x):
+            return missing
+        vals[name] = _p_value(x, p_digits, p_style) if name == "p_value" else _fixed(x, digits)
+    return _PLACEHOLDER.sub(lambda m: vals[m.group(1)], template)
+
+
 def _stars(p: float, thresholds: list[float], symbols: list[str]) -> str:
     if p is None or math.isnan(p):
         return ""
@@ -365,7 +465,9 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
     missing = fmt.get("missing", "")
     stars = spec.get("stars") or []
     symbols = fmt.get("star_symbols") or ["*" * (i + 1) for i in range(len(stars))]
-    unc = spec.get("uncertainty", "std_error")
+    lines = uncertainty_lines(spec)
+    p_digits = fmt.get("p_digits", digits)
+    p_style = fmt.get("p_style", "fixed")
 
     cols = []
     for i, c in enumerate(spec["columns"]):
@@ -412,30 +514,20 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
 
     out_rows = []
     for label, names in listed:
-        est, sec = [], []
+        est = []
+        below: list[list[str]] = [[] for _ in lines]
         for c in cols:
             r = next((c["tidy"][n] for n in names if n in c["tidy"]), None)
             if r is None:
                 est.append(missing)
-                sec.append(missing)
+                for b in below:
+                    b.append(missing)
                 continue
             est.append(_fixed(r["estimate"], digits) + _stars(r["p_value"], stars, symbols))
-            if unc == "std_error":
-                sec.append(
-                    f"({_fixed(r['std_error'], digits)})" if not math.isnan(r["std_error"]) else missing
-                )
-            elif unc == "statistic":
-                sec.append(
-                    f"({_fixed(r['statistic'], digits)})" if not math.isnan(r["statistic"]) else missing
-                )
-            elif unc == "p_value":
-                sec.append(f"[{_fixed(r['p_value'], digits)}]" if not math.isnan(r["p_value"]) else missing)
-            elif unc == "conf_int":
-                lo, hi = r["conf_low"], r["conf_high"]
-                sec.append(f"[{_fixed(lo, digits)}, {_fixed(hi, digits)}]" if not math.isnan(lo) else missing)
+            for b, t in zip(below, lines):
+                b.append(_fill(t, r, digits, p_digits, p_style, missing))
         out_rows.append({"label": label, "cells": est, "kind": "estimate"})
-        if unc is not None:
-            out_rows.append({"label": "", "cells": sec, "kind": "uncertainty"})
+        out_rows += [{"label": "", "cells": b, "kind": "uncertainty"} for b in below]
 
     for s in spec.get("stats") or []:
         d = s.get("digits", digits)
@@ -477,21 +569,20 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
             for c in cols:
                 t = _find_test(c["found"].record, s["test"])
                 v = _num(t.get(which)) if t else math.nan
-                cells.append(missing if math.isnan(v) else _fixed(v, d))
+                if math.isnan(v):
+                    cells.append(missing)
+                elif which == "p_value":
+                    cells.append(_p_value(v, s.get("digits", p_digits), p_style))
+                else:
+                    cells.append(_fixed(v, d))
         out_rows.append({"label": label, "cells": cells, "kind": "stat"})
 
     notes = list(spec.get("notes") or [])
     if stars:
         notes.append(", ".join(f"{sym} p < {t:g}" for t, sym in zip(stars, symbols)))
-    if unc is not None:
-        notes.append(
-            {
-                "std_error": "Standard errors in parentheses.",
-                "statistic": "Test statistics in parentheses.",
-                "p_value": "p-values in brackets.",
-                "conf_int": "Confidence intervals in brackets.",
-            }[unc]
-        )
+    note = _uncertainty_note(spec, lines)
+    if note:
+        notes.append(note)
     return {
         "title": spec.get("title"),
         "header": [c["header"] for c in cols],

@@ -71,7 +71,14 @@
     "keep": {"type": "array", "items": {"type": "string"}},
     "drop": {"type": "array", "items": {"type": "string"}},
     "keep_unlisted": {"type": "boolean"},
-    "uncertainty": {"enum": ["std_error", "statistic", "p_value", "conf_int", null]},
+    "uncertainty": {
+      "description": "The lines under each estimate: one name, a template, a list of names and templates (one row each), or null for none. Templates use {estimate}, {std_error}, {statistic}, {p_value}, {conf_low}, {conf_high}.",
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/line"},
+        {"type": "array", "items": {"$ref": "#/$defs/line"}, "minItems": 1}
+      ]
+    },
     "stars": {
       "anyOf": [
         {"type": "null"},
@@ -87,7 +94,9 @@
         "missing": {"type": "string"},
         "fe_yes": {"type": "string"},
         "fe_no": {"type": "string"},
-        "star_symbols": {"type": "array", "items": {"type": "string"}}
+        "star_symbols": {"type": "array", "items": {"type": "string"}},
+        "p_digits": {"type": "integer", "minimum": 0, "maximum": 12, "description": "Decimals for p-values; default `digits`."},
+        "p_style": {"enum": ["fixed", "less_than"], "description": "fixed: 0.000; less_than: <0.001 below the smallest value p_digits can show. Default fixed."}
       },
       "additionalProperties": false
     },
@@ -95,6 +104,12 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "line": {
+      "anyOf": [
+        {"enum": ["std_error", "statistic", "p_value", "conf_int"]},
+        {"type": "string", "pattern": "\\{(estimate|std_error|statistic|p_value|conf_low|conf_high)\\}"}
+      ]
+    },
     "stat": {
       "type": "object",
       "properties": {

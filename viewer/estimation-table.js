@@ -18,6 +18,47 @@
     pseudo_r2: "Pseudo R²", aic: "AIC", bic: "BIC", log_lik: "Log lik.", rmse: "RMSE", f_stat: "F",
   };
 
+  // lines under each estimate (spec/table.md section 5)
+  const NAMED_LINES = { std_error: "({std_error})", statistic: "({statistic})", p_value: "[{p_value}]", conf_int: "[{conf_low}, {conf_high}]" };
+  const PLACEHOLDERS = ["estimate", "std_error", "statistic", "p_value", "conf_low", "conf_high"];
+  const PLACEHOLDER = /\{([^{}]*)\}/g;
+  const NAMED_NOTES = { std_error: "Standard errors in parentheses.", statistic: "Test statistics in parentheses.", p_value: "p-values in brackets.", conf_int: "Confidence intervals in brackets." };
+  const WORDS = { estimate: "estimate", std_error: "standard error", statistic: "test statistic", p_value: "p-value", conf_low: "lower bound", conf_high: "upper bound" };
+
+  function uncertaintyLines(spec) {
+    const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
+    if (unc === null) return [];
+    return (Array.isArray(unc) ? unc : [unc]).map((x) => NAMED_LINES[x] || x);
+  }
+
+  function lineIssues(spec) {
+    const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
+    if (unc === null) return [];
+    const items = Array.isArray(unc) ? unc : [unc];
+    const out = [];
+    items.forEach((x, j) => {
+      const path = Array.isArray(unc) ? `uncertainty[${j}]` : "uncertainty";
+      if (typeof x !== "string") out.push(issue("error", path, "a name or a template string"));
+      else if (x in NAMED_LINES) return;
+      else if (!x.includes("{")) out.push(issue("error", path, `'${x}' is neither a name (${Object.keys(NAMED_LINES).join(", ")}) nor a template`));
+      else {
+        const names = [...x.matchAll(PLACEHOLDER)].map((m) => m[1]);
+        const bad = names.filter((n) => !PLACEHOLDERS.includes(n));
+        if (bad.length) out.push(issue("error", path, `unknown placeholder {${bad[0]}}; use ${PLACEHOLDERS.join(", ")}`));
+        else if (!names.length) out.push(issue("error", path, "a template needs at least one placeholder"));
+      }
+    });
+    return out;
+  }
+
+  function uncertaintyNote(spec, lines) {
+    const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
+    if (unc === null || !lines.length) return null;
+    if (typeof unc === "string" && NAMED_NOTES[unc]) return NAMED_NOTES[unc];
+    const parts = lines.map((t) => t.replace("{conf_low}, {conf_high}", "confidence interval").replace(PLACEHOLDER, (_, n) => WORDS[n] || n));
+    return "Under each estimate: " + parts.join("; ") + ".";
+  }
+
   // ------------------------------------------------------------ distributions
 
   const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
@@ -314,6 +355,22 @@
     return fixed(x, digits);
   }
 
+  function pValue(p, digits, style) {
+    if (p === null || p === undefined || Number.isNaN(p)) return "";
+    if (style === "less_than" && p < 10 ** -digits) return "<" + fixed(10 ** -digits, digits);
+    return fixed(p, digits);
+  }
+
+  function fill(template, row, digits, pDigits, pStyle, missing) {
+    const vals = {};
+    for (const m of template.matchAll(PLACEHOLDER)) {
+      const x = row[m[1]];
+      if (x === null || x === undefined || Number.isNaN(x)) return missing;
+      vals[m[1]] = m[1] === "p_value" ? pValue(x, pDigits, pStyle) : fixed(x, digits);
+    }
+    return template.replace(PLACEHOLDER, (_, n) => vals[n]);
+  }
+
   function starsFor(p, thresholds, symbols) {
     if (p === null || p === undefined || Number.isNaN(p)) return "";
     let out = "";
@@ -355,6 +412,7 @@
         try { new RegExp(p); } catch (e) { out.push(issue("error", `${key}[${j}]`, `pattern doesn't compile: ${e.message}`)); }
       });
     }
+    out.push(...lineIssues(spec));
     (spec.stats || []).forEach((s, j) => {
       if (s.values && s.values.length !== cols.length) out.push(issue("error", `stats[${j}].values`, `${s.values.length} values for ${cols.length} columns`));
     });
@@ -410,7 +468,9 @@
     const missing = fmt.missing !== undefined ? fmt.missing : "";
     const stars = spec.stars || [];
     const symbols = fmt.star_symbols || stars.map((_, i) => "*".repeat(i + 1));
-    const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
+    const lines = uncertaintyLines(spec);
+    const pDigits = fmt.p_digits !== undefined ? fmt.p_digits : digits;
+    const pStyle = fmt.p_style || "fixed";
 
     const cols = spec.columns.map((c, i) => {
       const f = lookup(idx, c);
@@ -444,19 +504,17 @@
 
     const rows = [];
     for (const [label, names] of listed) {
-      const est = [], sec = [];
+      const est = [];
+      const below = lines.map(() => []);
       for (const c of cols) {
         const n = names.find((x) => c.tidy.has(x));
         const r = n === undefined ? null : c.tidy.get(n);
-        if (!r) { est.push(missing); sec.push(missing); continue; }
+        if (!r) { est.push(missing); below.forEach((b) => b.push(missing)); continue; }
         est.push(fixed(r.estimate, digits) + starsFor(r.p_value, stars, symbols));
-        if (unc === "std_error") sec.push(Number.isNaN(r.std_error) ? missing : `(${fixed(r.std_error, digits)})`);
-        else if (unc === "statistic") sec.push(Number.isNaN(r.statistic) ? missing : `(${fixed(r.statistic, digits)})`);
-        else if (unc === "p_value") sec.push(Number.isNaN(r.p_value) ? missing : `[${fixed(r.p_value, digits)}]`);
-        else if (unc === "conf_int") sec.push(Number.isNaN(r.conf_low) ? missing : `[${fixed(r.conf_low, digits)}, ${fixed(r.conf_high, digits)}]`);
+        lines.forEach((t, k) => below[k].push(fill(t, r, digits, pDigits, pStyle, missing)));
       }
       rows.push({ label, cells: est, kind: "estimate" });
-      if (unc !== null) rows.push({ label: "", cells: sec, kind: "uncertainty" });
+      for (const b of below) rows.push({ label: "", cells: b, kind: "uncertainty" });
     }
 
     for (const s of spec.stats || []) {
@@ -495,7 +553,9 @@
         for (const c of cols) {
           const t = findTest(c.found.record, s.test);
           const v = t ? num(t[which]) : NaN;
-          cells.push(Number.isNaN(v) ? missing : fixed(v, d));
+          if (Number.isNaN(v)) cells.push(missing);
+          else if (which === "p_value") cells.push(pValue(v, s.digits !== undefined ? s.digits : pDigits, pStyle));
+          else cells.push(fixed(v, d));
         }
       }
       rows.push({ label, cells, kind: "stat" });
@@ -503,9 +563,8 @@
 
     const notes = (spec.notes || []).slice();
     if (stars.length) notes.push(stars.map((t, i) => `${symbols[i]} p < ${t}`).join(", "));
-    if (unc !== null) {
-      notes.push({ std_error: "Standard errors in parentheses.", statistic: "Test statistics in parentheses.", p_value: "p-values in brackets.", conf_int: "Confidence intervals in brackets." }[unc]);
-    }
+    const note = uncertaintyNote(spec, lines);
+    if (note) notes.push(note);
     return {
       title: spec.title === undefined ? null : spec.title,
       header: cols.map((c) => c.header),
@@ -655,6 +714,7 @@
   return {
     TABLE_SCHEMA, DEFAULT_STARS, TABLE_METRICS, STAT_LABELS,
     twoSidedP, criticalValue, erfc, qnorm,
+    NAMED_LINES, PLACEHOLDERS, uncertaintyLines, pValue,
     num, vcovs, vcovLabel, pickVcov, tidy, glance, findTest,
     canonicalJSON, sha256Hex, recordSha256,
     indexRecords, validateTable, checkPins, buildTable, render, renderers: RENDERERS,

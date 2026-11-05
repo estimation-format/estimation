@@ -18,6 +18,26 @@ if (dir.exists(ex)) {
             identical(cells(x, "Wald p"), c("0.000", "0.000", "0.001")),
             identical(cells(x, "Controls"), c("No", "No", "qsec")),
             !"qsec" %in% x$term)
+
+  # several lines under each estimate, p-value formats (the Python reference's cells)
+  spec <- jsonlite::fromJSON(file.path(ex, "paper.estimation-table.json"), simplifyVector = FALSE)
+  spec$uncertainty <- list("std_error", "[{p_value}]", "t = {statistic}")
+  spec$format <- list(digits = 3, p_style = "less_than")
+  x <- render_table(spec, output = "data.frame", base_dir = ex)
+  stopifnot(identical(unname(unlist(x[1:4, 4])), c("-3.206***", "(0.754)", "[<0.001]", "t = -4.252")),
+            identical(unname(unlist(x[3, 6])), "[0.004]"),
+            identical(cells(x, "Wald p"), c("<0.001", "<0.001", "<0.001")))
+  spec$uncertainty <- "[{p_value}]"
+  for (case in list(list(f = list(), want = "[0.000]"), list(f = list(p_digits = 4), want = "[0.0002]"),
+                    list(f = list(p_digits = 2, p_style = "less_than"), want = "[<0.01]"))) {
+    spec$format <- c(list(digits = 3), case$f)
+    stopifnot(identical(render_table(spec, output = "data.frame", base_dir = ex)[2, 4], case$want))
+  }
+  spec$uncertainty <- list("({stderr})")
+  stopifnot(grepl("unknown placeholder \\{stderr\\}", tryCatch(render_table(spec, base_dir = ex), error = conditionMessage)))
+  spec$uncertainty <- NULL; spec["uncertainty"] <- list(NULL)
+  x <- render_table(spec, output = "data.frame", base_dir = ex)
+  stopifnot(!any(grepl("^\\(", unlist(x[x$part == "estimates", 4]))))
 }
 
 # records in memory: another vcov per column, shared rows, keep/drop, uncertainty, errors
