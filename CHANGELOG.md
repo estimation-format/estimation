@@ -31,6 +31,18 @@
   no environment, execution, agent or data locations. At
   level 1 `created` may be a date. Validators: fields above the declared level are errors, and
   withheld expected members are information, not warnings. New history action `reduced`.
+- Collections: disclosure levels (spec 11.7). `meta.disclosure` and `meta.parent`; the
+  collection schema marks its own fields (session times and clients, and events about workers
+  and clients, at 5; `session`, `events`, `provenance` and `extensions` at 4); every member
+  must be at the collection's level or below; a session or replication collection needs 4 or
+  more. `new_collection(level=)` lowers members above it (new records; event references
+  follow) and cuts the collection's own fields; it declares nothing by default, so building a
+  collection from existing records leaves them as they are. `reduce_collection()`; `estimation
+  reduce` takes collections; the validator checks the collection's level. estrec:
+  `write_collection(level =)`, default 4 for fits.
+- Any field marked `x-identifying` is level 5, so profiles' identifying fields need no mark of
+  their own. `dfeols/0.1`: the `dask` block, the time estimate and per-round timings are
+  level 5.
 - estrec: `to_estimation(level =, purpose =, program =, data_info =)`. Level 4 by default
   (R, fixest and estrec only; no other packages, environment, user, host or command line);
   the marks come from `inst/levels.json`, written by `estimation levels` and kept equal to the

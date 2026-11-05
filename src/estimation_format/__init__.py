@@ -24,6 +24,7 @@ from .collection import (
     new_member,
     read_collection,
     redact_collection,
+    reduce_collection,
     validate_collection,
     write_collection,
 )
@@ -126,6 +127,7 @@ __all__ = [
     "redact",
     "redact_collection",
     "reduce",
+    "reduce_collection",
     "spill",
     "tidy",
     "to_json",

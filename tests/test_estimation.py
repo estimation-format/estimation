@@ -625,7 +625,7 @@ def test_redact_hash_compares_equal_with_same_salt():
 
 def test_redact_takes_marks_from_core_and_claimed_profiles():
     sc = schemas()
-    rec = est.prepare(fe_record())
+    rec = est.prepare(fe_record(), level=5)
     rec["provenance"]["agent"] = {"user": "ted"}
     # claims dfeols/0.1: the core's marks and the dfeols profile's (its extension block)
     dfeols_marks = {"extensions.dfeols.shards.folder", "extensions.dfeols.dask.scheduler_address"}

@@ -18,7 +18,7 @@ version of the record the collection holds, when the \pkg{openssl} package is in
 write_collection(x, path, kind = c("paper", "session", "replication", "batch", "other"),
   labels = NULL, locators = NULL, publication = NULL, session = NULL, events = NULL,
   provenance = NULL, title = NULL, notes = NULL, tags = NULL,
-  members = c("embed", "jsonl"), hash = NULL, ...)
+  members = c("embed", "jsonl"), hash = NULL, level = NULL, ...)
 }
 \arguments{
 \item{x}{a list of fitted models or records (converted as by \code{\link{to_estimation}}), or
@@ -37,6 +37,12 @@ in the collection; the records are not changed.}
 \item{members}{\code{"embed"} the records in the file, or put them in a \code{"jsonl"}
 members file.}
 \item{hash}{write member hashes: by default when \pkg{openssl} is installed.}
+\item{level}{disclosure level of the collection, 1 to 5 (spec 4.9, 11.7). Fits are converted
+at it (default 4, as \code{to_estimation}); a record above it is lowered (a new record with
+\code{meta.parent}, and the events that name it follow); the collection's own fields above it
+(session times and clients, events about workers and clients, provenance below 4) are left
+out. With only records and no \code{level}, nothing is declared or changed. A session or
+replication collection needs level 4 or more.}
 \item{...}{passed to \code{\link{to_estimation}} for fitted models.}
 }
 \value{The paths written (the collection, then any members file), invisibly.}

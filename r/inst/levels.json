@@ -162,6 +162,16 @@
    "if": []
   },
   {
+   "path": "provenance.environment.host",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.environment.hostname",
+   "level": 5,
+   "if": []
+  },
+  {
    "path": "provenance.execution",
    "level": 4,
    "if": []
@@ -172,8 +182,68 @@
    "if": []
   },
   {
+   "path": "provenance.execution.invocation.argv",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.command_line",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.script_path",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.working_directory",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.Account",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.JobID",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.JobName",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.NodeList",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.SubmitLine",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.User",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.WorkDir",
+   "level": 5,
+   "if": []
+  },
+  {
    "path": "provenance.execution.session",
    "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.workers[*].host",
+   "level": 5,
    "if": []
   },
   {
@@ -198,6 +268,11 @@
   },
   {
    "path": "provenance.software[*].container",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].container.path",
    "level": 5,
    "if": []
   },
@@ -304,5 +379,262 @@
  ],
  "purposes": {
   "aea/0.1": 4
+ },
+ "collection_marks": [
+  {
+   "path": "attachments",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "events",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "events[*]",
+   "level": null,
+   "if": [
+    {
+     "field": "type",
+     "in": [
+      "worker_lost",
+      "worker_added",
+      "client_connected",
+      "client_disconnected"
+     ],
+     "level": 5
+    }
+   ]
+  },
+  {
+   "path": "extensions",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "history",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "history[*].by",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "members",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.producer",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.*",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.agent",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.data",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.data[*].location",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.environment",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.environment.host",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.environment.hostname",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.*",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.argv",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.command_line",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.script_path",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.invocation.working_directory",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.Account",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.JobID",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.JobName",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.NodeList",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.SubmitLine",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.User",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.scheduler.WorkDir",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.session",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.workers[*].host",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.software",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*]",
+   "level": 5,
+   "if": [
+    {
+     "field": "role",
+     "in": [
+      "language",
+      "estimator",
+      "writer"
+     ],
+     "level": 4
+    }
+   ]
+  },
+  {
+   "path": "provenance.software[*].container",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].container.path",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].lock",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].lock.path",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "publication",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "schema",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "session",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "session.clients",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "session.clients[*].host",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "session.elapsed_seconds",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "session.ended",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "session.started",
+   "level": 5,
+   "if": []
+  }
+ ],
+ "collection_min_level_by_kind": {
+  "session": 4,
+  "replication": 4
  }
 }

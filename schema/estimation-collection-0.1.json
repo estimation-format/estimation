@@ -3,23 +3,29 @@
   "$id": "https://estimation-format.github.io/estimation/schema/estimation-collection-0.1.json",
   "title": "estimation-collection/0.1",
   "x-license": "CC0-1.0",
-  "description": "A set of estimation records plus what is true of the set: a paper's results (members with locators) or a session's or replication's timeline (events). Specification: spec/estimation.md section 11. A collection is an export built from records; each member stays a self-contained record, embedded or in a JSON Lines members file listed in attachments. Each member record is validated as an estimation record (core plus its claimed profiles) by the validator, not by this schema. Encoding, x-identifying, x-expected and x-vocabulary are as in estimation-0.1.json.",
+  "description": "A set of estimation records plus what is true of the set: a paper's results (members with locators) or a session's or replication's timeline (events). Specification: spec/estimation.md section 11. A collection is an export built from records; each member stays a self-contained record, embedded or in a JSON Lines members file listed in attachments. Each member record is validated as an estimation record (core plus its claimed profiles) by the validator, not by this schema. Encoding, x-identifying, x-expected, x-vocabulary and x-level are as in estimation-0.1.json; a collection's members are judged by the record marks, its own fields by these (spec 11.7).",
   "type": "object",
   "required": ["schema", "meta", "members"],
   "properties": {
-    "schema": {"const": "estimation-collection/0.1"},
-    "meta": {"$ref": "#/$defs/meta"},
-    "members": {"type": "array", "items": {"$ref": "#/$defs/member"}},
-    "publication": {"$ref": "estimation-0.1.json#/$defs/publication"},
-    "session": {"$ref": "#/$defs/session"},
-    "provenance": {"$ref": "estimation-0.1.json#/$defs/provenance"},
-    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
-    "attachments": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/attachment"}},
+    "schema": {"const": "estimation-collection/0.1", "x-level": 1},
+    "meta": {"$ref": "#/$defs/meta", "x-level": 1},
+    "members": {"type": "array", "items": {"$ref": "#/$defs/member"}, "x-level": 1},
+    "publication": {"$ref": "estimation-0.1.json#/$defs/publication", "x-level": 1},
+    "session": {"$ref": "#/$defs/session", "x-level": 4},
+    "provenance": {"$ref": "estimation-0.1.json#/$defs/provenance", "x-level": 4},
+    "events": {
+      "description": "Level 4; events about workers and clients are level 5.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/event", "x-level-if": [{"field": "type", "in": ["worker_lost", "worker_added", "client_connected", "client_disconnected"], "level": 5}]},
+      "x-level": 4
+    },
+    "attachments": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/attachment"}, "x-level": 1},
     "extensions": {
+      "x-level": 4,
       "type": "object",
       "additionalProperties": {"$ref": "estimation-0.1.json#/$defs/extension"}
     },
-    "history": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/history_entry"}}
+    "history": {"type": "array", "items": {"$ref": "estimation-0.1.json#/$defs/history_entry"}, "x-level": 1}
   },
   "additionalProperties": false,
   "allOf": [
@@ -54,7 +60,14 @@
         "title": {"type": "string"},
         "tags": {"$ref": "estimation-0.1.json#/$defs/strings"},
         "notes": {"type": "string"},
-        "producer": {"$ref": "estimation-0.1.json#/$defs/tool"}
+        "producer": {"$ref": "estimation-0.1.json#/$defs/tool", "x-level": 4},
+        "parent": {"description": "id of the collection this one was lowered from (spec 11.7).", "type": "string"},
+        "disclosure": {
+          "description": "How much the collection discloses (spec 4.9, 11.7): its own fields and every member record are at this level or below. A session or replication collection needs level 4 or more.",
+          "type": "object",
+          "required": ["level"],
+          "properties": {"level": {"type": "integer", "minimum": 1, "maximum": 5}}
+        }
       }
     },
     "member": {
@@ -81,11 +94,12 @@
       "required": ["id"],
       "properties": {
         "id": {"description": "The id member records carry in provenance.execution.session.", "type": "string"},
-        "started": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
-        "ended": {"$ref": "estimation-0.1.json#/$defs/timestamp"},
-        "elapsed_seconds": {"$ref": "estimation-0.1.json#/$defs/number"},
+        "started": {"$ref": "estimation-0.1.json#/$defs/timestamp", "x-level": 5},
+        "ended": {"$ref": "estimation-0.1.json#/$defs/timestamp", "x-level": 5},
+        "elapsed_seconds": {"$ref": "estimation-0.1.json#/$defs/number", "x-level": 5},
         "status": {"enum": ["open", "closed", "crashed", "timed_out"]},
         "clients": {
+          "x-level": 5,
           "type": "array",
           "items": {
             "type": "object",

@@ -30,13 +30,31 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
                              labels = NULL, locators = NULL, publication = NULL,
                              session = NULL, events = NULL, provenance = NULL, title = NULL,
                              notes = NULL, tags = NULL, members = c("embed", "jsonl"),
-                             hash = NULL, ...) {
+                             hash = NULL, level = NULL, ...) {
   kind <- match.arg(kind)
   members <- match.arg(members)
-  recs <- if (is_estimation_record(x)) list(x) else to_estimation(x, ...)
+  only_records <- is_estimation_record(x) ||
+    (is.list(x) && length(x) && all(vapply(x, is_estimation_record, logical(1))))
+  # fits are written at `level` (default 4); records given as they are unless `level` is set
+  if (!only_records || !is.null(level)) level <- .est_resolve_level(level, NULL)
+  need <- .est_levels()$min_by_kind[[kind]]
+  if (!is.null(level) && !is.null(need) && level < need)
+    stop("a ", kind, " collection needs disclosure level ", need, " or more, not ", level, call. = FALSE)
+  recs <- if (is_estimation_record(x)) list(x)
+          else if (only_records) x
+          else to_estimation(x, level = level, ...)
   if (is_estimation_record(recs)) recs <- list(recs)
   if (is.null(labels)) labels <- names(recs)
   recs <- lapply(recs, .est_plain)
+  if (!is.null(level)) {
+    old <- vapply(recs, function(r) as.character(r$meta$id), "")
+    recs <- lapply(recs, .est_reduce, level = level)
+    new <- vapply(recs, function(r) as.character(r$meta$id), "")
+    if (!is.null(events)) events <- lapply(events, function(e) {
+      if (!is.null(e$member) && e$member %in% old) e$member <- new[match(e$member, old)]
+      e
+    })
+  }
   n <- length(recs)
   if (!is.null(labels) && length(labels) != n)
     stop("`labels` has ", length(labels), " entries for ", n, " records", call. = FALSE)
@@ -65,10 +83,20 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
     schema = "estimation-collection/0.1",
     meta = .est_compact(list(id = .est_uuid(), created = .est_now(), kind = kind,
                              title = title, tags = if (!is.null(tags)) I(tags), notes = notes,
-                             producer = estrec_info())),
+                             producer = estrec_info(),
+                             disclosure = if (!is.null(level)) list(level = as.integer(level)))),
     publication = publication, session = session, provenance = provenance,
-    members = NULL, events = if (!is.null(events)) I(events),
-    history = list(list(when = .est_now(), by = estrec_info(), action = "created"))))
+    members = NULL, events = if (!is.null(events)) I(events)))
+  if (!is.null(level)) {
+    # the collection's own fields above the level (session times, clients, worker events, ...)
+    coll <- .est_apply_level(coll, level, .est_levels()$collection_marks)$record
+    if (level == 1L) coll$meta$created <- substr(coll$meta$created, 1L, 10L)
+  }
+  entry <- list(when = if (identical(level, 1L)) substr(.est_now(), 1L, 10L) else .est_now())
+  if (is.null(level) || level >= 4L) entry$by <- estrec_info()
+  entry$action <- "created"
+  if (!is.null(level)) entry$level <- as.integer(level)
+  coll$history <- list(entry)
   embedded <- coll
   embedded$members <- I(Map(function(e, r) c(e, list(record = r)), entries, unname(recs)))
   embedded <- embedded[c(setdiff(names(embedded), c("members", "events", "history")),

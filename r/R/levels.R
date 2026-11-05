@@ -11,10 +11,12 @@
       f <- system.file("levels.json", package = "estrec")
       if (!nzchar(f)) stop("estrec's levels.json is missing; reinstall estrec", call. = FALSE)
       tab <- jsonlite::fromJSON(f, simplifyVector = FALSE)
-      marks <- lapply(tab$marks, function(m) list(
+      compile <- function(ms) lapply(ms, function(m) list(
         parts = .est_split_path(m$path), level = m$level,
         conds = lapply(m[["if"]], function(c) list(field = c$field, values = unlist(c[["in"]]), level = c$level))))
-      cache <<- list(marks = marks, purposes = tab$purposes)
+      cache <<- list(marks = compile(tab$marks), purposes = tab$purposes,
+                     collection_marks = compile(tab$collection_marks),
+                     min_by_kind = tab$collection_min_level_by_kind)
     }
     cache
   }
@@ -56,9 +58,9 @@
   if (length(parts) > 1L) max(lvl, parent) else lvl
 }
 
-# Remove every field above `level`; returns the record and the paths removed
-.est_apply_level <- function(rec, level) {
-  marks <- .est_levels()$marks
+# Remove every field above `level`; returns the record and the paths removed. `marks` are
+# the record marks, or the collection's for a collection's own fields
+.est_apply_level <- function(rec, level, marks = .est_levels()$marks) {
   removed <- character(0)
   # an object or list that removing fields left empty goes too (one empty to begin with stays)
   walk <- function(node, parts, parent) {
@@ -138,6 +140,35 @@
 .est_declared_level <- function(rec) {
   l <- rec$meta$disclosure$level
   if (is.numeric(l) && length(l) == 1L && l %in% 1:5) as.integer(l)
+}
+
+# A record at a lower level (spec 4.9): a new record pointing at the original. Returns it
+# unchanged when nothing in it is above `level` and it declares no higher level.
+.est_reduce <- function(rec, level) {
+  declared <- .est_declared_level(rec)
+  cut <- .est_apply_level(rec, level)
+  if (!length(cut$removed) && !is.null(declared) && declared <= level) return(rec)
+  out <- cut$record
+  claimed <- as.character(unlist(out$meta$profiles))
+  dropped <- claimed[claimed %in% names(.est_profile_levels) & .est_profile_levels[claimed] > level]
+  if (length(dropped)) {
+    kept <- setdiff(claimed, dropped)
+    out$meta$profiles <- if (length(kept)) I(kept)
+    if (level >= 2L) out$meta$messages <- c(out$meta$messages, lapply(dropped, function(p) list(
+      level = "info", code = "profile_not_claimed", source = "estrec",
+      message = sprintf("%s isn't claimed: disclosure level %d leaves out what it requires", p, level))))
+  }
+  if (!is.null(out$meta$id)) out$meta$parent <- out$meta$id
+  out$meta$id <- .est_uuid()
+  out$meta$disclosure <- list(level = as.integer(level))
+  entry <- list(when = if (level == 1L) substr(.est_now(), 1L, 10L) else .est_now())
+  if (level >= 4L) entry$by <- estrec_info()
+  entry$action <- "reduced"
+  entry$level <- as.integer(level)
+  entry$fields <- I(cut$removed)
+  out$history <- c(out$history, list(entry))
+  if (!is.null(out$meta$core_digest)) out <- .est_add_digest(out, TRUE)
+  out
 }
 
 # The program in the replication package that ran the command (specification.program):

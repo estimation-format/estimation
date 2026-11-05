@@ -31,13 +31,18 @@ from typing import Any
 from .records import (
     DEFAULT_IDENTIFYING,
     FAIL_BYTES,
+    LEVELS,
     EstimationError,
     Issue,
     Schemas,
+    _above,
+    _compile,
+    _declared_level,
     _dumps,
     _have_jsonschema,
     _now,
     _producer,
+    _prune,
     _reject_constant,
     _sha256_file,
     _size_issues,
@@ -45,8 +50,11 @@ from .records import (
     decode_nonfinite,
     identifying_paths,
     jsonschema_check,
+    level_marks,
     load_schemas,
+    record_level_marks,
     redact,
+    reduce,
     to_json,
     validate,
 )
@@ -144,11 +152,20 @@ def new_collection(
     events: list[dict] | None = None,
     provenance: dict | None = None,
     sha256: bool = True,
+    level: int | None = None,
+    schema: Schemas | str | None = "auto",
     **meta: Any,
 ) -> dict:
     """A collection embedding `records`, in the order given. A mapping gives the labels by
     its keys. `labels` and `locators` line up with the records (None where there is none).
-    Other keyword arguments go into `meta` (title, tags, notes)."""
+    Other keyword arguments go into `meta` (title, tags, notes).
+
+    `level` is the collection's disclosure level (spec 11.7): the collection's own fields
+    above it are left out, and each record above it is lowered with `reduce` (a new record;
+    event `member` references follow). A session or replication collection needs level 4 or
+    more. The default, None, declares no level and leaves the records as they are: a tool
+    that writes the records and their collection passes the level it writes records at
+    (DEFAULT_LEVEL, 4, unless the user chose another)."""
     if kind not in KINDS:
         raise EstimationError(f"kind must be one of {', '.join(KINDS)}, not {kind!r}")
     if isinstance(records, Mapping):
@@ -179,6 +196,9 @@ def new_collection(
     coll["members"] = members
     if events is not None:
         coll["events"] = to_json(events)
+    if level is not None:
+        schemas = load_schemas() if isinstance(schema, str) and schema == "auto" else schema
+        coll, _ = _at_level(coll, level, schemas, None)
     return coll
 
 
@@ -201,6 +221,157 @@ def add_event(
         ev["message"] = message
     collection.setdefault("events", []).append(ev)
     return ev
+
+
+# ---------------------------------------------------------------- disclosure levels (11.7)
+
+# Kinds whose required parts are level 4 (a session's block and events; a replication's events)
+MIN_LEVEL_BY_KIND = {"session": 4, "replication": 4}
+
+
+def collection_level_marks(schemas: Schemas | None = None) -> list:
+    """The collection schema's level marks for the collection's own fields (members'
+    records are judged by the record marks)."""
+    schemas = schemas or load_schemas()
+    if schemas is None or schemas.collection is None:
+        return _compile(
+            {k: (1, ()) for k in ("schema", "meta", "members", "publication", "attachments", "history")}
+        )
+    marks = level_marks(schemas.collection, schemas.documents())
+    return _compile({p: v for p, v in marks.items() if not p.startswith("members[*].record")})
+
+
+def _shell(coll: dict) -> dict:
+    """The collection without `members`: its own fields, sharing objects with `coll`."""
+    return {k: v for k, v in coll.items() if k != "members"}
+
+
+def _member_needs(rec: dict, level: int, schemas: Schemas | None) -> bool:
+    declared = _declared_level(rec)
+    if declared is not None and declared > level:
+        return True
+    return bool(_above(rec, level, record_level_marks(rec, schemas)))
+
+
+def _at_level(coll: dict, level: int, schemas: Schemas | None, by: dict | None) -> tuple[dict, list[str]]:
+    """`coll` (embedded) cut to `level` in place: each member record above it lowered with
+    `reduce` (a new record; member ids and event references follow), the collection's own
+    fields above it removed, and `meta.disclosure` set. Returns it and the paths removed."""
+    if level not in LEVELS:
+        raise EstimationError(f"disclosure level must be one of 1-5, got {level!r}")
+    kind = (coll.get("meta") or {}).get("kind")
+    need = MIN_LEVEL_BY_KIND.get(kind, 1)
+    if level < need:
+        raise EstimationError(f"a {kind} collection needs disclosure level {need} or more, not {level}")
+    renamed: dict[str, str] = {}
+    for m in coll.get("members") or []:
+        rec = m.get("record")
+        if not isinstance(rec, dict) or not _member_needs(rec, level, schemas):
+            continue
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # dropped profile claims are said in the record
+            low = reduce(rec, level, schema=schemas if schemas is not None else "auto", by=by)
+        renamed[m["id"]] = low["meta"]["id"]
+        m["id"] = low["meta"]["id"]
+        m["record"] = low
+        if "created" in m and low["meta"].get("created"):
+            m["created"] = low["meta"]["created"]
+        if "sha256" in m:
+            m["sha256"] = member_sha256(low)
+    for e in coll.get("events") or []:
+        if isinstance(e, dict) and e.get("member") in renamed:
+            e["member"] = renamed[e["member"]]
+    shell = _shell(coll)
+    hits = _above(shell, level, collection_level_marks(schemas))
+    touched: set[int] = set()
+    removed = []
+    for container, key, p, _ in sorted(hits, key=lambda h: (isinstance(h[1], int), h[1]), reverse=True):
+        del container[key]
+        touched.add(id(container))
+        removed.append(p)
+    _prune(shell, touched)
+    out = {**shell, "members": coll.get("members", [])}
+    out.setdefault("meta", {})["disclosure"] = {"level": level}
+    return _ordered(out), sorted(removed)
+
+
+def reduce_collection(
+    collection: dict,
+    level: int,
+    *,
+    schema: Schemas | str | None = "auto",
+    base_dir: str | os.PathLike | None = None,
+    by: dict | None = None,
+) -> dict:
+    """A copy of `collection` at disclosure `level` (spec 4.9, 11.7): each member record
+    above it lowered with `reduce` (a new record with `meta.parent`, so its member id and the
+    events that name it change too), and the collection's own fields above it removed. The
+    copy is a new collection: a new `meta.id`, `meta.parent` set to the original's, and a
+    `history` entry with `action: "reduced"`. Members in a members file are read from
+    `base_dir` and come back embedded."""
+    schemas = load_schemas() if isinstance(schema, str) and schema == "auto" else schema
+    coll = _embedded(collection, base_dir)
+    old_id = (coll.get("meta") or {}).get("id")
+    coll, removed = _at_level(coll, level, schemas, by)
+    meta = coll["meta"]
+    if old_id:
+        meta["parent"] = old_id
+    meta["id"] = str(uuid.uuid4())
+    entry: dict[str, Any] = {
+        "when": _now() if level > 1 else _now()[:10],
+        "action": "reduced",
+        "level": level,
+    }
+    if level >= 4:
+        entry["by"] = by or _producer()
+    entry["fields"] = removed
+    coll.setdefault("history", []).append(entry)
+    return coll
+
+
+def _level_issues(coll: dict, members: list, base_dir, schemas: Schemas | None) -> list[Issue]:
+    """With a declared level: an error for each of the collection's own fields above it, for
+    a kind that needs more, and for each member record above it."""
+    meta = coll.get("meta") if isinstance(coll.get("meta"), dict) else {}
+    level = _declared_level(coll)
+    if level is None:
+        if "disclosure" in meta:
+            return [Issue("error", "meta.disclosure.level", "must be an integer from 1 to 5")]
+        return []
+    out = []
+    need = MIN_LEVEL_BY_KIND.get(meta.get("kind"), 1)
+    if level < need:
+        out.append(
+            Issue(
+                "error",
+                "meta.disclosure.level",
+                f"a {meta.get('kind')} collection needs level {need} or more",
+            )
+        )
+    for _, _, p, n in _above(_shell(coll), level, collection_level_marks(schemas)):
+        out.append(Issue("error", p, f"level {n} field in a collection declared at disclosure level {level}"))
+    for i, m, rec in iter_members(coll, base_dir):
+        if not isinstance(rec, dict):
+            continue
+        declared = _declared_level(rec)
+        if declared is not None and declared > level:
+            out.append(
+                Issue(
+                    "error",
+                    f"members[{i}].record.meta.disclosure.level",
+                    f"member declared at level {declared}, above the collection's {level}",
+                )
+            )
+        elif declared is None:
+            for _, _, p, n in _above(rec, level, record_level_marks(rec, schemas)):
+                out.append(
+                    Issue(
+                        "error",
+                        f"members[{i}].record.{p}",
+                        f"level {n} field in a member of a collection declared at disclosure level {level}",
+                    )
+                )
+    return out
 
 
 # ---------------------------------------------------------------- members files
@@ -348,14 +519,20 @@ def write_collection(
     meta = coll.setdefault("meta", {})
     meta.setdefault("id", str(uuid.uuid4()))
     meta.setdefault("created", _now())
-    coll.setdefault("history", []).append(
-        {
-            "when": _now(),
-            "by": by or _producer(),
-            "action": "created",
-            "sections": [k for k in SECTIONS if k in coll and k != "schema"],
-        }
-    )
+    entry = {
+        "when": _now(),
+        "by": by or _producer(),
+        "action": "created",
+        "sections": [k for k in SECTIONS if k in coll and k != "schema"],
+    }
+    level = _declared_level(coll)
+    if level is not None:
+        entry["level"] = level
+        if level < 4:
+            del entry["by"]  # withheld below level 4 (spec 4.9)
+        if level == 1:
+            entry["when"] = entry["when"][:10]
+    coll.setdefault("history", []).append(entry)
     text = _dumps(_ordered(coll), indent)
     if members == "jsonl" or (members == "auto" and len(text.encode()) > FAIL_BYTES):
         coll = _to_members_file(coll, path)
@@ -688,6 +865,8 @@ def validate_collection(
             if last is not None and t < last:
                 warn(f"events[{j}].when", "earlier than the event before: events are in time order")
             last = t
+
+    issues += _level_issues(coll, members, base_dir, schemas if schemas is not None else load_schemas())
 
     # what each kind expects (11.6)
     if kind == "paper":

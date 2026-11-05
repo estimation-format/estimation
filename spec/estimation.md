@@ -444,7 +444,9 @@ record, not a degraded one. Each level includes everything in the levels below i
   key without a mark of its own. `"x-level-if": [{field, in, level}]` gives list items whose
   `field` is one of `in` another level (software components by `role`). A field's level is
   never below that of what contains it: a mark lower than its parent's has the parent's
-  level (a `lock` is level 4 on a level-4 component, 5 on a level-5 one). Profiles mark their own fields the same way; where two schemas mark a
+  level (a `lock` is level 4 on a level-4 component, 5 on a level-5 one). A field marked
+  `x-identifying` (4.7) is level 5, so a profile's identifying fields need no mark of their
+  own. Profiles mark their own fields the same way; where two schemas mark a
   path differently, the higher level applies. Writers, validators and tools that lower a
   record need only the schemas.
 - **At level 1**, `meta.created` and a history entry's `when` MAY be dates instead of
@@ -803,6 +805,8 @@ a collection's `history` describes the collection, and each member keeps its own
 | `kind` | required | `"paper"`, `"session"`, `"replication"`, `"batch"` or `"other"` |
 | `title`, `tags`, `notes` | optional | user labels and free text |
 | `producer` | optional | `{name, version}` of the software that wrote the collection |
+| `disclosure` | optional | `{level}`: the most the collection and its members disclose (11.7) |
+| `parent` | optional | the `id` of the collection this one was lowered from (11.7) |
 
 `batch` is a set of runs with no paper or session behind it (a grid of specifications, a
 benchmark); `other` is anything else.
@@ -919,7 +923,7 @@ member's issues under `members[<i>]`. In addition:
 | `replication` | `events`; `publication` |
 | `batch`, `other` | nothing beyond the structure |
 
-### 11.7 Size and redaction
+### 11.7 Size, redaction and disclosure levels
 
 - **Size.** A collection file above 16 MB is an error, as for a record. The 1 MB and
   10,000-element warnings (8.2) apply to the collection *without* its embedded records, and
@@ -933,6 +937,24 @@ member's issues under `members[<i>]`. In addition:
   every member record (under the member's own profiles, 4.7) with the same method and salt,
   updates each member's `sha256` that is present, and appends a `history` entry to each
   member and to the collection.
+- **Disclosure levels.** A collection MAY declare a level in `meta.disclosure.level`
+  (4.9). Its own fields carry level marks in the collection schema: `meta` (except
+  `producer`, 4), `members`, `publication`, `attachments` and `history` are level 1;
+  `session` and `provenance` are level 4, with `session.started`, `ended`,
+  `elapsed_seconds` and `clients` at 5 and `provenance` as in a record; `events` are level 4,
+  except events about workers and clients (`worker_lost`, `worker_added`,
+  `client_connected`, `client_disconnected`) at 5; `extensions` are level 4. Every member
+  record MUST be at the collection's level or below: declared at it or lower, or, if it
+  declares none, holding no field above it. A `session` or `replication` collection needs
+  level 4 or more, since its required parts are level 4. Validators report a field above the
+  declared level, a member above it and a kind below its minimum as errors.
+- **Lowering a collection** lowers each member record above the level (4.9: each becomes a
+  new record, so its member `id`, `sha256` and the events that name it change too) and
+  removes the collection's own fields above it. The result is a new collection: a new
+  `meta.id`, `meta.parent` set to the original's, and a `history` entry
+  `{action: "reduced", level, fields}`. A tool that writes records and their collection
+  together writes both at the level the user chose; building a collection from existing
+  records declares no level unless asked.
 - **Integrity.** A collection has no digest of its own in 0.1. Each member keeps its core
   digest (7.2), and member hashes pin which versions the collection holds.
 

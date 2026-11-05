@@ -70,11 +70,13 @@
             "iterations_max": {"type": "integer", "minimum": 0},
             "iterations_median": {"type": "number"},
             "worst_shard_change": {"type": ["number", "string"]},
-            "round_seconds": {"type": "array", "items": {"type": "number"}},
+            "round_seconds": {"type": "array", "items": {"type": "number"}, "x-level": 5},
             "persisted_key": {"type": ["string", "null"]}
           }
         },
         "dask": {
+          "description": "The cluster the run used: level 5, like provenance.environment and execution.",
+          "x-level": 5,
           "type": "object",
           "properties": {
             "scheduler_address": {"x-identifying": true, "type": "string"},
@@ -93,7 +95,7 @@
             }
           }
         },
-        "estimate": {"description": "The time estimate shown at submission.", "type": "object"},
+        "estimate": {"description": "The time estimate shown at submission.", "type": "object", "x-level": 5},
         "replay": {
           "type": "object",
           "properties": {

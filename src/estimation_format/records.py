@@ -1514,12 +1514,27 @@ DEFAULT_LEVEL_MARKS = {
     "provenance.data": (4, ()),
     "provenance.data[*].location": (5, ()),
     "provenance.environment": (5, ()),
+    "provenance.environment.host": (5, ()),
+    "provenance.environment.hostname": (5, ()),
     "provenance.execution": (4, ()),
     "provenance.execution.*": (5, ()),
+    "provenance.execution.invocation.argv": (5, ()),
+    "provenance.execution.invocation.command_line": (5, ()),
+    "provenance.execution.invocation.script_path": (5, ()),
+    "provenance.execution.invocation.working_directory": (5, ()),
+    "provenance.execution.scheduler.Account": (5, ()),
+    "provenance.execution.scheduler.JobID": (5, ()),
+    "provenance.execution.scheduler.JobName": (5, ()),
+    "provenance.execution.scheduler.NodeList": (5, ()),
+    "provenance.execution.scheduler.SubmitLine": (5, ()),
+    "provenance.execution.scheduler.User": (5, ()),
+    "provenance.execution.scheduler.WorkDir": (5, ()),
     "provenance.execution.session": (4, ()),
+    "provenance.execution.workers[*].host": (5, ()),
     "provenance.software": (4, ()),
     "provenance.software[*]": (5, (("role", ("language", "estimator", "writer"), 4),)),
     "provenance.software[*].container": (5, ()),
+    "provenance.software[*].container.path": (5, ()),
     "provenance.software[*].lock": (4, ()),
     "provenance.software[*].lock.path": (5, ()),
     "publication": (1, ()),
@@ -1549,12 +1564,14 @@ _Mark = tuple[tuple[str, ...], "int | None", tuple]
 
 def level_marks(schema: dict, documents: Iterable[dict] = ()) -> dict[str, tuple[int | None, tuple]]:
     """The `x-level` and `x-level-if` marks of a JSON Schema, by path (the syntax of
-    DEFAULT_IDENTIFYING). Where two documents mark one path differently, the higher level
-    wins."""
+    DEFAULT_IDENTIFYING); a field marked `x-identifying` is level 5. Where two documents mark
+    one path differently, the higher level wins."""
     found: dict[str, tuple[int | None, tuple]] = {}
 
     def visit(node: dict, path: str) -> bool:
         lvl = node.get("x-level")
+        if node.get("x-identifying") is True:  # identifying fields are level 5 (spec 4.9)
+            lvl = 5
         conds = tuple(
             (c["field"], tuple(c["in"]), c["level"])
             for c in node.get("x-level-if") or []
@@ -1865,6 +1882,14 @@ def levels_table(schemas: Schemas | None = None) -> dict:
         "purposes": {n: min_level(n, schemas) for n in sorted(schemas.profiles) if is_purpose(n, schemas)}
         if schemas
         else {},
+        "collection_marks": [
+            {"path": p, "level": lvl, "if": [{"field": f, "in": list(v), "level": n} for f, v, n in conds]}
+            for p, (lvl, conds) in sorted(level_marks(schemas.collection, schemas.documents()).items())
+            if not p.startswith("members[*].record")
+        ]
+        if schemas and schemas.collection
+        else [],
+        "collection_min_level_by_kind": {"session": 4, "replication": 4},
     }
 
 
@@ -1952,7 +1977,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     d.add_argument("file")
     d.add_argument("--write", action="store_true", help="add (or replace) the record's core digest in place")
-    lv = sub.add_parser("reduce", help="write a record at a lower disclosure level (a new record, spec 4.9)")
+    lv = sub.add_parser(
+        "reduce", help="write a record or collection at a lower disclosure level (a new one, spec 4.9, 11.7)"
+    )
     lv.add_argument("file")
     lv.add_argument("--level", type=int, required=True, choices=LEVELS)
     lv.add_argument("-o", "--output", required=True)
@@ -2039,9 +2066,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "reduce":
         rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)
-        if not isinstance(rec, dict) or coll.is_collection(rec):
-            ap.error(f"{args.file}: reduce takes one record")
+        if not isinstance(rec, dict):
+            ap.error(f"{args.file}: not a JSON object")
         schemas = _cli_schemas(ap, args.schema_path, False)
+        if coll.is_collection(rec):
+            try:
+                out = coll.reduce_collection(rec, args.level, schema=schemas, base_dir=Path(args.file).parent)
+            except EstimationError as e:
+                ap.error(str(e))
+            written = coll.write_collection(out, args.output, members="auto")
+            print(
+                f"{args.output}: collection and {len(written.get('members') or [])} members at level {args.level}"
+            )
+            return 0
         out = reduce(rec, args.level, schema=schemas)
         Path(args.output).write_text(_dumps(out, 1) + "\n", encoding="utf-8")
         print(

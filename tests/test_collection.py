@@ -361,3 +361,111 @@ def test_records_still_validate_through_the_cli(tmp_path, capsys):
     ef.write(record(1), p)
     assert est.main(["validate", str(p)]) == 0
     assert Path(p).is_file() and "valid" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------- disclosure levels (11.7)
+
+
+def session_coll(**kw):
+    recs = [record(i, provenance={"agent": {"user": "ada"}, "execution": {"session": "s1"}}) for i in (1, 2)]
+    events = [
+        {"when": "2026-11-01T10:00:00Z", "type": "data_loaded"},
+        {"when": "2026-11-01T10:00:01Z", "type": "fit", "member": recs[0]["meta"]["id"]},
+        {"when": "2026-11-01T10:00:02Z", "type": "worker_lost", "detail": {"host": "node7"}},
+        {"when": "2026-11-01T10:00:03Z", "type": "fit", "member": recs[1]["meta"]["id"]},
+    ]
+    session = {
+        "id": "s1",
+        "status": "closed",
+        "started": "2026-11-01T09:59:00Z",
+        "clients": [{"language": "R", "host": "laptop"}],
+        "fixed": {"fe": ["id"]},
+    }
+    return ef.new_collection(
+        recs,
+        kind="session",
+        session=session,
+        events=events,
+        provenance={
+            "agent": {"user": "ada"},
+            "software": [{"name": "dfeols", "version": "1", "role": "estimator"}],
+        },
+        **kw,
+    )
+
+
+def test_new_collection_at_a_level_lowers_members_and_its_own_fields():
+    c = paper(level=1, provenance={"agent": {"user": "ada"}})
+    assert c["meta"]["disclosure"] == {"level": 1} and "provenance" not in c
+    for m, i in zip(c["members"], (1, 2)):
+        r = m["record"]
+        assert r["meta"]["parent"] == record(i)["meta"]["id"] and m["id"] == r["meta"]["id"]
+        assert r["meta"]["disclosure"] == {"level": 1} and "provenance" not in r and "specification" not in r
+        assert m["sha256"] == ef.member_sha256(r)
+    assert not [i for i in ef.validate_collection(c) if i.level == "error"]
+
+
+def test_session_collection_at_level_4_keeps_the_session_and_drops_its_machinery():
+    c = session_coll(level=4)
+    assert c["session"] == {"id": "s1", "status": "closed", "fixed": {"fe": ["id"]}}
+    assert [e["type"] for e in c["events"]] == ["data_loaded", "fit", "fit"]
+    ids = [m["id"] for m in c["members"]]
+    assert [e["member"] for e in c["events"] if e["type"] == "fit"] == ids  # remapped
+    assert c["provenance"] == {"software": [{"name": "dfeols", "version": "1", "role": "estimator"}]}
+    for m in c["members"]:
+        assert m["record"]["provenance"] == {"execution": {"session": "s1"}}
+    found = [i for i in ef.validate_collection(c) if i.level in ("error", "warning")]
+    assert not [i for i in found if "disclosure" in i.message or "level" in i.message], found
+
+
+def test_session_collection_needs_level_4():
+    with pytest.raises(ef.EstimationError, match="needs disclosure level 4"):
+        session_coll(level=3)
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+def test_validator_checks_the_collection_level(schema):
+    c = paper(level=2)
+    c["provenance"] = {"agent": {"user": "ada"}}  # the collection's own, above 2
+    c["members"][0]["record"]["meta"]["disclosure"] = {"level": 4}  # a member above 2
+    c["members"][1]["record"] = record(2)  # undeclared, with level-3 and -5 fields
+    c["members"][1]["id"] = record(2)["meta"]["id"]
+    c["members"][1].pop("sha256")
+    errs = messages([i for i in ef.validate_collection(c, schema=schema) if i.level == "error"])
+    assert any(e.startswith("provenance: level 4 field in a collection") for e in errs), errs
+    assert any(
+        e.startswith("members[0].record.meta.disclosure.level: member declared at level 4") for e in errs
+    )
+    assert any(e.startswith("members[1].record.specification: level 3 field in a member") for e in errs)
+    s = session_coll(level=4)
+    s["meta"]["disclosure"] = {"level": 3}
+    assert any(
+        "needs level 4" in i.message for i in ef.validate_collection(s, schema=schema) if i.level == "error"
+    )
+
+
+def test_reduce_collection(tmp_path):
+    c = session_coll(level=5)
+    written = ef.write_collection(c, tmp_path / "s.estimation-collection.json", members="jsonl")
+    assert written["history"][-1]["by"]["name"] and written["history"][-1]["level"] == 5
+    low = ef.reduce_collection(written, 4, base_dir=tmp_path)
+    assert low["meta"]["parent"] == written["meta"]["id"] and low["meta"]["id"] != written["meta"]["id"]
+    assert low["history"][-1]["action"] == "reduced" and "session.started" in low["history"][-1]["fields"]
+    assert "clients" not in low["session"] and all("record" in m for m in low["members"])
+    assert not [i for i in ef.validate_collection(low) if i.level == "error"]
+    out = ef.write_collection(paper(level=2), tmp_path / "p.estimation-collection.json")
+    assert "by" not in out["history"][-1] and out["history"][-1]["level"] == 2
+
+
+def test_cli_reduce_collection(tmp_path, capsys):
+    src = tmp_path / "s.estimation-collection.json"
+    ef.write_collection(session_coll(level=5), src)
+    dst = tmp_path / "t.estimation-collection.json"
+    assert ef.main(["reduce", str(src), "--level", "4", "-o", str(dst)]) == 0
+    back = ef.read_collection(dst)
+    assert back["meta"]["disclosure"] == {"level": 4}
+    assert ef.main(["validate", str(dst)]) == 0
+
+
+def test_levels_table_has_the_collection_minimums():
+    assert ef.levels_table()["collection_min_level_by_kind"] == col.MIN_LEVEL_BY_KIND
