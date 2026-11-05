@@ -7,8 +7,8 @@
 \code{tidy} gives the record's parameters with broom's column names (\code{term},
 \code{estimate}, \code{std.error}, \code{statistic}, \code{p.value}, \code{conf.low},
 \code{conf.high}, and \code{response} or \code{component} when the record has them).
-\code{glance} gives one row of its metrics, the default vcov (\code{vcov.type}) and one
-\code{"FE: <name>"} column per fixed effect. The methods are registered on \pkg{generics}
+\code{glance} gives one row of its metrics (by default those a table shows), the default
+vcov (\code{vcov.type}) and one \code{"FE: <name>"} column per fixed effect. The methods are registered on \pkg{generics}
 when it is loaded, which is what \pkg{modelsummary} and \pkg{broom} use.
 
 By default \code{tidy} returns the parameters as written, which come from the record's
@@ -19,7 +19,7 @@ when it has none.
 \usage{
 \method{tidy}{estimation_record}(x, conf.int = TRUE, conf.level = NULL, vcov = NULL,
   component = NULL, dropped = FALSE, ...)
-\method{glance}{estimation_record}(x, vcov = NULL, ...)
+\method{glance}{estimation_record}(x, vcov = NULL, metrics = c("table", "all"), ...)
 \method{print}{estimation_record}(x, digits = 4, ...)
 }
 \arguments{
@@ -32,6 +32,9 @@ when it has none.
 \item{component}{\code{NULL} for the main model (rows with no \code{component}), a
 component name such as \code{"first_stage"}, or \code{"all"}.}
 \item{dropped}{keep collinear and reference terms, which have no estimate.}
+\item{metrics}{\code{"table"} keeps the metrics a regression table usually shows (N, the
+R-squareds, AIC, BIC, log-likelihood, F, and RMSE as \code{sqrt(rss / nobs)} when the record
+has both); \code{"all"} keeps every scalar metric.}
 \item{digits}{significant digits.}
 \item{...}{unused.}
 }

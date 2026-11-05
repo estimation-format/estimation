@@ -19,7 +19,7 @@ rec <- list(
   specification = list(formula = list(text = "y ~ x1 + x2 | firm + year", syntax = "fixest"),
                        fixed_effects = I(c("firm", "year")), clusters = I("firm")),
   metrics = list(nobs = 1000, r2 = 0.6, r2_within = list(value = 0.2, definition = "demeaned"),
-                 f_stat = "Inf", conf_level = 0.95),
+                 f_stat = "Inf", rss = 100, tss = 250, conf_level = 0.95),
   parameters = list(
     list(term = "x1", estimate = 0.5, std_error = 0.1, statistic = 5, p_value = 1e-6,
          conf_low = 0.3, conf_high = 0.7),
@@ -67,6 +67,9 @@ stopifnot(nrow(g) == 1L, g$nobs == 1000, g$r.squared == 0.6, g$r2.within == 0.2,
           is.infinite(g$F), g$vcov.type == "by: firm", g$`FE: firm` == "X",
           g$`FE: year` == "X", !"conf_level" %in% names(g))
 stopifnot(glance(r, vcov = "iid")$vcov.type == "iid")
+eq(g$rmse, sqrt(100 / 1000)); stopifnot(!"rss" %in% names(g), !"tss" %in% names(g))
+ga <- glance(r, metrics = "all")
+stopifnot(ga$rss == 100, ga$tss == 250, !"rmse" %in% names(ga))
 
 # a read record writes back unchanged
 path2 <- write_estimation(r, file.path(out, "again.estimation.json"))
@@ -99,6 +102,32 @@ if (requireNamespace("fixest", quietly = TRUE)) {
                                       kind = "batch"))
   }
   stopifnot(inherits(try(read_estimation(cp), silent = TRUE), "try-error"))
+
+  # modelsummary gives the same table from the records as from the fits
+  if (requireNamespace("modelsummary", quietly = TRUE) && requireNamespace("broom", quietly = TRUE)) {
+    d$z <- rnorm(200); d$x <- d$x + d$z; d$cnt <- rpois(200, exp(0.2 * d$x))
+    fits <- list(ols = feols(y ~ x, d), fe = feols(y ~ x | id, d, cluster = ~id),
+                 iv = feols(y ~ 1 | id | x ~ z, d, vcov = "hetero"), pois = fepois(cnt ~ x, d))
+    mp <- file.path(out, "ms.estimation-collection.json")
+    suppressMessages(write_collection(fits, mp, kind = "batch"))
+    recs <- read_collection(mp)
+    ms <- function(m, ...) {
+      t <- modelsummary::modelsummary(m, output = "data.frame", fmt = 8, stars = TRUE, ...)
+      attributes(t) <- attributes(t)[c("names", "row.names", "class")]
+      t
+    }
+    stopifnot(identical(ms(fits, gof_omit = ".*"), ms(recs, gof_omit = ".*")))
+    gf <- ms(fits); gr <- ms(recs)
+    # every model: N, AIC, BIC, FEs; linear models: the R2s and RMSE (fixest shows a Poisson
+    # fit's pseudo R2s as R2; records keep McFadden's as R2 Pseudo, and have no RSS for a GLM)
+    linear <- c("ols", "fe", "iv")
+    rows <- list(`Num.Obs.` = names(fits), AIC = names(fits), BIC = names(fits), `FE: id` = names(fits),
+                 R2 = linear, `R2 Adj.` = linear, RMSE = linear, `R2 Within` = c("fe", "iv"))
+    for (row in names(rows)) {
+      a <- unlist(gf[gf$term == row, rows[[row]]]); b <- unlist(gr[gr$term == row, rows[[row]]])
+      if (!identical(unname(a), unname(b))) stop("modelsummary row ", row, ": ", toString(a), " vs ", toString(b))
+    }
+  }
 }
 
 # the spec's examples

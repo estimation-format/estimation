@@ -9,6 +9,10 @@
   records as they take fitted models. `tidy(vcov = "iid")` and other vcovs in the record
   recompute SEs, tests and intervals; `component =` selects first-stage and other components.
   The writers accept records read back in.
+- estrec and Python `glance` give the metrics a regression table shows by default (N, R2s,
+  AIC, BIC, log-likelihood, F, RMSE as sqrt(rss / nobs)); `metrics = "all"` gives every one.
+  estrec's feols records now carry `aic` and `bic`, as its GLM records did. A modelsummary
+  table from records matches the one from the fits (tested when broom is installed).
 - Python views for tables (`estimation_format.views`): `tidy(record, vcov=, conf_level=,
   component=, dropped=)`, `glance(record)`, and `parameters_table`/`glance_table` across a
   collection's members (the flat table of spec 11), as plain dicts for polars, pandas or

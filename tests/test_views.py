@@ -31,6 +31,8 @@ def hand_record():
             "r2": 0.6,
             "r2_within": {"value": 0.2, "definition": "demeaned"},
             "f_stat": math.inf,
+            "rss": 100,
+            "tss": 250,
             "conf_level": 0.95,
         },
         "parameters": [
@@ -137,6 +139,9 @@ def test_glance():
     assert math.isinf(g["f_stat"]) and "conf_level" not in g
     assert g["vcov_type"] == "by: firm" and g["fixed_effects"] == ["firm", "year"]
     assert ef.glance(hand_record(), vcov="iid")["vcov_type"] == "iid"
+    assert g["rmse"] == pytest.approx(math.sqrt(0.1)) and "rss" not in g and "tss" not in g
+    ga = ef.glance(hand_record(), metrics="all")
+    assert ga["rss"] == 100 and ga["tss"] == 250 and "rmse" not in ga
 
 
 def test_read_record_strings_decode(tmp_path):

@@ -69,6 +69,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
                     sigma = .est_num(sigma(fit)), rss = .est_num(fit$ssr),
                     tss = .est_num(fit$ssr_null), log_lik = .est_num(as.numeric(logLik(fit))),
                     log_lik_null = .est_num(fit$ll_null), sq_corr_fitted = .est_num(fit$sq.cor),
+                    aic = .est_num(stats::AIC(fit)), bic = .est_num(stats::BIC(fit)),
                     conf_level = conf_level)
   }
   if (!is.null(sample$dropped$singletons)) metrics$n_singletons <- sample$dropped$singletons

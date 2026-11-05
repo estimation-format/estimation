@@ -258,14 +258,37 @@ def tidy(
     return rows
 
 
-def glance(record: dict, *, vcov: int | str | None = None) -> dict:
-    """One row: the record's scalar metrics (structured ones by their `value`; `conf_level`
-    left out), `vcov_type` ("by: firm", or the default vcov's type) and `fixed_effects`
-    (the names, a list)."""
+TABLE_METRICS = (
+    "nobs",
+    "r2",
+    "adj_r2",
+    "r2_within",
+    "adj_r2_within",
+    "pseudo_r2",
+    "aic",
+    "bic",
+    "log_lik",
+    "f_stat",
+    "rmse",
+)
+
+
+def glance(record: dict, *, vcov: int | str | None = None, metrics: str = "table") -> dict:
+    """One row: the record's metrics (structured ones by their `value`; `conf_level` left
+    out), `vcov_type` ("by: firm", or the default vcov's type) and `fixed_effects` (the
+    names, a list). `metrics="table"` keeps those a regression table usually shows
+    (`TABLE_METRICS`), with `rmse` as sqrt(rss / nobs) when the record has both; "all" keeps
+    every scalar metric."""
+    if metrics not in ("table", "all"):
+        raise ValueError("metrics is 'table' or 'all'")
+    ms = {k: v for k, v in (record.get("metrics") or {}).items() if k != "conf_level"}
+    if metrics == "table":
+        if "rmse" not in ms and "rss" in ms and "nobs" in ms:
+            rss, n = _num(ms["rss"]), _num(ms["nobs"])
+            ms["rmse"] = math.sqrt(rss / n) if n > 0 else math.nan
+        ms = {k: ms[k] for k in TABLE_METRICS if k in ms}
     out = {}
-    for k, v in (record.get("metrics") or {}).items():
-        if k == "conf_level":
-            continue
+    for k, v in ms.items():
         if isinstance(v, Mapping) and "value" not in v:
             continue
         out[k] = _metric(v)
@@ -328,11 +351,20 @@ def parameters_table(
     return rows
 
 
-def glance_table(source: Any, *, base_dir: str | os.PathLike | None = None) -> list[dict]:
+def glance_table(
+    source: Any, *, base_dir: str | os.PathLike | None = None, metrics: str = "table"
+) -> list[dict]:
     """`glance` for each member, with `member`, `id` and `locator` first."""
     rows = []
     for name, m, rec in _members(source, base_dir):
         locs = m.get("locators") or ([m["locator"]] if m.get("locator") else [])
         loc = "; ".join(filter(None, map(_locator_label, locs))) or None
-        rows.append({"member": name, "id": (rec.get("meta") or {}).get("id"), "locator": loc, **glance(rec)})
+        rows.append(
+            {
+                "member": name,
+                "id": (rec.get("meta") or {}).get("id"),
+                "locator": loc,
+                **glance(rec, metrics=metrics),
+            }
+        )
     return rows

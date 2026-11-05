@@ -89,9 +89,12 @@ generics::tidy(r, vcov = "iid")          # another vcov in the record: SEs, t, p
 generics::tidy(r, component = "first_stage")
 ```
 
-`glance()` gives the metrics (broom names: `r.squared`, `r2.within`, `logLik`, ...),
-`vcov.type` (`"by: firm"`) and an `FE: <name>` column per fixed effect, which modelsummary shows
-as it does for fixest. Records read back in can be written again (`write_estimation`,
+`glance()` gives the metrics a table shows (broom names: `r.squared`, `r2.within`, `AIC`,
+`rmse`, ...; `metrics = "all"` for every one), `vcov.type` (`"by: firm"`) and an
+`FE: <name>` column per fixed effect. modelsummary needs **broom** installed to use these
+methods. A modelsummary table from records matches the one from the fixest fits they were
+written from, coefficients, stars and fit rows alike, except that a Poisson or logit fit's
+McFadden pseudo R2 shows as "R2 Pseudo" (fixest puts it in the R2 rows). Records read back in can be written again (`write_estimation`,
 `write_collection`) unchanged.
 
 ## What a record holds
@@ -146,8 +149,6 @@ CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages insta
 ## Not yet
 
 - `fenegbin`/`femlm`, `lm`/`glm` and other classes through `insight`.
-- `tidy`/`glance` are checked against hand-made records and the spec's examples, not yet
-  through modelsummary itself (not installed where estrec was built).
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
 - Tests: `tests/test-fixest.R`, `tests/test-collection.R` and `tests/test-read.R` (base R). They validate every

@@ -190,16 +190,28 @@ tidy.estimation_record <- function(x, conf.int = TRUE, conf.level = NULL, vcov =
 }
 
 .est_glance_names <- c(r2 = "r.squared", adj_r2 = "adj.r.squared", r2_within = "r2.within",
-                       adj_r2_within = "adj.r2.within", log_lik = "logLik", aic = "AIC",
-                       bic = "BIC", f_stat = "F", df_residual = "df.residual",
-                       df_model = "df", pseudo_r2 = "pseudo.r.squared")
+                       adj_r2_within = "r2.within.adjusted", pseudo_r2 = "pseudo.r.squared",
+                       log_lik = "logLik", aic = "AIC", bic = "BIC", f_stat = "F", rmse = "rmse",
+                       df_residual = "df.residual", df_model = "df", n_clusters = "nclusters")
 
-# glance(): one row of the record's scalar metrics (broom names where broom has one, else the
-# record's name with "_" -> "."), the default vcov as `vcov.type` ("by: firm", or its type), and
-# one "FE: <name>" = "X" column per fixed effect, as modelsummary shows fixest's.
-glance.estimation_record <- function(x, vcov = NULL, ...) {
+# The metrics a regression table shows by default (modelsummary's gof rows)
+.est_table_metrics <- c("nobs", "r2", "adj_r2", "r2_within", "adj_r2_within", "pseudo_r2",
+                        "aic", "bic", "log_lik", "f_stat", "rmse")
+
+# glance(): one row of the record's metrics under broom names (modelsummary's gof rows), the
+# default vcov as `vcov.type` ("by: firm", or its type), and one "FE: <name>" = "X" column per
+# fixed effect, as modelsummary shows fixest's. `metrics = "table"` keeps the metrics a table
+# usually shows, with RMSE as sqrt(rss / nobs) when the record has both; "all" keeps every
+# scalar metric (unregistered names with "_" -> ".").
+glance.estimation_record <- function(x, vcov = NULL, metrics = c("table", "all"), ...) {
+  metrics <- match.arg(metrics)
   ms <- x$metrics %||% list()
   ms <- ms[setdiff(names(ms), "conf_level")]
+  if (metrics == "table") {
+    if (is.null(ms$rmse) && !is.null(ms$rss) && !is.null(ms$nobs))
+      ms$rmse <- sqrt(.est_dbl(ms$rss) / .est_dbl(ms$nobs))
+    ms <- ms[intersect(.est_table_metrics, names(ms))]
+  }
   vals <- lapply(ms, .est_metric_value)
   vals <- vals[!vapply(vals, is.null, logical(1))]
   nm <- names(vals)
