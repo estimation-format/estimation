@@ -81,6 +81,8 @@ A record has the following top-level members. Each is **required**, **expected**
 - A record without an **expected** member is valid, but validators MUST warn, and writers
   SHOULD include the member whenever they can fill it.
 - **Optional** members are used when they apply.
+- A record that declares a disclosure level (4.9) may withhold any member above it, required
+  members excepted; validators report a withheld expected member as information.
 
 | Member | Status | Content |
 |---|---|---|
@@ -121,6 +123,7 @@ shape; the second is just fuller. Section 12 shows a minimal record.
 | `title`, `tags`, `notes` | optional | user labels and free text |
 | `producer` | optional | `{name, version}` of the writer, when it is not the estimating software (a converter) |
 | `core_digest` | optional | integrity check over the result sections (7.2) |
+| `disclosure` | optional | `{level}`: how much the writer chose to disclose, 1 to 5 (4.9) |
 
 `estimator.family` and `estimator.method` have a recommended vocabulary (in the schema), but
 any string is valid, so a new kind of model needs no change to the format.
@@ -335,9 +338,10 @@ What each kind of producer can usually fill (a guide for writers, not a requirem
 ### 4.7 Identifying details
 
 Some provenance fields identify people or places: the user, hosts, paths, job ids, accounts,
-command lines, working directories, data locations. They help trace a discrepancy, so writers
-SHOULD include them by default, but the format never requires them, and they MUST be easy to
-remove:
+command lines, working directories, data locations. They help trace a discrepancy, but the
+format never requires them. Nearly all are at disclosure level 5 (4.9), so a record written at
+the default level 4 leaves them out; at level 5 writers include them unless asked to redact.
+Either way they MUST be easy to remove:
 
 - **The schemas mark them**: each identifying field carries `"x-identifying": true`. An
   extension's or profile's schema marks its own the same way. A redactor needs only the
@@ -411,6 +415,51 @@ Rules:
 - Validators check that `id`s are unique and that `restrictions` has one row of `R` per `q`
   and one column per label, and warn when a named term isn't in `parameters` or a named vcov
   isn't in `structures.vcov`.
+
+### 4.9 Disclosure levels
+
+How much a record discloses is the choice of the person who shares it. Someone may want to
+send only an estimate, its standard error and N, because the rest isn't material or because
+they don't want to reveal more about their work; a replication harness wants everything. A
+record's **disclosure level** is a ceiling: the most it holds. A small record is a complete
+record, not a degraded one. Each level includes everything in the levels below it.
+
+| Level | Adds |
+|---|---|
+| 1 | `parameters` (estimates, standard errors, test statistics, p-values, intervals), `metrics.nobs`, `df_residual` and `conf_level`; `meta.id`, `created`, `status`, `parent`, `profiles`, `title`, `tags`, `notes`, `disclosure`, `core_digest`; `publication`; `history` without `by` |
+| 2 | the model's diagnostic and summary measures: the other `metrics`, `meta.estimator`, `responses` and `messages`, `structures.vcov` (without cluster names and counts), `random_effects`, `first_stage`, and `tests` (without `source`); `attachments` |
+| 3 | `specification`; the other structures (`fixed_effects`, `hyperparameters`, ...) and the vcov's `cluster` and `n_clusters` |
+| 4 | `provenance.software`: the components with `role` `language` or `estimator` only; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
+| 5 | every other software component (dependencies, the writer), `lock` and `container`; `provenance.environment`, `execution` and `agent`; data `location`; `meta.producer`; `history[*].by`; any other `provenance` member |
+
+- **Writers** SHOULD let the user choose the level and SHOULD default to **4**. A record
+  written at a level declares it in `meta.disclosure.level`, inside the core digest. A reader
+  then knows that a missing member was withheld, not unknown.
+- **The schemas mark the levels.** Each field carries `"x-level": n`; a field without a mark
+  has its parent's level, except that a mark on `*` (`additionalProperties`) applies to every
+  key without a mark of its own. `"x-level-if": [{field, in, level}]` gives list items whose
+  `field` is one of `in` another level (software components by `role`). A mark is never lower
+  than an enclosing one. Profiles mark their own fields the same way; where two schemas mark a
+  path differently, the higher level applies. Writers, validators and tools that lower a
+  record need only the schemas.
+- **At level 1**, `meta.created` and a history entry's `when` MAY be dates instead of
+  times. Below level 5, history entries omit `by`.
+- **Profile claims.** A writer MUST NOT claim a model profile that the level makes the record
+  fail (`linear-fe/0.1` needs `structures.fixed_effects`, level 3). It leaves the claim out of
+  `meta.profiles` and, at level 2 or more, says so in `meta.messages`
+  (`code: "profile_not_claimed"`). A purpose profile (9.1) is never dropped: a writer asked for
+  one at too low a level, or for a record that falls short of it, MUST fail and name the field.
+- **Validators**, for a record that declares a level: report each field above it as an
+  **error**; report each missing expected member or field that the level withholds as
+  **information**, not a warning; report a claimed purpose profile whose `x-min-level` is above
+  the declared level as an error. A record without `meta.disclosure` gets no level checks.
+- **Lowering.** A tool MAY write a record at a lower level from an existing one by removing
+  the fields above it, the attachments only removed structures linked to, and the claims of
+  model profiles it no longer meets. Lowering changes sections inside the core digest, so the
+  result is a **new record**: a new `meta.id`, `meta.parent` set to the original's, a new
+  digest, and a `history` entry `{action: "reduced", level, fields}`.
+- Identifying details (4.7) keep their own switch: level 5 makes them allowed, and redaction
+  still removes or hashes them. Attachments stay opt-in at every level (8.1).
 
 ## 5. `publication` (optional)
 
@@ -516,9 +565,10 @@ replication harness, a cluster accounting tool).
   any tool may append to.
 - A tool that changes results (a new vcov, a new sample) MUST write a **new record** with
   `meta.parent` set, not a block.
-- Each tool that creates, extends, redacts or validates a record SHOULD append to `history`
-  an entry `{when, by: {name, version}, action, sections}`, where `action` is `created`,
-  `extended`, `redacted` or `validated`. The chain of tools that touched a record is then
+- Each tool that creates, extends, redacts, reduces or validates a record SHOULD append to
+  `history` an entry `{when, by: {name, version}, action, sections}`, where `action` is
+  `created`, `extended`, `redacted`, `reduced` (4.9) or `validated`. `created` and `reduced`
+  entries carry the `level` written; below level 5 entries omit `by`. The chain of tools that touched a record is then
   explicit and in order.
 - The core validator ignores the content of blocks. Readers MUST skip blocks they don't
   know.
@@ -607,6 +657,20 @@ standard ones and MAY depart from them where the tool must, but MUST declare it:
 - A profile whose `$defs/rules` includes its base's rules has no departures. Standard profiles
   don't deviate from each other.
 
+**Purpose profiles** describe what a destination needs: a journal, a data editor, a registry,
+a replication harness. Model profiles say what a kind of model must report; a purpose profile
+says what a use of the record must see. It is a floor, where the disclosure level (4.9) is a
+ceiling.
+
+- `x-min-level` is the lowest disclosure level that can meet it. A writer asked for a purpose
+  uses that level unless the user sets one, and fails, naming the level, if the user's is
+  lower.
+- It only adds requirements, so it composes with any model profile: a record claims
+  `["linear-fe/0.1", "<purpose>/0.1"]` and is checked against both.
+- It can't forbid content; only the sharer's level does that.
+- It SHOULD require only what the destination states it needs, and its page in
+  `spec/profiles/` cites where the destination says so, rule by rule.
+
 ### 9.2 What a validator reports
 
 - Errors against the core or a claimed profile make the record invalid.
@@ -616,11 +680,13 @@ standard ones and MAY depart from them where the tool must, but MUST declare it:
   `x-deviations`; a **warning** for each failure it doesn't declare. The record stays valid
   either way: it is judged by the profiles it claims.
 - A claimed profile the validator doesn't know is reported as information.
+- A claimed purpose profile whose `x-min-level` is above the record's declared disclosure
+  level is an error (4.9).
 
 ### 9.3 The catalog
 
 [`schema/catalog.json`](../schema/catalog.json) lists the core schema and every registered
-profile: `name`, `file`, `kind` (`standard` or `tool`), `status` (`draft` or `published`),
+profile: `name`, `file`, `kind` (`standard`, `tool` or `purpose`), `status` (`draft` or `published`),
 `maintainer`, `description` and `examples`. Profiles are added by pull request
 ([CONTRIBUTING.md](../CONTRIBUTING.md)); CI checks each one.
 

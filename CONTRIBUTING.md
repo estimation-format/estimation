@@ -23,9 +23,17 @@ records (`dfeols/0.1`). To add one, open a pull request with:
 - At least one example record in `schema/examples/` that claims the profile.
 - `"x-license": "CC0-1.0"` in the profile file.
 - An entry in `schema/catalog.json`: `name`, `file`, `kind` (`tool` for one program's
-  records, `standard` for a model type shared across tools), `status: "draft"`, `maintainer`
-  (your GitHub handle), `description`, `examples`.
+  records, `standard` for a model type shared across tools, `purpose` for what a destination
+  needs), `status: "draft"`, `maintainer` (your GitHub handle), `description`, `examples`.
 - A page in `spec/profiles/` describing it, with the tool's own names for each field.
+- Fields of its own marked with their disclosure level (`"x-level": n`, spec 4.9) where they
+  shouldn't inherit their parent's.
+
+A *purpose profile* (spec 9.1) says what a journal, data editor, registry or harness needs to
+see. Besides the above, it carries `x-min-level`, and its page cites, for each rule, where the
+destination states that requirement. Review asks for that citation: a purpose profile should
+ask for what the destination needs and no more, so that it never becomes a reason to disclose
+more than a use requires.
 
 Tool profiles are encouraged to stay close to a standard one:
 

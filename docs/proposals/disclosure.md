@@ -1,7 +1,19 @@
 # Proposal: disclosure levels and purpose profiles
 
-Status: **draft for review**. Ted's answers so far (2026-11-05) are folded in; the open
-questions are at the end.
+Status: **adopted** in 0.1 (Ted, 2026-11-05). Spec 4.9 and 9.1; core `x-level` marks;
+`prepare(level=, purpose=)` and `reduce()` in the Python tools. Ted's answers to the questions
+at the end:
+
+1. Purpose profiles go in the catalog (`kind: "purpose"`).
+2. A lowered record is a new record with `meta.parent` set to the original.
+3. Level 4 software: the language and the estimator only (`role` `language` or `estimator`);
+   where the estimator's package can't be told, the language alone. The writer and every
+   other component are level 5, and so is `history[*].by`.
+4. Amend 0.1.
+
+As built, two details differ from the draft below: all vcovs are level 2 (a schema mark can't
+single out the default one), with their cluster names and counts at 3; and a test's `source`
+is level 4.
 
 ## Problem
 

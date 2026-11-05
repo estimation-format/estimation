@@ -42,8 +42,11 @@ def test_entries_are_complete_and_unique():
         assert e.get("maintainer"), f"{e['name']}: maintainer (GitHub handle) required"
         assert e.get("examples"), f"{e['name']}: at least one example record"
     for e in CATALOG["profiles"]:
-        assert e["kind"] in ("standard", "tool"), e["name"]
+        assert e["kind"] in ("standard", "tool", "purpose"), e["name"]
         assert e.get("description"), e["name"]
+        if e["kind"] == "purpose":  # spec 9.1: the lowest disclosure level that can meet it
+            doc = json.loads((ROOT / e["file"]).read_text(encoding="utf-8"))
+            assert doc.get("x-min-level") in (1, 2, 3, 4, 5), e["name"]
 
 
 def test_every_schema_file_is_listed():

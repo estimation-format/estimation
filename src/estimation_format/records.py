@@ -524,24 +524,67 @@ def prepare(
     digest: bool = True,
     redact_identifying: bool | Iterable[str] = False,
     by: dict | None = None,
+    level: int | None = None,
+    purpose: str | Iterable[str] | None = None,
+    schema: Schemas | str | None = "auto",
 ) -> dict:
     """The record as it would be written, without spilling: encoded, `schema`, `meta.id`
-    and `meta.created` filled if missing, optionally redacted, history and digest added.
+    and `meta.created` filled if missing, cut to a disclosure level, optionally redacted,
+    history and digest added.
+
+    `level` (1-5, spec 4.9) is the most the record discloses: fields above it are left out,
+    claims of model profiles that then fail are dropped, and `meta.disclosure` records it.
+    The default is the lowest level that meets every `purpose`, else DEFAULT_LEVEL (4); a
+    record that already declares a lower level keeps it. `purpose` names purpose profiles
+    the record must meet: they are added to `meta.profiles`, and a level below one's
+    `x-min-level`, or a record that falls short of one, raises EstimationError naming the
+    fields. At level 1 `meta.created` and the history entry's time are dates, and below 5
+    the history entry doesn't name the writer.
+
     `redact_identifying=True` removes the fields `redact` finds; a list of paths removes
     those instead (a tool can add its own extension's fields this way)."""
     rec = to_json(record)
     rec.setdefault("schema", SCHEMA)
     meta = rec.setdefault("meta", {})
     meta.setdefault("id", str(uuid.uuid4()))
-    meta.setdefault("created", _now())
-    rec.setdefault("history", []).append(
-        {
-            "when": _now(),
-            "by": by or _producer(),
-            "action": "created",
-            "sections": [k for k in (*REQUIRED, *EXPECTED, *OPTIONAL) if k in rec and k != "schema"],
-        }
-    )
+    schemas = _schemas_or_none(schema)
+    purposes = [purpose] if isinstance(purpose, str) else list(purpose or [])
+    for p in purposes:
+        if schemas is None or p not in schemas.profiles:
+            raise EstimationError(f"purpose {p!r}: no such profile")
+        if not is_purpose(p, schemas):
+            raise EstimationError(f"purpose {p!r} is a {_kind(p, schemas)} profile, not a purpose profile")
+    need = max((min_level(p, schemas) for p in purposes), default=1) if schemas else 1
+    if level is None:
+        level = need if purposes else DEFAULT_LEVEL
+    if level not in LEVELS:
+        raise EstimationError(f"disclosure level must be one of 1-5, got {level!r}")
+    if level < need:
+        raise EstimationError(
+            f"disclosure level {level} is below the {need} that {', '.join(purposes)} needs"
+        )
+    level = min(level, _declared_level(rec) or level)
+    if purposes:
+        meta["profiles"] = list(dict.fromkeys([*(meta.get("profiles") or []), *purposes]))
+    if "created" not in meta:
+        meta["created"] = _now()[:10] if level == 1 else _now()
+    meta["disclosure"] = {"level": level}
+    _, dropped = _apply_level(rec, level, schemas)
+    for p in dropped:
+        warnings.warn(f"{p} isn't claimed: disclosure level {level} leaves out what it requires")
+    for p in purposes:
+        errs = _profile_errors(rec, p, schemas)
+        if errs:
+            raise EstimationError(
+                f"the record doesn't meet {p} at disclosure level {level}: " + "; ".join(map(str, errs))
+            )
+    entry: dict[str, Any] = {"when": _now() if level > 1 else _now()[:10]}
+    if level >= 5:
+        entry["by"] = by or _producer()
+    entry.update(action="created", level=level)
+    if level >= 2:
+        entry["sections"] = [k for k in (*REQUIRED, *EXPECTED, *OPTIONAL) if k in rec and k != "schema"]
+    rec.setdefault("history", []).append(entry)
     if redact_identifying is True:
         rec = redact(rec, by=by)
     elif redact_identifying:
@@ -562,15 +605,19 @@ def write(
     redact_identifying: bool | Iterable[str] = False,
     by: dict | None = None,
     indent: int | None = 1,
+    level: int | None = None,
+    purpose: str | Iterable[str] | None = None,
 ) -> dict:
     """Write `record` to `path` (`<name>.estimation.json`) and return it as written.
 
     Large structures are spilled to side files next to it (`spill`), the core digest is
     computed after spilling (on by default), and the size limits are applied: a warning
-    above 1 MB or 10,000 elements in one array, an error above 16 MB. `redact_identifying`
-    is as in `prepare`."""
+    above 1 MB or 10,000 elements in one array, an error above 16 MB. `redact_identifying`,
+    `level` (default 4) and `purpose` are as in `prepare`."""
     path = Path(path)
-    rec = prepare(record, digest=False, redact_identifying=redact_identifying, by=by)
+    rec = prepare(
+        record, digest=False, redact_identifying=redact_identifying, by=by, level=level, purpose=purpose
+    )
     if spill_large:
         stem = path.name.removesuffix(".json").removesuffix(".estimation")
         spill(rec, path.parent, stem)
@@ -740,9 +787,11 @@ def _check_core(rec: dict, structural: bool = True) -> list[Issue]:
         if not isinstance(rec["history"], list):
             err("history", "must be a list")
         else:
+            # below level 5 the writer withholds `by` (spec 4.9)
+            need = {"when", "action"} | ({"by"} if (_declared_level(rec) or 5) >= 5 else set())
             for i, h in enumerate(rec["history"]):
-                if not isinstance(h, dict) or not {"when", "by", "action"} <= h.keys():
-                    warn(f"history[{i}]", "needs 'when', 'by' and 'action'")
+                if not isinstance(h, dict) or not need <= h.keys():
+                    warn(f"history[{i}]", "needs " + " and ".join(f"'{k}'" for k in sorted(need)))
     return issues
 
 
@@ -820,10 +869,17 @@ def add_test(record: dict, test: dict, *, by: dict | None = None) -> dict:
     elif t["id"] in taken:
         raise EstimationError(f"a test with id {t['id']!r} is already in the record")
     t.setdefault("added", _now())
+    level = _declared_level(record)
+    if level is not None and level < 2:
+        raise EstimationError(f"tests are disclosure level 2; this record declares level {level}")
     tests.append(t)
-    record.setdefault("history", []).append(
-        {"when": t["added"], "by": by or _producer(), "action": "extended", "sections": ["tests"]}
-    )
+    if level is not None and level < 5:
+        # the test's own fields above the record's level (its `source`, at 4) are left out
+        _apply_level(record, level, load_schemas())
+    entry = {"when": t["added"], "by": by or _producer(), "action": "extended", "sections": ["tests"]}
+    if level is not None and level < 5:
+        del entry["by"]
+    record.setdefault("history", []).append(entry)
     return record
 
 
@@ -1143,6 +1199,8 @@ def validate(
         issues += _base_issues(enc, schemas, claimed if isinstance(claimed, list) else [], seen)
         issues += _expected_issues(enc, schemas, claimed if isinstance(claimed, list) else [], set())
 
+    issues = _level_issues(enc, issues, schemas if schemas is not None else load_schemas())
+
     if extra is not None:
         check = extra if callable(extra) else jsonschema_check(extra)
         issues += list(check(record))
@@ -1397,11 +1455,401 @@ def redact(
         "method": "removed" if salt is None else "hmac-sha256",
         "fields": sorted(changed),
     }
+    if (_declared_level(rec) or 5) < 5:
+        del entry["by"]  # withheld below level 5 (spec 4.9)
     if salt is not None:
         # names the salt without revealing it, so readers know which records are comparable
         entry["salt_id"] = hashlib.sha256(b"estimation-salt-id:" + salt).hexdigest()[:16]
     rec.setdefault("history", []).append(entry)
     return rec
+
+
+# ---------------------------------------------------------------- disclosure levels (spec 4.9)
+
+LEVELS = (1, 2, 3, 4, 5)
+DEFAULT_LEVEL = 4
+
+# The core schema's level marks, for when the packaged schemas are missing
+# (tests/test_disclosure.py keeps the two equal): path -> (level, x-level-if conditions).
+DEFAULT_LEVEL_MARKS = {
+    "attachments": (2, ()),
+    "extensions": (4, ()),
+    "history": (1, ()),
+    "history[*].by": (5, ()),
+    "meta": (1, ()),
+    "meta.*": (2, ()),
+    "meta.core_digest": (1, ()),
+    "meta.created": (1, ()),
+    "meta.disclosure": (1, ()),
+    "meta.estimator": (2, ()),
+    "meta.id": (1, ()),
+    "meta.messages": (2, ()),
+    "meta.notes": (1, ()),
+    "meta.parent": (1, ()),
+    "meta.producer": (5, ()),
+    "meta.profiles": (1, ()),
+    "meta.responses": (2, ()),
+    "meta.status": (1, ()),
+    "meta.tags": (1, ()),
+    "meta.title": (1, ()),
+    "metrics": (1, ()),
+    "metrics.*": (2, ()),
+    "metrics.conf_level": (1, ()),
+    "metrics.df_residual": (1, ()),
+    "metrics.nobs": (1, ()),
+    "parameters": (1, ()),
+    "provenance": (4, ()),
+    "provenance.*": (5, ()),
+    "provenance.agent": (5, ()),
+    "provenance.data": (4, ()),
+    "provenance.data[*].location": (5, ()),
+    "provenance.environment": (5, ()),
+    "provenance.execution": (5, ()),
+    "provenance.software": (4, ()),
+    "provenance.software[*]": (5, (("role", ("language", "estimator"), 4),)),
+    "provenance.software[*].container": (5, ()),
+    "provenance.software[*].lock": (5, ()),
+    "publication": (1, ()),
+    "schema": (1, ()),
+    "specification": (3, ()),
+    "structures": (2, ()),
+    "structures.*": (3, ()),
+    "structures.first_stage": (2, ()),
+    "structures.fixed_effects": (3, ()),
+    "structures.hyperparameters": (3, ()),
+    "structures.numerics": (4, ()),
+    "structures.random_effects": (2, ()),
+    "structures.vcov": (2, ()),
+    "structures.vcov[*].cluster": (3, ()),
+    "structures.vcov[*].n_clusters": (3, ()),
+    "structures.vcov[*].n_clusters_min": (3, ()),
+    "tests": (2, ()),
+    "tests[*].source": (4, ()),
+    "validation": (4, ()),
+}
+
+# A compiled mark: the pattern's parts (`*` any key, `[*]` any list item), its level (None:
+# inherit) and its conditions ((field, values, level), ...) from `x-level-if`.
+_Mark = tuple[tuple[str, ...], "int | None", tuple]
+
+
+def level_marks(schema: dict, documents: Iterable[dict] = ()) -> dict[str, tuple[int | None, tuple]]:
+    """The `x-level` and `x-level-if` marks of a JSON Schema, by path (the syntax of
+    DEFAULT_IDENTIFYING). Where two documents mark one path differently, the higher level
+    wins."""
+    found: dict[str, tuple[int | None, tuple]] = {}
+
+    def visit(node: dict, path: str) -> bool:
+        lvl = node.get("x-level")
+        conds = tuple(
+            (c["field"], tuple(c["in"]), c["level"])
+            for c in node.get("x-level-if") or []
+            if isinstance(c, dict) and {"field", "in", "level"} <= c.keys()
+        )
+        if path and (isinstance(lvl, int) or conds):
+            old_lvl, old_conds = found.get(path, (None, ()))
+            if isinstance(lvl, int):
+                lvl = lvl if old_lvl is None else max(lvl, old_lvl)
+            else:
+                lvl = old_lvl
+            found[path] = (lvl, tuple(dict.fromkeys(old_conds + conds)))
+        return False
+
+    _walk_schema(schema, documents, visit)
+    return found
+
+
+def _compile(marks: dict[str, tuple[int | None, tuple]]) -> list[_Mark]:
+    return [(tuple(_split(p)), lvl, conds) for p, (lvl, conds) in marks.items()]
+
+
+def _schemas_or_none(schema: Any) -> Schemas | None:
+    """The schemas whose level marks apply: those given, else the packaged ones (the marks
+    are data, so they don't need the jsonschema package or a schema check)."""
+    return schema if isinstance(schema, Schemas) else load_schemas()
+
+
+def record_level_marks(record: dict, schemas: Schemas | None) -> list[_Mark]:
+    """The level marks for one record: the core's plus each claimed profile's (without
+    schemas, DEFAULT_LEVEL_MARKS)."""
+    if schemas is None:
+        return _compile(DEFAULT_LEVEL_MARKS)
+    claimed = (record.get("meta") or {}).get("profiles") if isinstance(record.get("meta"), dict) else None
+    names = tuple(p for p in claimed or [] if isinstance(p, str) and p in schemas.profiles)
+    return _record_marks(schemas, names)
+
+
+@functools.lru_cache(maxsize=64)
+def _record_marks_cached(schemas_id: int, names: tuple[str, ...]) -> list[_Mark]:
+    schemas = _MARK_SCHEMAS[schemas_id]
+    docs = schemas.documents()
+    marks = level_marks(schemas.core, docs)
+    for p in names:
+        for path, (lvl, conds) in level_marks(schemas.profiles[p], docs).items():
+            old_lvl, old_conds = marks.get(path, (None, ()))
+            marks[path] = (
+                lvl if old_lvl is None else old_lvl if lvl is None else max(lvl, old_lvl),
+                tuple(dict.fromkeys(old_conds + conds)),
+            )
+    return _compile(marks)
+
+
+_MARK_SCHEMAS: dict[int, Schemas] = {}
+
+
+def _record_marks(schemas: Schemas, names: tuple[str, ...]) -> list[_Mark]:
+    _MARK_SCHEMAS[id(schemas)] = schemas  # Schemas are cached by load_schemas and kept alive
+    return _record_marks_cached(id(schemas), names)
+
+
+def _seg(pat: str, key: Any) -> bool:
+    if pat == "[*]":
+        return isinstance(key, int)
+    if pat == "*":
+        return isinstance(key, str)
+    return pat == key
+
+
+def _mark_for(parts: tuple, marks: list[_Mark]) -> tuple[int | None, tuple] | None:
+    """The most specific mark for one concrete path: literal keys beat `*`, earlier first."""
+    best, best_key = None, None
+    for pat, lvl, conds in marks:
+        if len(pat) == len(parts) and all(_seg(a, b) for a, b in zip(pat, parts)):
+            key = tuple(a != "*" for a in pat)
+            if best_key is None or key > best_key:
+                best, best_key = (lvl, conds), key
+    return best
+
+
+def _node_level(parts: tuple, node: Any, parent: int, marks: list[_Mark]) -> int:
+    m = _mark_for(parts, marks)
+    if m is None:
+        return parent if parts[:-1] else 5  # an unmarked top-level member is level 5
+    lvl = parent if m[0] is None else m[0]
+    for field, values, cond_level in m[1]:
+        if isinstance(node, dict) and node.get(field) in values:
+            lvl = cond_level
+    return lvl
+
+
+def path_level(path: str, marks: list[_Mark]) -> int:
+    """The level of a path, present or not (`x-level-if` can't apply without the value)."""
+    parts: list[Any] = []
+    for p in re.findall(r"[^.\[\]]+|\[\d+\]|\[\*\]", path):
+        parts.append(int(p[1:-1]) if re.fullmatch(r"\[\d+\]", p) else 0 if p == "[*]" else p)
+    lvl = 1
+    for i in range(len(parts)):
+        lvl = _node_level(tuple(parts[: i + 1]), None, lvl, marks)
+    return lvl
+
+
+def _above(rec: dict, level: int, marks: list[_Mark]) -> list[tuple[Any, Any, str, int]]:
+    """(container, key, path, field level) of each outermost field above `level`."""
+    out: list[tuple[Any, Any, str, int]] = []
+
+    def walk(node: Any, parts: tuple, path: str, lvl: int) -> None:
+        items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+        for k, v in items:
+            sub = (*parts, k)
+            p = f"{path}[{k}]" if isinstance(k, int) else f"{path}.{k}" if path else k
+            n = _node_level(sub, v, lvl, marks)
+            if n > level:
+                out.append((node, k, p, n))
+            else:
+                walk(v, sub, p, n)
+
+    walk(rec, (), "", 1)
+    return out
+
+
+def _declared_level(rec: dict) -> int | None:
+    d = (rec.get("meta") or {}).get("disclosure") if isinstance(rec.get("meta"), dict) else None
+    lvl = d.get("level") if isinstance(d, dict) else None
+    return lvl if isinstance(lvl, int) and not isinstance(lvl, bool) and lvl in LEVELS else None
+
+
+def fields_above(record: dict, level: int, *, schema: Schemas | str | None = "auto") -> list[str]:
+    """Paths of the fields in `record` above disclosure `level` (outermost only)."""
+    rec = to_json(record)
+    return [p for _, _, p, _ in _above(rec, level, record_level_marks(rec, _schemas_or_none(schema)))]
+
+
+def record_level(record: dict, *, schema: Schemas | str | None = "auto") -> int:
+    """The lowest disclosure level that holds everything in `record`."""
+    rec = to_json(record)
+    marks = record_level_marks(rec, _schemas_or_none(schema))
+    for lvl in LEVELS:
+        if not _above(rec, lvl, marks):
+            return lvl
+    return 5
+
+
+def is_purpose(name: str, schemas: Schemas) -> bool:
+    """A purpose profile: catalogued as `kind: "purpose"`, or a local profile with
+    `x-min-level`."""
+    for e in schemas.catalog.get("profiles", []):
+        if e.get("name") == name:
+            return e.get("kind") == "purpose"
+    return "x-min-level" in schemas.profiles.get(name, {})
+
+
+def _kind(name: str, schemas: Schemas) -> str:
+    for e in schemas.catalog.get("profiles", []):
+        if e.get("name") == name:
+            return str(e.get("kind"))
+    return "local"
+
+
+def min_level(name: str, schemas: Schemas) -> int:
+    """The lowest disclosure level a purpose profile can be met at (`x-min-level`, else 1)."""
+    lvl = schemas.profiles.get(name, {}).get("x-min-level")
+    return lvl if isinstance(lvl, int) and lvl in LEVELS else 1
+
+
+def _profile_errors(rec: dict, name: str, schemas: Schemas | None) -> list[Issue] | None:
+    """A profile's errors for `rec`, or None when it can't be checked here."""
+    if schemas is not None and name in schemas.profiles and _have_jsonschema():
+        return [i for i in schemas.check(name)(rec) if i.level == "error"]
+    if name in PROFILES:
+        return [i for i in PROFILES[name](rec) if i.level == "error"]
+    return None
+
+
+def _apply_level(rec: dict, level: int, schemas: Schemas | None) -> tuple[list[str], list[str]]:
+    """Remove the fields above `level` from `rec` in place, drop attachments only removed
+    structures linked to, and drop the claims of model profiles the removal broke. Returns
+    (removed paths, dropped profile claims)."""
+    if level not in LEVELS:
+        raise EstimationError(f"disclosure level must be one of 1-5, got {level!r}")
+    marks = record_level_marks(rec, schemas)
+    hits = _above(rec, level, marks)
+    if not hits:
+        return [], []
+
+    def links(r: dict) -> set:
+        return {
+            s.get("attachment") for s in _structures(r) if isinstance(s, dict) and s.get("kind") == "link"
+        }
+
+    linked_before = links(rec)
+    claimed = list((rec.get("meta") or {}).get("profiles") or [])
+    before = {p: _profile_errors(rec, p, schemas) for p in claimed}
+    removed = []
+    # list items from the end, so removing one doesn't shift the others
+    for container, key, p, _ in sorted(hits, key=lambda h: (isinstance(h[1], int), h[1]), reverse=True):
+        del container[key]
+        removed.append(p)
+    gone = linked_before - links(rec)
+    if gone and isinstance(rec.get("attachments"), list):
+        for i in reversed(range(len(rec["attachments"]))):
+            a = rec["attachments"][i]
+            if isinstance(a, dict) and a.get("id") in gone:
+                del rec["attachments"][i]
+                removed.append(f"attachments[{i}]")
+        if not rec["attachments"]:
+            del rec["attachments"]
+    dropped = []
+    for p in claimed:
+        if before[p] == [] and _profile_errors(rec, p, schemas):
+            if schemas is not None and is_purpose(p, schemas):
+                continue  # a purpose's failures are the caller's to report
+            dropped.append(p)
+    if dropped:
+        meta = rec["meta"]
+        meta["profiles"] = [p for p in claimed if p not in dropped]
+        if not meta["profiles"]:
+            del meta["profiles"]
+        if level >= 2:
+            meta.setdefault("messages", []).extend(
+                {
+                    "level": "info",
+                    "code": "profile_not_claimed",
+                    "message": f"{p} isn't claimed: disclosure level {level} leaves out what it requires",
+                    "source": "estimation-format",
+                }
+                for p in dropped
+            )
+    return sorted(removed), dropped
+
+
+def reduce(
+    record: dict,
+    level: int,
+    *,
+    schema: Schemas | str | None = "auto",
+    by: dict | None = None,
+) -> dict:
+    """A copy of `record` at disclosure `level`: the fields above it removed (by the
+    `x-level` marks of the core and the claimed profiles), and the claims of model profiles
+    it no longer meets dropped. The copy is a new record: a new `meta.id` with `meta.parent`
+    set to the original's, `meta.disclosure`, a new core digest if the original had one, and
+    a `history` entry with `action: "reduced"`. A record already at or below `level` is
+    returned as a copy, unchanged."""
+    schemas = _schemas_or_none(schema)
+    rec = copy.deepcopy(to_json(record))
+    declared = _declared_level(rec)
+    if (
+        declared is not None
+        and declared <= level
+        and not _above(rec, level, record_level_marks(rec, schemas))
+    ):
+        return rec
+    removed, dropped = _apply_level(rec, level, schemas)
+    meta = rec.setdefault("meta", {})
+    if "id" in meta:
+        meta["parent"] = meta["id"]
+    meta["id"] = str(uuid.uuid4())
+    meta["disclosure"] = {"level": level}
+    entry: dict[str, Any] = {
+        "when": _now() if level > 1 else _now()[:10],
+        "action": "reduced",
+        "level": level,
+    }
+    if level >= 5:
+        entry["by"] = by or _producer()
+    entry["fields"] = removed
+    rec.setdefault("history", []).append(entry)
+    if "core_digest" in meta:
+        add_digest(rec)
+    for p in dropped:
+        warnings.warn(f"{p} isn't claimed: disclosure level {level} leaves out what it requires")
+    return rec
+
+
+def _level_issues(enc: dict, issues: list[Issue], schemas: Schemas | None) -> list[Issue]:
+    """With a declared level: an error for each field above it and for each claimed purpose
+    that needs more; and warnings about missing expected fields the level withholds become
+    information."""
+    level = _declared_level(enc)
+    if level is None:
+        if isinstance(enc.get("meta"), dict) and "disclosure" in enc["meta"]:
+            issues.append(Issue("error", "meta.disclosure.level", "must be an integer from 1 to 5"))
+        return issues
+    marks = record_level_marks(enc, schemas)
+    out = []
+    for i in issues:
+        missing = i.level == "warning" and (
+            i.message.endswith("expected section missing")
+            or i.message.endswith("expected, missing")
+            or "test, none present" in i.message
+        )
+        if missing and path_level(i.path, marks) > level:
+            out.append(Issue("info", i.path, f"withheld at disclosure level {level} ({i.message})"))
+        else:
+            out.append(i)
+    for _, _, p, n in _above(enc, level, marks):
+        out.append(Issue("error", p, f"level {n} field in a record declared at disclosure level {level}"))
+    if schemas is not None:
+        for p in (enc.get("meta") or {}).get("profiles") or []:
+            if isinstance(p, str) and p in schemas.profiles and is_purpose(p, schemas):
+                need = min_level(p, schemas)
+                if need > level:
+                    out.append(
+                        Issue(
+                            "error", "meta.disclosure.level", f"[{p}] needs disclosure level {need} or more"
+                        )
+                    )
+    return out
 
 
 # ---------------------------------------------------------------- command line

@@ -3,7 +3,7 @@
   "$id": "https://estimation-format.github.io/estimation/schema/estimation-0.1.json",
   "title": "estimation/0.1",
   "x-license": "CC0-1.0",
-  "description": "One estimation run: what was estimated, what came out, and how and where it ran. Specification: docs/design/estimation-format.md. Absent key = not recorded by this producer; null = applies but wasn't computed. Non-finite numbers are the strings \"NaN\", \"Inf\", \"-Inf\". Times are UTC, ISO 8601. Fields marked \"x-identifying\": true identify people, hosts, paths or jobs; none is required and a redactor removes or hashes them. \"x-expected\" lists keys a validator warns about when absent; \"x-vocabulary\" lists recommended values of an open string field.",
+  "description": "One estimation run: what was estimated, what came out, and how and where it ran. Specification: docs/design/estimation-format.md. Absent key = not recorded by this producer; null = applies but wasn't computed. Non-finite numbers are the strings \"NaN\", \"Inf\", \"-Inf\". Times are UTC, ISO 8601. Fields marked \"x-identifying\": true identify people, hosts, paths or jobs; none is required and a redactor removes or hashes them. \"x-expected\" lists keys a validator warns about when absent; \"x-vocabulary\" lists recommended values of an open string field. \"x-level\" is the disclosure level (1-5) of a field and everything under it that has no mark of its own; \"x-level-if\" raises or lowers it for list items that match (spec 4.9).",
   "type": "object",
   "required": ["schema", "meta", "parameters"],
   "x-expected": ["metrics", "specification", "provenance"],
@@ -14,35 +14,41 @@
     "description": "Checked by validators, not expressible in JSON Schema. Elements count the items of one array, nested arrays by their leaves. Per-observation and per-level output must be an attachment."
   },
   "properties": {
-    "schema": {"const": "estimation/0.1"},
-    "meta": {"$ref": "#/$defs/meta"},
+    "schema": {"const": "estimation/0.1", "x-level": 1},
+    "meta": {"$ref": "#/$defs/meta", "x-level": 1},
     "parameters": {
+      "x-level": 1,
       "description": "The model's reported parameters, one row per term (per response/component). Per-level estimates (FE coefficients, BLUPs) are not parameters: they go in an attachment.",
       "type": "array",
       "items": {"$ref": "#/$defs/parameter"}
     },
-    "metrics": {"$ref": "#/$defs/metrics"},
-    "specification": {"$ref": "#/$defs/specification"},
-    "provenance": {"$ref": "#/$defs/provenance"},
-    "structures": {"$ref": "#/$defs/structures"},
+    "metrics": {"$ref": "#/$defs/metrics", "x-level": 1},
+    "specification": {"$ref": "#/$defs/specification", "x-level": 3},
+    "provenance": {"$ref": "#/$defs/provenance", "x-level": 4},
+    "structures": {"$ref": "#/$defs/structures", "x-level": 2},
     "tests": {
+      "x-level": 2,
       "description": "Hypothesis tests about the model: the estimator's own (model F, first-stage, overidentification, pre-trend, ...) and those added after the fit (Wald tests of restrictions, linear combinations). Append-only: a tool MAY add entries and MUST NOT change or remove entries another tool wrote. Outside the core digest. Ids unique within the record.",
       "type": "array",
       "items": {"$ref": "#/$defs/test"}
     },
-    "publication": {"$ref": "#/$defs/publication"},
-    "validation": {"$ref": "#/$defs/validation"},
+    "publication": {"$ref": "#/$defs/publication", "x-level": 1},
+    "validation": {"$ref": "#/$defs/validation", "x-level": 4},
     "attachments": {
+      "description": "Level 2 as a section; an attachment no remaining structure links to is dropped when a record is lowered.",
+      "x-level": 2,
       "type": "array",
       "items": {"$ref": "#/$defs/attachment"}
     },
     "extensions": {
+      "x-level": 4,
       "description": "Blocks added by tools, one per namespace. A tool adds or replaces only its own block. The core schema doesn't validate block content; the block's `schema` names the schema that does.",
       "type": "object",
       "additionalProperties": {"$ref": "#/$defs/extension"}
     },
     "history": {
-      "description": "Every tool that created, extended, validated or redacted the record, in order.",
+      "description": "Every tool that created, extended, validated, redacted or reduced the record, in order.",
+      "x-level": 1,
       "type": "array",
       "items": {"$ref": "#/$defs/history_entry"}
     }
@@ -104,7 +110,7 @@
         "options": {"description": "Test-specific settings (e.g. the proportional-hazards time transform).", "type": "object"},
         "resampling": {"description": "For bootstrap and permutation tests, as in resampling/0.1.", "type": "object"},
         "records": {"description": "meta.id of each record a cross-model test compares (Hausman, lrtest m1 m2).", "$ref": "#/$defs/strings"},
-        "source": {"description": "What computed the test when it isn't the estimator: name, version, call.", "type": "object", "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "call": {"type": "string"}}},
+        "source": {"description": "What computed the test when it isn't the estimator: name, version, call.", "x-level": 4, "type": "object", "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "call": {"type": "string"}}},
         "added": {"description": "When a test was added to an existing record.", "$ref": "#/$defs/timestamp"}
       }
     },
@@ -115,9 +121,9 @@
     "number_or_null": {"anyOf": [{"$ref": "#/$defs/number"}, {"type": "null"}]},
     "count": {"type": "integer", "minimum": 0},
     "timestamp": {
-      "description": "ISO 8601 date-time in UTC.",
+      "description": "ISO 8601 date-time in UTC, or a date alone when the writer withholds the time (spec 4.9).",
       "type": "string",
-      "format": "date-time"
+      "anyOf": [{"format": "date-time"}, {"format": "date"}]
     },
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "redacted": {
@@ -140,15 +146,18 @@
     "meta": {
       "type": "object",
       "required": ["id", "created", "status"],
+      "additionalProperties": {"x-level": 2},
       "properties": {
-        "id": {"description": "UUID of this record.", "type": "string", "format": "uuid"},
-        "parent": {"description": "id of the record this one derives from (same model, new vcov).", "type": "string"},
-        "created": {"$ref": "#/$defs/timestamp"},
+        "id": {"description": "UUID of this record.", "type": "string", "format": "uuid", "x-level": 1},
+        "parent": {"description": "id of the record this one derives from (same model, new vcov).", "type": "string", "x-level": 1},
+        "created": {"$ref": "#/$defs/timestamp", "x-level": 1},
         "status": {
+          "x-level": 1,
           "description": "A failed run still writes what it knows.",
           "enum": ["ok", "warning", "failed"]
         },
         "messages": {
+          "x-level": 2,
           "type": "array",
           "items": {
             "type": "object",
@@ -162,6 +171,7 @@
           }
         },
         "estimator": {
+          "x-level": 2,
           "description": "{family, method, ...}; any string is valid, the vocabulary is recommended.",
           "type": "object",
           "properties": {
@@ -171,21 +181,31 @@
             "link": {"type": "string"}
           }
         },
-        "responses": {"$ref": "#/$defs/strings"},
+        "responses": {"$ref": "#/$defs/strings", "x-level": 2},
+        "disclosure": {
+          "description": "How much the writer chose to disclose (spec 4.9). Absent: not declared, and no level checks apply.",
+          "x-level": 1,
+          "type": "object",
+          "required": ["level"],
+          "properties": {"level": {"type": "integer", "minimum": 1, "maximum": 5}}
+        },
         "profiles": {
           "description": "Profiles this record claims to follow, e.g. [\"linear-fe/0.1\", \"dfeols/0.1\"].",
+          "x-level": 1,
           "type": "array",
           "items": {"$ref": "#/$defs/profile_id"}
         },
-        "title": {"type": "string"},
-        "tags": {"$ref": "#/$defs/strings"},
-        "notes": {"type": "string"},
+        "title": {"type": "string", "x-level": 1},
+        "tags": {"$ref": "#/$defs/strings", "x-level": 1},
+        "notes": {"type": "string", "x-level": 1},
         "producer": {
+          "x-level": 5,
           "description": "The code that wrote the record, when it isn't the estimating software (e.g. a converter that reads Stata e()).",
           "$ref": "#/$defs/tool"
         },
         "core_digest": {
           "description": "sha256 over the canonical form (RFC 8785) of meta (without core_digest), specification, metrics, parameters and structures, as written. Optional; writers include it by default.",
+          "x-level": 1,
           "type": "object",
           "required": ["algorithm", "canonicalization", "value"],
           "properties": {
@@ -282,10 +302,10 @@
       "description": "Flat dict of named scalars. Names follow broom glance where one exists; the registered names below have fixed meanings, and unregistered names are allowed. Profiles register more.",
       "type": "object",
       "properties": {
-        "nobs": {"description": "Rows used in estimation.", "$ref": "#/$defs/count_metric"},
-        "df_residual": {"description": "Residual degrees of freedom as the tool reports it, normally N - K - absorbed levels; use {value, definition} when the tool's value means something else (e.g. min(G) - 1 under clustering). The df used for t tests goes in structures.vcov[].df_t.", "$ref": "#/$defs/metric"},
+        "nobs": {"description": "Rows used in estimation.", "$ref": "#/$defs/count_metric", "x-level": 1},
+        "df_residual": {"description": "Residual degrees of freedom as the tool reports it, normally N - K - absorbed levels; use {value, definition} when the tool's value means something else (e.g. min(G) - 1 under clustering). The df used for t tests goes in structures.vcov[].df_t.", "$ref": "#/$defs/metric", "x-level": 1},
         "df_model": {"description": "Model degrees of freedom.", "$ref": "#/$defs/metric"},
-        "conf_level": {"description": "Level of conf_low/conf_high in parameters.", "$ref": "#/$defs/metric"},
+        "conf_level": {"description": "Level of conf_low/conf_high in parameters.", "$ref": "#/$defs/metric", "x-level": 1},
         "r2": {"$ref": "#/$defs/metric"},
         "adj_r2": {"$ref": "#/$defs/metric"},
         "sigma": {"description": "Residual standard error (RMSE).", "$ref": "#/$defs/metric"},
@@ -297,7 +317,7 @@
         "mse": {"$ref": "#/$defs/metric"},
         "auc": {"$ref": "#/$defs/metric"}
       },
-      "additionalProperties": {"$ref": "#/$defs/metric"}
+      "additionalProperties": {"$ref": "#/$defs/metric", "x-level": 2}
     },
 
     "specification": {
@@ -433,30 +453,32 @@
       "properties": {
         "vcov": {
           "description": "One entry per vcov computed; the default one also feeds parameters.",
+          "x-level": 2,
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/vcov"}
         },
         "fixed_effects": {
           "description": "One entry per FE. Counts only, never level values.",
+          "x-level": 3,
           "type": "array",
           "items": {"$ref": "#/$defs/fixed_effect"}
         },
-        "numerics": {"$ref": "#/$defs/numerics"},
-        "random_effects": {"$ref": "#/$defs/structure_or_list"},
-        "hyperparameters": {"$ref": "#/$defs/structure_or_list"},
-        "first_stage": {"$ref": "#/$defs/structure_or_list"}
+        "numerics": {"$ref": "#/$defs/numerics", "x-level": 4},
+        "random_effects": {"$ref": "#/$defs/structure_or_list", "x-level": 2},
+        "hyperparameters": {"$ref": "#/$defs/structure_or_list", "x-level": 3},
+        "first_stage": {"$ref": "#/$defs/structure_or_list", "x-level": 2}
       },
-      "additionalProperties": {"$ref": "#/$defs/structure_or_list"}
+      "additionalProperties": {"$ref": "#/$defs/structure_or_list", "x-level": 3}
     },
     "vcov": {
       "allOf": [{"$ref": "#/$defs/structure"}],
       "properties": {
         "kind": {"enum": ["matrix", "link"]},
         "type": {"type": "string", "x-vocabulary": ["iid", "HC0", "HC1", "HC2", "HC3", "CRV1", "CRV3", "twoway", "multiway", "HAC", "DK"]},
-        "cluster": {"$ref": "#/$defs/strings"},
-        "n_clusters": {"type": "object", "additionalProperties": {"$ref": "#/$defs/count"}},
-        "n_clusters_min": {"$ref": "#/$defs/count"},
+        "cluster": {"$ref": "#/$defs/strings", "x-level": 3},
+        "n_clusters": {"type": "object", "additionalProperties": {"$ref": "#/$defs/count"}, "x-level": 3},
+        "n_clusters_min": {"$ref": "#/$defs/count", "x-level": 3},
         "ssc": {"$ref": "#/$defs/ssc"},
         "df_t": {"description": "df used for t tests and confidence intervals, in the tool's convention (e.g. G - 1 under clustering).", "$ref": "#/$defs/number_or_null"},
         "default": {"type": "boolean"}
@@ -521,19 +543,26 @@
     "provenance": {
       "description": "How and where the run happened; open-ended, filled as far as the producer can.",
       "type": "object",
+      "additionalProperties": {"x-level": 5},
       "properties": {
-        "software": {"type": "array", "items": {"$ref": "#/$defs/software_component"}},
-        "environment": {"$ref": "#/$defs/environment"},
-        "execution": {"$ref": "#/$defs/execution"},
+        "software": {
+          "description": "Level 4 holds the language and the estimator; every other component is level 5.",
+          "x-level": 4,
+          "type": "array",
+          "items": {"$ref": "#/$defs/software_component", "x-level": 5, "x-level-if": [{"field": "role", "in": ["language", "estimator"], "level": 4}]}
+        },
+        "environment": {"$ref": "#/$defs/environment", "x-level": 5},
+        "execution": {"$ref": "#/$defs/execution", "x-level": 5},
         "agent": {
           "description": "Who ran it and where.",
+          "x-level": 5,
           "x-identifying": true,
           "anyOf": [
             {"type": "object", "properties": {"user": {"type": "string"}, "host": {"type": "string"}}},
             {"$ref": "#/$defs/redacted"}
           ]
         },
-        "data": {"type": "array", "items": {"$ref": "#/$defs/data_input"}}
+        "data": {"type": "array", "items": {"$ref": "#/$defs/data_input"}, "x-level": 4}
       }
     },
     "software_component": {
@@ -564,9 +593,11 @@
             "format": {"type": "string", "x-vocabulary": ["renv.lock", "pylock.toml", "conda-lock", "cyclonedx", "spdx", "pip-freeze"]},
             "path": {"x-identifying": true, "type": "string"},
             "sha256": {"$ref": "#/$defs/sha256"}
-          }
+          },
+          "x-level": 5
         },
         "container": {
+          "x-level": 5,
           "type": "object",
           "properties": {
             "image": {"type": "string"},
@@ -689,7 +720,7 @@
         "role": {"type": "string"},
         "name": {"type": "string"},
         "version": {"type": "string"},
-        "location": {"x-identifying": true, "type": "string"},
+        "location": {"x-identifying": true, "x-level": 5, "type": "string"},
         "checksum": {"$ref": "#/$defs/checksum"},
         "rows": {"$ref": "#/$defs/count"},
         "columns": {"anyOf": [{"$ref": "#/$defs/count"}, {"$ref": "#/$defs/strings"}]},
@@ -899,8 +930,9 @@
       "x-expected": ["when", "by", "action"],
       "properties": {
         "when": {"$ref": "#/$defs/timestamp"},
-        "by": {"$ref": "#/$defs/tool"},
-        "action": {"type": "string", "x-vocabulary": ["created", "extended", "redacted", "validated"]},
+        "by": {"$ref": "#/$defs/tool", "x-level": 5},
+        "action": {"type": "string", "x-vocabulary": ["created", "extended", "redacted", "reduced", "validated"]},
+        "level": {"description": "created, reduced: the disclosure level written.", "type": "integer", "minimum": 1, "maximum": 5},
         "sections": {"$ref": "#/$defs/strings"},
         "method": {"type": "string"},
         "fields": {"$ref": "#/$defs/strings"},

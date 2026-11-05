@@ -599,7 +599,7 @@ def test_jsonschema_plugin():
 
 
 def test_redact_removes_identifying_fields_and_keeps_digest():
-    rec = est.prepare(lm_record())
+    rec = est.prepare(lm_record(), level=5)
     out = est.redact(rec)
     prov = out["provenance"]
     assert "agent" not in prov and "host" not in prov["environment"]
@@ -695,7 +695,7 @@ def test_identifying_paths_from_schema():
 
 def test_cli(tmp_path, capsys, monkeypatch):
     p = tmp_path / "a.estimation.json"
-    est.write(lm_record(), p)
+    est.write(lm_record(), p, level=5)
     assert est.main(["validate", str(p)]) == 0
     assert "valid" in capsys.readouterr().out
 

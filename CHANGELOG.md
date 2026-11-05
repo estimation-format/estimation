@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Disclosure levels (spec 4.9; proposal `docs/proposals/disclosure.md`, Ted 2026-11-05):
+  how much a record discloses is the sharer's choice, from 1 (estimates, SEs, p-values,
+  intervals, N, df) to 5 (environment, execution, agent, every software component). The core
+  schema marks each field with `x-level` (`x-level-if` for software components by role);
+  `meta.disclosure.level` declares it. Writers default to 4: language and estimator only, no
+  environment, execution, agent or data locations, and history entries without `by`. At
+  level 1 `created` may be a date. Validators: fields above the declared level are errors, and
+  withheld expected members are information, not warnings. New history action `reduced`.
+- Purpose profiles: a third catalog `kind`, `purpose`, for what a destination needs, with
+  `x-min-level`; a floor where the level is a ceiling. None registered yet.
+- Validator and tools: `prepare` and `write` take `level` and `purpose`, drop the claims of
+  model profiles the level breaks (`profile_not_claimed` in `meta.messages`) and fail when a
+  purpose can't be met; `reduce(record, level)` writes a lowered copy as a new record with
+  `meta.parent`; `fields_above`, `record_level`, `level_marks`, `path_level`,
+  `DEFAULT_LEVEL_MARKS`. `add_test` and `redact` respect the declared level.
 - Collections: `estimation-collection/0.1` (spec section 11, `schema/estimation-collection-0.1.json`,
   catalog entry `collection`), a set of records plus what is true of the set. `meta.kind` is
   `paper`, `session`, `replication`, `batch` or `other` and sets what a validator expects: a
