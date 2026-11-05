@@ -107,7 +107,7 @@ def test_level_3_keeps_profiles_that_need_the_specification():
     assert "provenance" not in rec and "extensions" not in rec
 
 
-def test_default_level_4_lists_only_language_and_estimator():
+def test_default_level_4_lists_only_language_estimator_and_writer():
     r = lm_record()
     r["provenance"]["software"] += [
         {"name": "estrec", "version": "0.1", "role": "writer"},
@@ -116,10 +116,10 @@ def test_default_level_4_lists_only_language_and_estimator():
     rec = est.prepare(r)
     assert rec["meta"]["disclosure"] == {"level": 4}
     prov = rec["provenance"]
-    assert [s["name"] for s in prov["software"]] == ["R", "stats"]
+    assert [s["name"] for s in prov["software"]] == ["R", "stats", "estrec"]
     assert set(prov) == {"software", "data"} and "location" not in prov["data"][0]
     assert prov["data"][0]["checksum"]["value"] == "ab" * 32
-    assert "by" not in rec["history"][-1]
+    assert rec["history"][-1]["by"]["name"] == "estimation-format"  # the writer, traceable
     issues = est.validate(rec)
     assert errors(issues) == [] and warns(issues) == []
 
@@ -239,10 +239,12 @@ def test_add_test_respects_the_level():
     assert errors(est.validate(rec)) == []
 
 
-def test_redaction_below_level_5_doesnt_name_the_redactor():
+def test_redaction_names_the_redactor_from_level_4():
     out = est.redact(est.prepare(lm_record()))
-    assert out["history"][-1]["action"] == "redacted" and "by" not in out["history"][-1]
+    assert out["history"][-1]["action"] == "redacted" and "by" in out["history"][-1]
     assert errors(est.validate(out)) == []
+    low = est.redact(est.prepare(lm_record(), level=3))
+    assert "by" not in low["history"][-1] and errors(est.validate(low)) == []
 
 
 # ---------------------------------------------------------------- purpose profiles

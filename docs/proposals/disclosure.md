@@ -6,9 +6,11 @@ at the end:
 
 1. Purpose profiles go in the catalog (`kind: "purpose"`).
 2. A lowered record is a new record with `meta.parent` set to the original.
-3. Level 4 software: the language and the estimator only (`role` `language` or `estimator`);
-   where the estimator's package can't be told, the language alone. The writer and every
-   other component are level 5, and so is `history[*].by`.
+3. Level 4 software: the language, the estimator and the writer (`role` `language`,
+   `estimator` or `writer`); where the estimator's package can't be told, the language alone.
+   The writer is also named in `history[*].by` and `meta.producer` from level 4, so its
+   version can be traced when diagnosing bugs (Ted, 2026-11-05, revising the first answer,
+   which had the writer at 5). Every other component is level 5.
 4. Amend 0.1.
 
 As built, two details differ from the draft below: all vcovs are level 2 (a schema mark can't

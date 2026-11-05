@@ -6,8 +6,9 @@
   how much a record discloses is the sharer's choice, from 1 (estimates, SEs, p-values,
   intervals, N, df) to 5 (environment, execution, agent, every software component). The core
   schema marks each field with `x-level` (`x-level-if` for software components by role);
-  `meta.disclosure.level` declares it. Writers default to 4: language and estimator only, no
-  environment, execution, agent or data locations, and history entries without `by`. At
+  `meta.disclosure.level` declares it. Writers default to 4: language, estimator and writer
+  only (the writer also in `history[*].by` and `meta.producer`, so its version can be traced),
+  no environment, execution, agent or data locations. At
   level 1 `created` may be a date. Validators: fields above the declared level are errors, and
   withheld expected members are information, not warnings. New history action `reduced`.
 - Purpose profiles: a third catalog `kind`, `purpose`, for what a destination needs, with

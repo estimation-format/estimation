@@ -538,7 +538,7 @@ def prepare(
     record that already declares a lower level keeps it. `purpose` names purpose profiles
     the record must meet: they are added to `meta.profiles`, and a level below one's
     `x-min-level`, or a record that falls short of one, raises EstimationError naming the
-    fields. At level 1 `meta.created` and the history entry's time are dates, and below 5
+    fields. At level 1 `meta.created` and the history entry's time are dates, and below 4
     the history entry doesn't name the writer.
 
     `redact_identifying=True` removes the fields `redact` finds; a list of paths removes
@@ -579,7 +579,7 @@ def prepare(
                 f"the record doesn't meet {p} at disclosure level {level}: " + "; ".join(map(str, errs))
             )
     entry: dict[str, Any] = {"when": _now() if level > 1 else _now()[:10]}
-    if level >= 5:
+    if level >= 4:
         entry["by"] = by or _producer()
     entry.update(action="created", level=level)
     if level >= 2:
@@ -787,8 +787,8 @@ def _check_core(rec: dict, structural: bool = True) -> list[Issue]:
         if not isinstance(rec["history"], list):
             err("history", "must be a list")
         else:
-            # below level 5 the writer withholds `by` (spec 4.9)
-            need = {"when", "action"} | ({"by"} if (_declared_level(rec) or 5) >= 5 else set())
+            # below level 4 the writer withholds `by` (spec 4.9)
+            need = {"when", "action"} | ({"by"} if (_declared_level(rec) or 5) >= 4 else set())
             for i, h in enumerate(rec["history"]):
                 if not isinstance(h, dict) or not need <= h.keys():
                     warn(f"history[{i}]", "needs " + " and ".join(f"'{k}'" for k in sorted(need)))
@@ -873,11 +873,11 @@ def add_test(record: dict, test: dict, *, by: dict | None = None) -> dict:
     if level is not None and level < 2:
         raise EstimationError(f"tests are disclosure level 2; this record declares level {level}")
     tests.append(t)
-    if level is not None and level < 5:
+    if level is not None and level < 4:
         # the test's own fields above the record's level (its `source`, at 4) are left out
         _apply_level(record, level, load_schemas())
     entry = {"when": t["added"], "by": by or _producer(), "action": "extended", "sections": ["tests"]}
-    if level is not None and level < 5:
+    if level is not None and level < 4:
         del entry["by"]
     record.setdefault("history", []).append(entry)
     return record
@@ -1455,8 +1455,8 @@ def redact(
         "method": "removed" if salt is None else "hmac-sha256",
         "fields": sorted(changed),
     }
-    if (_declared_level(rec) or 5) < 5:
-        del entry["by"]  # withheld below level 5 (spec 4.9)
+    if (_declared_level(rec) or 5) < 4:
+        del entry["by"]  # withheld below level 4 (spec 4.9)
     if salt is not None:
         # names the salt without revealing it, so readers know which records are comparable
         entry["salt_id"] = hashlib.sha256(b"estimation-salt-id:" + salt).hexdigest()[:16]
@@ -1475,7 +1475,7 @@ DEFAULT_LEVEL_MARKS = {
     "attachments": (2, ()),
     "extensions": (4, ()),
     "history": (1, ()),
-    "history[*].by": (5, ()),
+    "history[*].by": (4, ()),
     "meta": (1, ()),
     "meta.*": (2, ()),
     "meta.core_digest": (1, ()),
@@ -1486,7 +1486,7 @@ DEFAULT_LEVEL_MARKS = {
     "meta.messages": (2, ()),
     "meta.notes": (1, ()),
     "meta.parent": (1, ()),
-    "meta.producer": (5, ()),
+    "meta.producer": (4, ()),
     "meta.profiles": (1, ()),
     "meta.responses": (2, ()),
     "meta.status": (1, ()),
@@ -1506,7 +1506,7 @@ DEFAULT_LEVEL_MARKS = {
     "provenance.environment": (5, ()),
     "provenance.execution": (5, ()),
     "provenance.software": (4, ()),
-    "provenance.software[*]": (5, (("role", ("language", "estimator"), 4),)),
+    "provenance.software[*]": (5, (("role", ("language", "estimator", "writer"), 4),)),
     "provenance.software[*].container": (5, ()),
     "provenance.software[*].lock": (5, ()),
     "publication": (1, ()),
@@ -1805,7 +1805,7 @@ def reduce(
         "action": "reduced",
         "level": level,
     }
-    if level >= 5:
+    if level >= 4:
         entry["by"] = by or _producer()
     entry["fields"] = removed
     rec.setdefault("history", []).append(entry)

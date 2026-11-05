@@ -199,7 +199,7 @@
         "tags": {"$ref": "#/$defs/strings", "x-level": 1},
         "notes": {"type": "string", "x-level": 1},
         "producer": {
-          "x-level": 5,
+          "x-level": 4,
           "description": "The code that wrote the record, when it isn't the estimating software (e.g. a converter that reads Stata e()).",
           "$ref": "#/$defs/tool"
         },
@@ -546,10 +546,10 @@
       "additionalProperties": {"x-level": 5},
       "properties": {
         "software": {
-          "description": "Level 4 holds the language and the estimator; every other component is level 5.",
+          "description": "Level 4 holds the language, the estimator and the writer; every other component is level 5.",
           "x-level": 4,
           "type": "array",
-          "items": {"$ref": "#/$defs/software_component", "x-level": 5, "x-level-if": [{"field": "role", "in": ["language", "estimator"], "level": 4}]}
+          "items": {"$ref": "#/$defs/software_component", "x-level": 5, "x-level-if": [{"field": "role", "in": ["language", "estimator", "writer"], "level": 4}]}
         },
         "environment": {"$ref": "#/$defs/environment", "x-level": 5},
         "execution": {"$ref": "#/$defs/execution", "x-level": 5},
@@ -576,7 +576,7 @@
           "type": "string",
           "pattern": "^pkg:[a-z][a-z0-9.+-]*/"
         },
-        "role": {"type": "string", "x-vocabulary": ["estimator", "language", "dependency", "system", "container"]},
+        "role": {"type": "string", "x-vocabulary": ["estimator", "language", "writer", "dependency", "system", "container"]},
         "source": {
           "description": "CRAN, PyPI, conda, SSC, or {git commit, dirty}.",
           "anyOf": [
@@ -930,7 +930,7 @@
       "x-expected": ["when", "by", "action"],
       "properties": {
         "when": {"$ref": "#/$defs/timestamp"},
-        "by": {"$ref": "#/$defs/tool", "x-level": 5},
+        "by": {"$ref": "#/$defs/tool", "x-level": 4},
         "action": {"type": "string", "x-vocabulary": ["created", "extended", "redacted", "reduced", "validated"]},
         "level": {"description": "created, reduced: the disclosure level written.", "type": "integer", "minimum": 1, "maximum": 5},
         "sections": {"$ref": "#/$defs/strings"},

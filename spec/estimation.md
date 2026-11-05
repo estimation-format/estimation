@@ -429,8 +429,8 @@ record, not a degraded one. Each level includes everything in the levels below i
 | 1 | `parameters` (estimates, standard errors, test statistics, p-values, intervals), `metrics.nobs`, `df_residual` and `conf_level`; `meta.id`, `created`, `status`, `parent`, `profiles`, `title`, `tags`, `notes`, `disclosure`, `core_digest`; `publication`; `history` without `by` |
 | 2 | the model's diagnostic and summary measures: the other `metrics`, `meta.estimator`, `responses` and `messages`, `structures.vcov` (without cluster names and counts), `random_effects`, `first_stage`, and `tests` (without `source`); `attachments` |
 | 3 | `specification`; the other structures (`fixed_effects`, `hyperparameters`, ...) and the vcov's `cluster` and `n_clusters` |
-| 4 | `provenance.software`: the components with `role` `language` or `estimator` only; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
-| 5 | every other software component (dependencies, the writer), `lock` and `container`; `provenance.environment`, `execution` and `agent`; data `location`; `meta.producer`; `history[*].by`; any other `provenance` member |
+| 4 | `provenance.software`: the components with `role` `language`, `estimator` or `writer` only; the writer in `meta.producer` and `history[*].by`, so a writer's version can be traced; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
+| 5 | every other software component (dependencies), `lock` and `container`; `provenance.environment`, `execution` and `agent`; data `location`; any other `provenance` member |
 
 - **Writers** SHOULD let the user choose the level and SHOULD default to **4**. A record
   written at a level declares it in `meta.disclosure.level`, inside the core digest. A reader
@@ -443,7 +443,7 @@ record, not a degraded one. Each level includes everything in the levels below i
   path differently, the higher level applies. Writers, validators and tools that lower a
   record need only the schemas.
 - **At level 1**, `meta.created` and a history entry's `when` MAY be dates instead of
-  times. Below level 5, history entries omit `by`.
+  times. Below level 4, history entries omit `by`.
 - **Profile claims.** A writer MUST NOT claim a model profile that the level makes the record
   fail (`linear-fe/0.1` needs `structures.fixed_effects`, level 3). It leaves the claim out of
   `meta.profiles` and, at level 2 or more, says so in `meta.messages`
@@ -568,7 +568,7 @@ replication harness, a cluster accounting tool).
 - Each tool that creates, extends, redacts, reduces or validates a record SHOULD append to
   `history` an entry `{when, by: {name, version}, action, sections}`, where `action` is
   `created`, `extended`, `redacted`, `reduced` (4.9) or `validated`. `created` and `reduced`
-  entries carry the `level` written; below level 5 entries omit `by`. The chain of tools that touched a record is then
+  entries carry the `level` written; below level 4 entries omit `by`. The chain of tools that touched a record is then
   explicit and in order.
 - The core validator ignores the content of blocks. Readers MUST skip blocks they don't
   know.
