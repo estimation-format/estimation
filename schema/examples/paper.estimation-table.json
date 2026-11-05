@@ -1,0 +1,30 @@
+{
+  "schema": "estimation-table/0.1",
+  "meta": {"id": "8c0e5d1a-6b3f-4e2a-9d17-3f5a2c4b6e01", "created": "2026-11-05T09:00:00Z",
+           "producer": {"name": "hand-written", "version": "0.1"}},
+  "title": "Table 2: Fuel economy and weight",
+  "sources": [{"id": "paper", "path": "paper.estimation-collection.json"}],
+  "columns": [
+    {"record": "2b7e6e56-b511-4f23-a5de-666356d56f36", "source": "paper", "header": "(1)"},
+    {"record": "2b71fb1a-ca69-4372-a22d-566f9dece227", "source": "paper", "header": "(2)"},
+    {"record": "380a95f5-b77e-4f3b-9c02-43e15c2b5eed", "source": "paper", "header": "(3)"}
+  ],
+  "rows": [
+    {"term": "wt", "label": "Weight (1000 lbs)"},
+    {"term": "hp", "label": "Horsepower"}
+  ],
+  "drop": ["^qsec$"],
+  "uncertainty": "std_error",
+  "stars": [0.1, 0.05, 0.01],
+  "stats": [
+    {"metric": "nobs", "label": "N"},
+    {"metric": "r2_within", "label": "Within R²"},
+    {"metric": "rmse", "label": "RMSE"},
+    {"vcov": "type", "label": "Std. errors"},
+    {"fixed_effect": "cyl", "label": "Cylinders FE"},
+    {"test": "wald", "value": "p_value", "label": "Wald p"},
+    {"label": "Controls", "values": ["No", "No", "qsec"]}
+  ],
+  "format": {"digits": 3},
+  "notes": ["Columns (2) and (3): heteroskedasticity-robust standard errors."]
+}

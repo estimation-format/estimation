@@ -21,6 +21,14 @@
       "examples/replication.estimation-collection.json"
     ]
   },
+  "table": {
+    "name": "estimation-table/0.1",
+    "file": "estimation-table-0.1.json",
+    "status": "draft",
+    "maintainer": "jemather",
+    "description": "A table spec: how to lay out a regression table from records (columns by meta.id, rows and labels, statistics rows, format). No results; a companion to the format (spec/table.md).",
+    "examples": ["examples/paper.estimation-table.json"]
+  },
   "profiles": [
     {
       "name": "inference/0.1",

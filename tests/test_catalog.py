@@ -10,11 +10,13 @@ import pytest
 
 from estimation_format import read_collection, validate_collection
 from estimation_format import records as est
+from estimation_format import table as et
 
 ROOT = est.PACKAGED_SCHEMAS
 CATALOG = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
 COLLECTION = CATALOG["collection"]
-ENTRIES = [CATALOG["core"], COLLECTION, *CATALOG["profiles"]]
+TABLE = CATALOG["table"]
+ENTRIES = [CATALOG["core"], COLLECTION, TABLE, *CATALOG["profiles"]]
 PROFILES = {e["name"]: e for e in CATALOG["profiles"]}
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]*/\d+\.\d+$")
 ID_BASE = "https://estimation-format.github.io/estimation/schema/"
@@ -54,6 +56,7 @@ def test_every_schema_file_is_listed():
     on_disk = {
         "estimation-0.1.json",
         "estimation-collection-0.1.json",
+        "estimation-table-0.1.json",
         *(f"profiles/{p.name}" for p in (ROOT / "profiles").glob("*.json")),
     }
     assert on_disk == listed, "files in profiles/ and catalog.json entries must match"
@@ -69,7 +72,7 @@ def test_schema_file(entry):
     assert doc["title"] == entry["name"]
     assert doc.get("x-license") == "CC0-1.0", "schemas in the catalog are CC0 (see LICENSE)"
     assert doc["$id"] == ID_BASE + entry["file"], "$id must match the file's place in the repository"
-    if entry is not CATALOG["core"] and entry is not COLLECTION:
+    if entry not in (CATALOG["core"], COLLECTION, TABLE):
         assert "rules" in doc.get("$defs", {}), "a profile keeps its own rules in $defs/rules"
 
 
@@ -91,6 +94,10 @@ def test_examples_validate_and_departures_are_declared(entry):
     pytest.importorskip("jsonschema")
     sc = est.load_schemas()
     for rel in entry["examples"]:
+        if entry is TABLE:
+            issues = et.validate_table(et.read_table(ROOT / rel), base_dir=ROOT / "examples")
+            assert [str(i) for i in issues if i.level in ("error", "warning")] == [], rel
+            continue
         if entry is COLLECTION:
             issues = validate_collection(read_collection(ROOT / rel), schema=sc, base_dir=ROOT / "examples")
             bad = [str(i) for i in issues if i.level in ("error", "warning") and ".record" not in i.path]

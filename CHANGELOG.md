@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Table specs, `estimation-table/0.1` (`spec/table.md`, `schema/estimation-table-0.1.json`,
+  catalog entry `table`; proposal `docs/proposals/table-spec.md`, Ted 2026-11-05): a saved
+  layout for a regression table from records, with no results in it. Columns name records by
+  `meta.id` (with source paths as hints and an optional `sha256` pin) and may pick another
+  vcov, a component or a response; rows are ordered and relabelled, with `keep`/`drop`
+  patterns and shared rows; statistics rows are metrics, the vcov type or cluster counts,
+  fixed effects, tests or literal text. A companion to the format: records and collections
+  don't change. Python: `estimation_format.table` (`new_table`, `read_table`, `write_table`,
+  `validate_table`, `build_table`, `render`/`render_table` to text, Markdown, LaTeX, HTML
+  and CSV, `to_great_table`; `python -m estimation_format.table spec.json -f latex`).
 - estrec reads records: `read_estimation()` (a record, or a folder of them) and
   `read_collection()` (embedded members or a members file) return records of class
   `estimation_record`, kept as written. `print` gives a quick view; `tidy` and `glance`

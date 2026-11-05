@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/estimation-table-0.1.json",
+  "title": "estimation-table/0.1",
+  "x-license": "CC0-1.0",
+  "description": "A table spec: how to lay out a regression table from estimation records (columns, rows and labels, statistics rows, number format). It holds no results; every number comes from the records when the table is rendered. Specification: spec/table.md. A companion to the estimation format, versioned on its own.",
+  "type": "object",
+  "required": ["schema", "meta", "columns"],
+  "properties": {
+    "schema": {"const": "estimation-table/0.1"},
+    "meta": {
+      "type": "object",
+      "required": ["id", "created"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "created": {"type": "string", "format": "date-time"},
+        "producer": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {"name": {"type": "string"}, "version": {"type": "string"}}
+        },
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "title": {"type": "string"},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1, "description": "A record file, a folder of records or a collection, relative to the spec's folder."}
+        },
+        "additionalProperties": false
+      }
+    },
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["record"],
+        "properties": {
+          "record": {"type": "string", "minLength": 1, "description": "The record's meta.id."},
+          "source": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "header": {"type": "string"},
+          "vcov": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "integer", "minimum": 0}]},
+          "component": {"type": "string"},
+          "response": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {"type": "string"},
+          "terms": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "label": {"type": "string"}
+        },
+        "oneOf": [{"required": ["term"]}, {"required": ["terms"]}],
+        "additionalProperties": false
+      }
+    },
+    "keep": {"type": "array", "items": {"type": "string"}},
+    "drop": {"type": "array", "items": {"type": "string"}},
+    "keep_unlisted": {"type": "boolean"},
+    "uncertainty": {"enum": ["std_error", "statistic", "p_value", "conf_int", null]},
+    "stars": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "array", "items": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1}, "minItems": 1}
+      ]
+    },
+    "stats": {"type": "array", "items": {"$ref": "#/$defs/stat"}},
+    "format": {
+      "type": "object",
+      "properties": {
+        "digits": {"type": "integer", "minimum": 0, "maximum": 12},
+        "thousands": {"type": "string"},
+        "missing": {"type": "string"},
+        "fe_yes": {"type": "string"},
+        "fe_no": {"type": "string"},
+        "star_symbols": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "stat": {
+      "type": "object",
+      "properties": {
+        "metric": {"type": "string", "minLength": 1},
+        "vcov": {"enum": ["type", "n_clusters"]},
+        "fixed_effect": {"type": "string", "minLength": 1},
+        "test": {"type": "string", "minLength": 1},
+        "value": {"enum": ["statistic", "p_value"]},
+        "values": {"type": "array", "items": {"type": "string"}},
+        "label": {"type": "string"},
+        "digits": {"type": "integer", "minimum": 0, "maximum": 12}
+      },
+      "oneOf": [
+        {"required": ["metric"]},
+        {"required": ["vcov"]},
+        {"required": ["fixed_effect"]},
+        {"required": ["test"]},
+        {"required": ["values", "label"]}
+      ],
+      "additionalProperties": false
+    }
+  }
+}
