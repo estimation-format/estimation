@@ -159,6 +159,10 @@ table.estimation-table tfoot td { font-size: 12.5px; color: var(--muted); paddin
 .seg button { border: 0; background: none; padding: 3px 9px; border-radius: 4px; cursor: pointer; color: var(--muted); font-size: 13px; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
 .export-head .spacer { flex: 1; }
+.export-note { margin: 0; padding: 8px 10px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+table.estimation-table thead th.linked { cursor: pointer; }
+table.estimation-table thead th.linked span { border-bottom: 1px dotted var(--muted); }
+table.estimation-table thead th.linked:hover span, table.estimation-table thead th.linked:focus-visible span { color: var(--accent); border-bottom-color: var(--accent); }
 .export textarea { border: 0; border-radius: 0 0 var(--r) var(--r); font: 12.5px/1.5 var(--font-mono); min-height: 220px; padding: 10px; white-space: pre; overflow: auto; }
 
 /* one record */
@@ -301,15 +305,18 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
                 <button type="button" data-f="html" aria-pressed="false">HTML</button>
                 <button type="button" data-f="csv" aria-pressed="false">CSV</button>
                 <button type="button" data-f="text" aria-pressed="false">Text</button>
+                <button type="button" data-f="web" aria-pressed="false">Web page</button>
                 <button type="button" data-f="spec" aria-pressed="false">Table spec</button>
               </div>
               <span class="spacer"></span>
               <label class="inline" id="pin-wrap" hidden><input type="checkbox" id="opt-pin"> Pin record versions</label>
+              <label class="inline" id="redact-wrap" hidden><input type="checkbox" id="opt-redact" checked> Leave out identifying details</label>
               <button class="btn small" id="copy" type="button">Copy</button>
               <button class="btn small" id="save" type="button">Save file</button>
               <button class="btn small" id="load-spec" type="button">Open table spec</button>
               <input id="spec-input" type="file" accept=".json" hidden>
             </div>
+            <p class="export-note" id="web-note" hidden></p>
             <textarea id="export-text" readonly spellcheck="false" aria-label="Exported table"></textarea>
           </div>
         </div>
@@ -325,6 +332,7 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
 
 <script src="estimation-table.js"></script>
 <script src="examples.js"></script>
+<script src="identifying.js"></script>
 <script>
 "use strict";
 const E = window.EstTable;
@@ -773,6 +781,7 @@ async function renderTable({ keepControls = false } = {}) {
   try {
     lastTable = E.buildTable(state.spec, idx);
     $("preview").innerHTML = E.render(lastTable, "html");
+    linkHeaders();
     for (const w of lastTable.warnings) msgs.append(el("div", { class: "msg warning", text: w.replace(/^warning: /, "") }));
   } catch (e) {
     lastTable = null;
@@ -806,11 +815,69 @@ async function specForExport() {
   return s;
 }
 
+// the item behind a column of the built table
+function columnItem(i) {
+  const c = (state.spec.columns || [])[i];
+  const id = lastTable && lastTable.column_records[i];
+  if (!id) return null;
+  return state.items.find((x) => (x.record.meta || {}).id === id && (!c || !c.source || x.source === c.source))
+    || state.items.find((x) => (x.record.meta || {}).id === id) || null;
+}
+
+function recordSummary(r) {
+  const m = r.meta || {}, e = m.estimator || {};
+  let v = null;
+  try { v = E.pickVcov(r, null); } catch { v = null; }
+  const sw = ((r.provenance || {}).software || []);
+  return [m.title, [e.family, e.method].filter(Boolean).join(" / ") + ((m.responses || []).length ? ` of ${m.responses.join(", ")}` : ""),
+    `N ${E.statValue(E.num((r.metrics || {}).nobs), 0, ",")}`, v ? `Std. errors: ${E.vcovLabel(v)}` : null,
+    ((r.specification || {}).fixed_effects || []).length ? `Fixed effects: ${r.specification.fixed_effects.join(", ")}` : null,
+    (Array.isArray(sw) ? sw : [sw]).filter((s) => s.role === "estimator").map((s) => `${s.name} ${s.version || ""}`.trim())[0] || null,
+    "Click to open the record"].filter(Boolean).join("\n");
+}
+
+// column headings in the preview open their record
+function linkHeaders() {
+  const ths = $("preview").querySelectorAll("thead th");
+  [...ths].slice(1).forEach((th, i) => {
+    const it = columnItem(i);
+    if (!it) return;
+    th.classList.add("linked");
+    th.tabIndex = 0;
+    th.title = recordSummary(it.record);
+    th.innerHTML = `<span>${th.innerHTML}</span>`;
+    const open = () => { state.selected = it.key; state.recordVcov = ""; renderRail(); renderRecord(); showTab("record"); };
+    th.addEventListener("click", open);
+    th.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+  });
+}
+
+function webPage() {
+  const ids = [...new Set(lastTable.column_records)];
+  let removed = 0;
+  const recs = ids.map((id, i) => {
+    const it = columnItem(lastTable.column_records.indexOf(id));
+    if (!it) return null;
+    if (!$("opt-redact").checked) return it.record;
+    const r = E.redactRecord(it.record, window.EST_IDENTIFYING || []);
+    removed += r.removed.length;
+    return r.record;
+  }).filter(Boolean);
+  const note = $("web-note");
+  note.hidden = false;
+  note.textContent = `A page with the table and the ${recs.length === 1 ? "record" : `${recs.length} records`} behind it: hover over a column heading for a summary, click it for the full record. `
+    + ($("opt-redact").checked ? (removed ? `${removed} identifying field${removed === 1 ? "" : "s"} (user, host, paths) left out.` : "The records have no identifying fields.") : "The records are included as they are, identifying fields and all.");
+  return E.renderWebPage(lastTable, recs);
+}
+
 async function renderExport() {
   for (const b of $("formats").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.f === state.format));
   $("pin-wrap").hidden = state.format !== "spec";
+  $("redact-wrap").hidden = state.format !== "web";
+  $("web-note").hidden = true;
   const box = $("export-text");
   if (state.format === "spec") box.value = state.spec ? JSON.stringify(await specForExport(), null, 2) + "\n" : "";
+  else if (state.format === "web") box.value = lastTable ? webPage() : "";
   else box.value = lastTable ? E.render(lastTable, state.format) : "";
 }
 
@@ -969,6 +1036,7 @@ $("opt-unlisted").addEventListener("change", () => {
   update();
 });
 $("opt-pin").addEventListener("change", renderExport);
+$("opt-redact").addEventListener("change", renderExport);
 $("stat-add-btn").addEventListener("click", () => {
   const c = ($("stat-add")._cands || [])[Number($("stat-add").value)];
   if (!c) return;
@@ -993,7 +1061,7 @@ $("copy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(box.value); toast("Copied"); }
   catch { box.focus(); box.select(); toast("Selected: press Ctrl+C or ⌘C to copy"); }
 });
-const EXT = { latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", spec: "estimation-table.json" };
+const EXT = { latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", web: "html", spec: "estimation-table.json" };
 $("save").hidden = embedded;
 $("save").addEventListener("click", () => {
   const text = $("export-text").value;

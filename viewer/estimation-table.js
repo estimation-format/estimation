@@ -568,6 +568,7 @@
     return {
       title: spec.title === undefined ? null : spec.title,
       header: cols.map((c) => c.header),
+      column_records: cols.map((c) => c.found.record.meta.id),
       rows,
       notes,
       warnings: issues.filter((i) => i.level === "warning").map((i) => `warning: ${i.path}: ${i.message}`),
@@ -662,6 +663,164 @@
     return f(t, opts);
   }
 
+  // ------------------------------------------------------------ redaction
+
+  const CORE = ["meta", "specification", "metrics", "parameters", "structures"];
+
+  // A copy of a record without the fields at `paths` (DEFAULT_IDENTIFYING syntax: dotted, with
+  // [*] for every list item), plus a history entry naming them, as the Python reference's
+  // redact() does. Paths in the sections the core digest covers are left alone.
+  function redactRecord(rec, paths, by) {
+    const out = JSON.parse(JSON.stringify(rec));
+    const changed = [];
+    for (const pattern of paths) {
+      const parts = pattern.replace(/\[\*\]/g, ".[*]").split(".").filter(Boolean);
+      if (!parts.length || CORE.includes(parts[0])) continue;
+      const walk = (node, i, prefix) => {
+        if (node === null || typeof node !== "object") return;
+        const part = parts[i];
+        if (part === "[*]") {
+          if (!Array.isArray(node)) return;
+          node.forEach((x, k) => walk(x, i + 1, `${prefix}[${k}]`));
+          return;
+        }
+        if (Array.isArray(node) || !(part in node)) return;
+        const path = prefix ? `${prefix}.${part}` : part;
+        if (i === parts.length - 1) { delete node[part]; changed.push(path); }
+        else walk(node[part], i + 1, path);
+      };
+      walk(out, 0, "");
+    }
+    if (changed.length) {
+      out.history = out.history || [];
+      out.history.push({ when: new Date().toISOString().replace(/\.\d+Z$/, "Z"), by: by || { name: "estimation viewer", version: "0.1" }, action: "redacted", method: "removed", fields: changed.sort() });
+    }
+    return { record: out, removed: changed };
+  }
+
+  // ------------------------------------------------------------ the web page
+
+  // A self-contained HTML page: the table, and the records behind its columns. Hovering a
+  // column heading summarizes its record; clicking it opens the full record.
+  function renderWebPage(t, records, opts) {
+    opts = opts || {};
+    const byId = new Map(records.map((r) => [((r || {}).meta || {}).id, r]));
+    const used = [...new Set(t.column_records || [])].map((id) => byId.get(id)).filter(Boolean);
+    const json = JSON.stringify({ columns: t.column_records || [], records: used }).replace(/</g, "\\u003c");
+    const table = renderHTML(t).replace(/<thead><tr><th><\/th>(.*?)<\/tr><\/thead>/, (_, ths) => {
+      let i = 0;
+      return "<thead><tr><th></th>" + ths.replace(/<th>(.*?)<\/th>/g, (__, h) => `<th><button type="button" class="col" data-col="${i++}" aria-haspopup="dialog">${h}</button></th>`) + "</tr></thead>";
+    });
+    const title = escHTML(t.title || "Estimation table");
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title}</title>
+<meta name="generator" content="estimation viewer (estimation-table/0.1)">
+<style>
+:root { --bg: #ffffff; --ink: #18212b; --muted: #5a6573; --line: #d6dce3; --accent: #2b5f8e; --soft: #eef3f8; }
+@media (prefers-color-scheme: dark) { :root { --bg: #14191f; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541; --accent: #84b3df; --soft: #1d2732; color-scheme: dark; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Georgia, "Times New Roman", serif; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
+.wrap { overflow-x: auto; }
+table.estimation-table { border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
+table.estimation-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; }
+table.estimation-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estimation-table th, table.estimation-table td { padding: 1px 14px; white-space: nowrap; }
+table.estimation-table tbody th { text-align: left; font-weight: 400; }
+table.estimation-table td { text-align: center; }
+table.estimation-table tr.uncertainty td { color: var(--muted); }
+table.estimation-table tbody tr.estimate:not(:first-child) th, table.estimation-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
+table.estimation-table tr.first-stat th, table.estimation-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
+table.estimation-table tbody tr:last-child th, table.estimation-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
+table.estimation-table tfoot td { font-size: 13px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
+button.col { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-bottom: 1px dotted var(--muted); }
+button.col:hover, button.col:focus-visible { color: var(--accent); border-bottom-color: var(--accent); outline: none; }
+td.hl, th.hl { background: var(--soft); }
+.tip { position: absolute; z-index: 5; max-width: 320px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: 12.5px/1.45 system-ui, sans-serif; box-shadow: 0 4px 16px rgba(0,0,0,.12); pointer-events: none; }
+.tip b { font-weight: 600; }
+.hint { text-align: center; color: var(--muted); font: 12px system-ui, sans-serif; margin-top: 10px; }
+dialog { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); max-width: min(860px, calc(100vw - 32px)); width: 100%; padding: 0; font: 14px/1.45 system-ui, sans-serif; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+.dhead { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.dhead h2 { margin: 0; font-size: 17px; }
+.dbody { padding: 14px 16px; display: grid; gap: 14px; max-height: 75vh; overflow: auto; }
+.dbody h3 { margin: 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; overflow-wrap: anywhere; }
+.grid { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
+.grid th, .grid td { padding: 3px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.grid th:first-child, .grid td:first-child { text-align: left; }
+.grid thead th { color: var(--muted); font-weight: 500; }
+.scroll { overflow-x: auto; }
+pre { font: 12px/1.45 ui-monospace, Menlo, monospace; background: var(--soft); padding: 10px; border-radius: 6px; overflow: auto; max-height: 360px; }
+.btn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; text-decoration: none; }
+code { font: 12.5px ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+${table}</div>
+<p class="hint">Hover over a column heading for its estimation; click it for the full record.</p>
+<dialog id="rec"><div class="dhead"><h2 id="rec-title"></h2><form method="dialog"><button class="btn">Close</button></form></div><div class="dbody" id="rec-body"></div></dialog>
+<script type="application/json" id="estimation-records">${json}</script>
+<script>
+(function () {
+  "use strict";
+  var data = JSON.parse(document.getElementById("estimation-records").textContent);
+  var recs = {}; data.records.forEach(function (r) { recs[r.meta.id] = r; });
+  function num(v) { if (v && typeof v === "object") v = v.value; if (typeof v === "number") return v; if (v === "Inf") return Infinity; if (v === "-Inf") return -Infinity; return NaN; }
+  function fmt(x) { if (typeof x !== "number") return x == null ? "" : String(x); if (isNaN(x)) return ""; if (!isFinite(x)) return x > 0 ? "Inf" : "-Inf"; if (Number.isInteger(x) && Math.abs(x) < 1e15) return x.toLocaleString("en-US"); var a = Math.abs(x); return a !== 0 && (a < 1e-4 || a >= 1e7) ? x.toExponential(3) : String(Number(x.toPrecision(4))); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function vcovs(r) { var v = (r.structures || {}).vcov; return v == null ? [] : Array.isArray(v) ? v : [v]; }
+  function vlabel(v) { var cl = v.cluster || []; if (typeof cl === "string") cl = [cl]; return cl.length ? "clustered by " + cl.join(" & ") : (v.type || "?"); }
+  function sw(r) { var s = (r.provenance || {}).software || []; if (!Array.isArray(s)) s = [s]; return s.filter(function (x) { return x.role === "estimator" || x.role === "language"; }).map(function (x) { return x.name + (x.version ? " " + x.version : ""); }).join(", "); }
+  function formula(r) { var f = (r.specification || {}).formula; return f ? (typeof f === "string" ? f : f.text) : ""; }
+  function summary(r) {
+    var m = r.meta || {}, e = m.estimator || {}, d = vcovs(r).filter(function (v) { return v.default; })[0];
+    var rows = [["", [e.family, e.method].filter(Boolean).join(" / ") + ((m.responses || []).length ? " of " + m.responses.join(", ") : "")],
+      ["N", fmt(num((r.metrics || {}).nobs))], ["Std. errors", d ? vlabel(d) : ""],
+      ["Fixed effects", ((r.specification || {}).fixed_effects || []).join(", ")], ["Software", sw(r)]];
+    return "<b>" + esc(m.title || formula(r) || "Record") + "</b>" + rows.filter(function (x) { return x[1]; }).map(function (x) { return "<br>" + (x[0] ? esc(x[0]) + ": " : "") + esc(x[1]); }).join("");
+  }
+  function table(head, rows) { return '<div class="scroll"><table class="grid"><thead><tr>' + head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>"; }
+  function detail(r) {
+    var m = r.meta || {}, s = r.specification || {}, h = [];
+    var kv = [["Estimator", [((m.estimator || {}).family), ((m.estimator || {}).method)].filter(Boolean).join(" / ")], ["Response", (m.responses || []).join(", ")], ["Formula", formula(r)], ["Fixed effects", (s.fixed_effects || []).join(", ")], ["Clusters", (s.clusters || []).join(", ")], ["Software", sw(r)], ["Status", m.status], ["Created", m.created], ["Record id", m.id], ["Core digest", m.core_digest]];
+    h.push('<dl class="kv">' + kv.filter(function (x) { return x[1]; }).map(function (x) { return "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>"; }).join("") + "</dl>");
+    h.push("<h3>Estimates</h3>" + table(["Term", "Estimate", "Std. error", "Statistic", "p", "CI low", "CI high"], (r.parameters || []).map(function (p) { return [(p.component ? "[" + p.component + "] " : "") + (p.response && (m.responses || []).length > 1 ? p.response + ": " : "") + p.term].concat(p.dropped ? ["(" + p.dropped + ")", "", "", "", "", ""] : ["estimate", "std_error", "statistic", "p_value", "conf_low", "conf_high"].map(function (k) { return fmt(num(p[k])); })); })));
+    var ms = r.metrics || {}; var mk = Object.keys(ms);
+    if (mk.length) h.push("<h3>Metrics</h3>" + table(["Metric", "Value"], mk.map(function (k) { var v = ms[k]; v = v && typeof v === "object" ? v.value : v; return [k, typeof v === "number" ? fmt(v) : String(v)]; })));
+    var vs = vcovs(r);
+    if (vs.length) h.push("<h3>Variance estimates</h3>" + table(["Type", "Clusters", "df for t", "Small-sample correction", ""], vs.map(function (v) { return [v.type || "?", v.n_clusters ? Object.keys(v.n_clusters).map(function (k) { return k + " " + fmt(v.n_clusters[k]); }).join(", ") : (v.cluster || []).join(", "), isNaN(num(v.df_t)) ? "normal" : fmt(num(v.df_t)), v.ssc ? [v.ssc.convention, v.ssc.formula].filter(Boolean).join(": ") : "", v.default ? "default" : ""]; })));
+    var fe = (r.structures || {}).fixed_effects; if (fe && !Array.isArray(fe)) fe = [fe];
+    if (fe && fe.length) h.push("<h3>Fixed effects</h3>" + table(["Name", "Levels", "Redundant"], fe.map(function (f) { return [f.name, fmt(num(f.levels)), f.redundant == null ? "" : fmt(f.redundant)]; })));
+    if ((r.tests || []).length) h.push("<h3>Tests</h3>" + table(["Test", "Statistic", "Distribution", "df", "p"], r.tests.map(function (t) { return [t.label || t.name || "", fmt(num(t.statistic)), t.distribution || "", Array.isArray(t.df) ? t.df.join(", ") : t.df == null ? "" : String(t.df), fmt(num(t.p_value))]; })));
+    var text = JSON.stringify(r, null, 2);
+    var name = (m.title || m.id || "record").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "record";
+    h.push('<details><summary>The record as JSON</summary><pre>' + esc(text) + '</pre></details><p><a class="btn" download="' + esc(name) + '.estimation.json" href="data:application/json;charset=utf-8,' + encodeURIComponent(text) + '">Download the record</a></p>');
+    return h.join("");
+  }
+  var tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; document.body.appendChild(tip);
+  var dlg = document.getElementById("rec");
+  function cells(i, on) { var trs = document.querySelectorAll("table.estimation-table tr"); for (var k = 0; k < trs.length; k++) { var c = trs[k].children[i + 1]; if (c) c.classList.toggle("hl", on); } }
+  document.querySelectorAll("button.col").forEach(function (b) {
+    var i = Number(b.dataset.col), r = recs[data.columns[i]];
+    if (!r) return;
+    function show() { tip.innerHTML = summary(r); tip.hidden = false; var q = b.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(window.scrollX + q.left, window.scrollX + document.documentElement.clientWidth - tip.offsetWidth - 8)) + "px"; tip.style.top = (window.scrollY + q.bottom + 6) + "px"; cells(i, true); }
+    function hide() { tip.hidden = true; cells(i, false); }
+    b.addEventListener("mouseenter", show); b.addEventListener("focus", show);
+    b.addEventListener("mouseleave", hide); b.addEventListener("blur", hide);
+    b.addEventListener("click", function () { hide(); document.getElementById("rec-title").textContent = b.textContent + (r.meta.title ? ": " + r.meta.title : ""); document.getElementById("rec-body").innerHTML = detail(r); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); });
+  });
+})();
+</script>
+</body>
+</html>
+`;
+  }
+
   // ------------------------------------------------------------ reading files
 
   // A parsed JSON document -> [{record, member}] (a record, or a collection's members). Members
@@ -718,6 +877,7 @@
     num, vcovs, vcovLabel, pickVcov, tidy, glance, findTest,
     canonicalJSON, sha256Hex, recordSha256,
     indexRecords, validateTable, checkPins, buildTable, render, renderers: RENDERERS,
+    redactRecord, renderWebPage,
     recordsIn, newSpec, fixed, statValue,
   };
 });

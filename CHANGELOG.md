@@ -23,6 +23,14 @@
 - estrec `render_table(spec, output, records)`: renders a table spec through modelsummary (each
   column a model from the record's `tidy()` with its vcov; statistics rows by the spec's rules
   as `add_rows`). The example spec gives the same cells as the Python and browser renderers.
+- Viewer: tables that link to their records. In the preview, a column heading shows a summary
+  of its record on hover and opens it on click. A new **Web page** export writes one
+  self-contained HTML file with the table and the records behind it: hover a heading for a
+  summary (estimator, N, standard errors, fixed effects, software), click it for the full
+  record (estimates, metrics, variance estimates, fixed effects, tests, the JSON and a
+  download). Identifying fields are left out by default (`viewer/identifying.js`, generated
+  from the schemas' `x-identifying` marks; the same result as the Python `redact`). Built
+  tables carry `column_records`, the record behind each column (Python and JS).
 - Table specs: several lines under each estimate (Ted, 2026-11-05). `uncertainty` may be a
   list of names and templates, one row each (`["std_error", "[{p_value}]"]`, `"p = {p_value}"`,
   `"[{conf_low}, {conf_high}]"`; placeholders `{estimate}`, `{std_error}`, `{statistic}`,

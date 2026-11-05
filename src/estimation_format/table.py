@@ -451,8 +451,8 @@ def _stars(p: float, thresholds: list[float], symbols: list[str]) -> str:
 
 
 def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, records: Any = None) -> dict:
-    """The table as cells: {"title", "header": [..], "rows": [{"label", "cells", "kind"}],
-    "notes": [..], "warnings": [..]}. `kind` is "estimate", "uncertainty" or "stat". Raises
+    """The table as cells: {"title", "header": [..], "column_records": [meta.id per column],
+    "rows": [{"label", "cells", "kind"}], "notes": [..], "warnings": [..]}. `kind` is "estimate", "uncertainty" or "stat". Raises
     ValueError on errors (spec/table.md section 9)."""
     issues = validate_table(spec, base_dir=base_dir, records=records, schema=None)
     errors = [i for i in issues if i.level == "error"]
@@ -586,6 +586,7 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
     return {
         "title": spec.get("title"),
         "header": [c["header"] for c in cols],
+        "column_records": [c["found"].record["meta"]["id"] for c in cols],
         "rows": out_rows,
         "notes": notes,
         "warnings": [str(i) for i in issues if i.level == "warning"],

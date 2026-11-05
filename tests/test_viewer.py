@@ -4,6 +4,7 @@ table logic (viewer/estimation-table.js) builds the same tables as the Python re
 import copy
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -11,6 +12,7 @@ from pathlib import Path
 import pytest
 
 import estimation_format as ef
+from estimation_format import records as est
 from estimation_format import table as et
 from estimation_format import views
 
@@ -19,13 +21,102 @@ EXAMPLES = ROOT / "schema" / "examples"
 NODE = shutil.which("node")
 
 
-def test_examples_js_is_current():
+def _make():
     spec = importlib.util.spec_from_file_location("make_examples", ROOT / "viewer" / "make_examples.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert (ROOT / "viewer" / "examples.js").read_text(encoding="utf-8") == mod.content(), (
+    return mod
+
+
+def test_examples_js_is_current():
+    assert (ROOT / "viewer" / "examples.js").read_text(encoding="utf-8") == _make().content(), (
         "run: python viewer/make_examples.py"
     )
+
+
+def test_identifying_js_is_current():
+    mod = _make()
+    assert (ROOT / "viewer" / "identifying.js").read_text(encoding="utf-8") == mod.identifying_js(), (
+        "run: python viewer/make_examples.py"
+    )
+    paths = mod.identifying()
+    assert set(est.DEFAULT_IDENTIFYING) <= set(paths)  # the schemas mark at least the fallback list
+    assert not any(p.split(".")[0] in est.CORE for p in paths)
+
+
+def identified_record():
+    rec = ef.read(EXAMPLES / "lm-minimal.estimation.json")
+    rec["provenance"] = {
+        "agent": {"user": "ted", "host": "valiant"},
+        "environment": {"os": "Linux", "host": "valiant"},
+        "execution": {
+            "invocation": {"argv": ["Rscript", "/home/ted/fit.R"], "working_directory": "/home/ted"}
+        },
+        "data": [{"name": "d", "location": "/home/ted/d.csv"}, {"name": "e"}],
+    }
+    return rec
+
+
+def run_node(script, payload):
+    run = subprocess.run(
+        [NODE, "-e", script, str(ROOT / "viewer")],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert run.returncode == 0, run.stderr
+    return json.loads(run.stdout)
+
+
+def test_redaction_matches_python():
+    if NODE is None:
+        pytest.skip("node not installed")
+    rec = identified_record()
+    paths = _make().identifying()
+    script = (
+        "const E=require(process.argv[1]+'/estimation-table.js');const P=require(process.argv[1]+'/identifying.js');"
+        "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(E.redactRecord(r,P)))"
+    )
+    js = run_node(script, rec)
+    py = est.redact(rec, paths=paths)
+    assert js["removed"] == py["history"][-1]["fields"]
+    for d in (js["record"], py):
+        d["history"][-1].pop("when")
+        d["history"][-1].pop("by")
+    assert js["record"] == py
+    assert js["record"]["provenance"]["environment"] == {"os": "Linux"}
+
+
+def test_web_page():
+    if NODE is None:
+        pytest.skip("node not installed")
+    t = et.build_table(specs()[0], base_dir=EXAMPLES)
+    recs = {}
+    coll = ef.read_collection(EXAMPLES / "paper.estimation-collection.json")
+    recs = [r for _, _, r in ef.iter_members(coll)]
+    script = (
+        "const E=require(process.argv[1]+'/estimation-table.js');const x=JSON.parse(require('fs').readFileSync(0,'utf8'));"
+        "process.stdout.write(JSON.stringify(E.renderWebPage(x.t,x.recs)))"
+    )
+    page = run_node(script, {"t": t, "recs": recs})
+    assert page.startswith("<!doctype html>") and page.count('class="col"') == 3
+    m = re.search(r'<script type="application/json" id="estimation-records">(.*?)</script>', page, re.DOTALL)
+    data = json.loads(m.group(1))
+    assert data["columns"] == t["column_records"]
+    assert {r["meta"]["id"] for r in data["records"]} == set(t["column_records"])
+    assert "</" not in m.group(1)  # the embedded JSON can't close its script element
+    inner = re.search(r"<script>\n(.*?)</script>", page, re.DOTALL).group(1)
+    check = subprocess.run([NODE, "--check", "-"], input=inner, capture_output=True, text=True, check=False)
+    assert check.returncode == 0, check.stderr
+    # the table itself is the HTML renderer's, with the headings as buttons
+    assert "-3.206***" in page and "<caption>Table 2: Fuel economy and weight</caption>" in page
+
+
+def test_column_records_match(node_result):
+    _req, out = node_result
+    for spec, js in zip(specs(), out["tables"]):
+        assert js["column_records"] == et.build_table(spec, base_dir=EXAMPLES)["column_records"]
 
 
 FILES = {
