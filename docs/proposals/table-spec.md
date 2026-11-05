@@ -57,7 +57,7 @@ a new table from the same spec.
    terms not listed follow in record order unless `keep_unlisted: false`. `keep`/`drop` are
    regexes on `term`, as in fixest's `etable` and modelsummary's `coef_omit`. Several terms
    can share one row (`{"terms": ["x", "fit_x"], "label": "x"}`), for OLS vs IV columns, as
-   modelsummary's `coef_rename` does. `panels` (Panel A / B) are left for 0.2.
+   modelsummary's `coef_map` does when two names map to one label. `panels` (Panel A / B) are left for 0.2.
 
 4. **Statistics rows are typed:** a metric (`metric`, the record's name such as `nobs`,
    `r2_within`); the vcov (`vcov_type`, or `n_clusters`); a fixed effect (`fixed_effect`,
