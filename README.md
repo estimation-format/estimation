@@ -106,6 +106,11 @@ python -m estimation_format.show table2.estimation-collection.json
 python -m estimation_format.show fit.estimation.json --vcov iid
 ```
 
+**In the browser:** the [record viewer](https://estimation-format.github.io/estimation/viewer/)
+opens records, folders and collections without uploading them, and builds tables you can copy
+as LaTeX, Markdown, HTML or CSV, or save as a table spec (`spec/table.md`) to render again with
+`python -m estimation_format.table table2.estimation-table.json -f latex`.
+
 ## Contributing
 
 Profiles for new model types or tools come by pull request; see

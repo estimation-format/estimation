@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estimation Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Layout: a records rail on the left, the work area (table builder or one record) on the right;
+   the table preview is set like a journal table, the controls around it stay plain. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #18212b;
+  --muted: #5a6573;
+  --line: #d6dce3;
+  --accent: #2b5f8e;
+  --accent-soft: #e2ebf4;
+  --warn: #8a5a00;
+  --warn-soft: #fbf1dc;
+  --error: #a3261c;
+  --error-soft: #f8e3e0;
+  --paper: #fffefb;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-table: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #19202a; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541;
+    --accent: #84b3df; --accent-soft: #1d2c3c; --warn: #e3b35a; --warn-soft: #2f2617;
+    --error: #f08a7e; --error-soft: #35201d; --paper: #1d232c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19202a; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541;
+  --accent: #84b3df; --accent-soft: #1d2c3c; --warn: #e3b35a; --warn-soft: #2f2617;
+  --error: #f08a7e; --error-soft: #35201d; --paper: #1d232c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 32px;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+
+header.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+  padding-block: 14px; border-bottom: 1px solid var(--line); margin-bottom: 16px;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); border-radius: var(--r);
+  padding: 6px 12px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.btn.icon { padding: 2px 7px; font-size: 12px; line-height: 1.4; }
+.btn[disabled] { opacity: 0.45; cursor: default; }
+
+.layout { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.panel > h2, .section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 0; padding: 12px 14px 8px;
+}
+
+/* records rail */
+.drop {
+  margin: 0 14px 12px; padding: 12px; border: 1px dashed var(--line); border-radius: var(--r);
+  color: var(--muted); font-size: 13px; text-align: center;
+}
+body.dragging .drop { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.group { border-top: 1px solid var(--line); }
+.group-head { display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px 4px; font-size: 12px; color: var(--muted); }
+.group-head .mono { overflow-wrap: anywhere; }
+.rec {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center;
+  padding: 8px 14px; border-top: 1px solid transparent; cursor: pointer;
+}
+.rec:hover { background: var(--accent-soft); }
+.rec.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.rec .name { font-weight: 500; overflow-wrap: anywhere; }
+.rec .meta { grid-column: 1; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rec .add { grid-row: 1 / span 2; grid-column: 2; }
+.badge { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+.example-note { margin: 0 14px 12px; font-size: 12px; color: var(--warn); background: var(--warn-soft); padding: 6px 10px; border-radius: var(--r); }
+
+/* work area */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 8px; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px 8px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.view { padding: 14px; }
+.builder { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .builder { grid-template-columns: minmax(0, 1fr); } }
+.controls { display: grid; gap: 18px; min-width: 0; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+legend { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 0 6px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
+.item.off { opacity: 0.55; }
+.item .fields { display: grid; gap: 4px; min-width: 0; }
+.item .tools { display: flex; gap: 3px; }
+.item .hint { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 4px 6px;
+}
+textarea { resize: vertical; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+label.inline { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+label.stack { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.addrow { display: flex; gap: 6px; }
+.addrow select { flex: 1; }
+.empty { color: var(--muted); font-size: 13px; padding: 4px 0; }
+
+/* the table preview: a journal table */
+.preview-wrap { min-width: 0; display: grid; gap: 14px; }
+.paper { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 20px; overflow-x: auto; }
+table.estimation-table { border-collapse: collapse; font-family: var(--font-table); font-size: 15px; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
+table.estimation-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; text-wrap: balance; }
+table.estimation-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estimation-table th, table.estimation-table td { padding: 1px 14px; white-space: nowrap; }
+table.estimation-table tbody th { text-align: left; font-weight: 400; }
+table.estimation-table td { text-align: center; }
+table.estimation-table tr.uncertainty td { padding-bottom: 5px; color: var(--muted); }
+table.estimation-table tr.first-stat th, table.estimation-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
+table.estimation-table tbody tr:last-child th, table.estimation-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
+table.estimation-table tfoot td { font-size: 12.5px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
+
+.msgs { display: grid; gap: 6px; }
+.msg { font-size: 13px; padding: 6px 10px; border-radius: var(--r); overflow-wrap: anywhere; }
+.msg.warning { background: var(--warn-soft); color: var(--warn); }
+.msg.error { background: var(--error-soft); color: var(--error); }
+.msg.info { background: var(--accent-soft); color: var(--accent); }
+
+.export { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; }
+.export-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; background: var(--bg); padding: 2px; border-radius: var(--r); }
+.seg button { border: 0; background: none; padding: 3px 9px; border-radius: 4px; cursor: pointer; color: var(--muted); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.export-head .spacer { flex: 1; }
+.export textarea { border: 0; border-radius: 0 0 var(--r) var(--r); font: 12.5px/1.5 var(--font-mono); min-height: 220px; padding: 10px; white-space: pre; overflow: auto; }
+
+/* one record */
+.detail { display: grid; gap: 18px; min-width: 0; }
+.detail h3 { margin: 0; font-size: 17px; font-weight: 600; text-wrap: balance; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.chip.ok { border-color: var(--accent); color: var(--accent); }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 16px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.scroll { overflow-x: auto; }
+table.grid { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; width: 100%; }
+table.grid th, table.grid td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.grid th:first-child, table.grid td:first-child { text-align: left; }
+table.grid thead th { color: var(--muted); font-weight: 500; font-size: 12px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.metric { border: 1px solid var(--line); border-radius: var(--r); padding: 6px 10px; min-width: 0; }
+.metric .k { font-size: 11px; color: var(--muted); font-family: var(--font-mono); overflow-wrap: anywhere; }
+.metric .v { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+details.raw summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); padding: 10px; border-radius: var(--r); overflow: auto; max-height: 420px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar label { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.toolbar select { width: auto; }
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: var(--r); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { .toast { transition: opacity 0.2s; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <h1>Estimation Viewer</h1>
+    <span class="sub">records and collections, read in your browser</span>
+  </div>
+  <div class="actions">
+    <button class="btn primary" id="open-files" type="button">Open files</button>
+    <button class="btn" id="open-folder" type="button">Open folder</button>
+    <button class="btn" id="load-examples" type="button">Examples</button>
+    <button class="btn" id="clear" type="button">Clear</button>
+    <input id="file-input" type="file" multiple accept=".json,.jsonl" hidden>
+    <input id="folder-input" type="file" webkitdirectory multiple hidden>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="panel" id="rail">
+    <h2>Records</h2>
+    <p class="example-note" id="example-note" hidden>Showing the format's example records. Open your own files to replace them.</p>
+    <div class="drop" id="drop">Drop <code>.estimation.json</code> records, collections (with their <code>.members.jsonl</code>) or a table spec here. Files stay on this computer.</div>
+    <div id="groups"></div>
+  </aside>
+
+  <main class="panel" id="work">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-table" aria-selected="true" aria-controls="view-table" type="button">Table</button>
+      <button class="tab" role="tab" id="tab-record" aria-selected="false" aria-controls="view-record" type="button">Record</button>
+    </div>
+
+    <section class="view" id="view-table" role="tabpanel" aria-labelledby="tab-table">
+      <div class="builder">
+        <div class="controls">
+          <fieldset>
+            <legend>Table</legend>
+            <label class="stack">Title<input type="text" id="opt-title" placeholder="Table 2: ..."></label>
+            <div class="row2">
+              <label class="stack">Under estimates
+                <select id="opt-unc">
+                  <option value="std_error">Std. errors</option>
+                  <option value="statistic">t / z statistics</option>
+                  <option value="p_value">p-values</option>
+                  <option value="conf_int">Confidence intervals</option>
+                  <option value="">Nothing</option>
+                </select>
+              </label>
+              <label class="stack">Stars
+                <select id="opt-stars">
+                  <option value="0.1,0.05,0.01">0.1 / 0.05 / 0.01</option>
+                  <option value="0.05,0.01,0.001">0.05 / 0.01 / 0.001</option>
+                  <option value="">None</option>
+                </select>
+              </label>
+            </div>
+            <div class="row2">
+              <label class="stack">Decimals<input type="number" id="opt-digits" min="0" max="8" value="3"></label>
+              <label class="stack">FE marker<input type="text" id="opt-feyes" value="Yes"></label>
+            </div>
+            <label class="stack">Notes (one per line)<textarea id="opt-notes" rows="2"></textarea></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Columns</legend>
+            <div id="columns"></div>
+            <p class="empty" id="columns-empty">Add records with <b>+ Table</b> in the list.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Terms</legend>
+            <label class="inline"><input type="checkbox" id="opt-unlisted"> Show new terms automatically</label>
+            <div id="rows"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Statistics</legend>
+            <div id="stats"></div>
+            <div class="addrow">
+              <select id="stat-add" aria-label="Statistic to add"></select>
+              <button class="btn small" id="stat-add-btn" type="button">Add</button>
+            </div>
+            <button class="btn small" id="stat-text" type="button">Add a text row</button>
+          </fieldset>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="msgs" id="table-msgs"></div>
+          <div class="paper" id="preview"></div>
+          <div class="export">
+            <div class="export-head">
+              <div class="seg" id="formats" role="group" aria-label="Export format">
+                <button type="button" data-f="latex" aria-pressed="true">LaTeX</button>
+                <button type="button" data-f="markdown" aria-pressed="false">Markdown</button>
+                <button type="button" data-f="html" aria-pressed="false">HTML</button>
+                <button type="button" data-f="csv" aria-pressed="false">CSV</button>
+                <button type="button" data-f="text" aria-pressed="false">Text</button>
+                <button type="button" data-f="spec" aria-pressed="false">Table spec</button>
+              </div>
+              <span class="spacer"></span>
+              <label class="inline" id="pin-wrap" hidden><input type="checkbox" id="opt-pin"> Pin record versions</label>
+              <button class="btn small" id="copy" type="button">Copy</button>
+              <button class="btn small" id="save" type="button">Save file</button>
+              <button class="btn small" id="load-spec" type="button">Open table spec</button>
+              <input id="spec-input" type="file" accept=".json" hidden>
+            </div>
+            <textarea id="export-text" readonly spellcheck="false" aria-label="Exported table"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-record" role="tabpanel" aria-labelledby="tab-record" hidden>
+      <div id="detail" class="detail"><p class="empty">Pick a record in the list.</p></div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="estimation-table.js"></script>
+<script src="examples.js"></script>
+<script>
+"use strict";
+const E = window.EstTable;
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "text") n.textContent = v;
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) n.append(c.nodeType ? c : String(c));
+  return n;
+};
+
+const state = {
+  items: [],          // {key, record, member, file, source}
+  jsonl: new Map(),   // members files by name
+  pendingDocs: [],    // collections waiting for a members file: {name, doc}
+  selected: null,     // key of the record shown on the Record tab
+  spec: null,
+  format: "latex",
+  examples: false,
+  recordVcov: "",
+};
+const embedded = window.self !== window.top;
+
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (t.hidden = true), 2200);
+}
+
+// ------------------------------------------------------------ loading files
+
+function recordName(it) {
+  const m = it.member || {};
+  return m.label || (it.record.meta || {}).title || it.file.replace(/\.estimation\.json$/, "");
+}
+
+function addDoc(name, doc) {
+  if (doc && doc.schema === "estimation-table/0.1") return { spec: doc };
+  const got = E.recordsIn(doc, state.jsonl);
+  if (!got) return { error: `${name} is not an estimation record, collection or table spec` };
+  const source = name.replace(/\.(estimation-collection|estimation|estimation-table)?\.json$/, "");
+  for (const it of got.items) {
+    const id = (it.record.meta || {}).id;
+    const key = `${name}\u0000${id}`;
+    if (state.items.some((x) => x.key === key)) continue;
+    state.items.push({ key, record: it.record, member: it.member, file: name, source });
+  }
+  if (got.missing.length) state.pendingDocs.push({ name, doc });
+  return { missing: got.missing };
+}
+
+async function loadFiles(files, { examples = false } = {}) {
+  if (state.examples && !examples) clearAll();
+  const msgs = [];
+  const texts = [];
+  for (const f of files) {
+    const name = f.name.split("/").pop();
+    if (!/\.(json|jsonl)$/i.test(name)) continue;
+    texts.push({ name, text: typeof f.text === "string" ? f.text : await f.text() });
+  }
+  // members files first, then records and collections, then table specs
+  for (const t of texts) if (/\.jsonl$/i.test(t.name)) state.jsonl.set(t.name, t.text);
+  const retry = state.pendingDocs.splice(0);
+  for (const p of retry) addDoc(p.name, p.doc);
+  const specs = [];
+  for (const t of texts) {
+    if (/\.jsonl$/i.test(t.name)) continue;
+    let doc;
+    try { doc = JSON.parse(t.text); } catch (e) { msgs.push({ level: "error", message: `${t.name}: not valid JSON (${e.message})` }); continue; }
+    const r = addDoc(t.name, doc);
+    if (r.spec) specs.push({ name: t.name, spec: r.spec });
+    else if (r.error) msgs.push({ level: "error", message: r.error });
+    else if (r.missing && r.missing.length) msgs.push({ level: "warning", message: `${t.name} keeps its records in ${r.missing.join(", ")}: open that file too.` });
+  }
+  state.examples = examples;
+  $("example-note").hidden = !examples;
+  if (specs.length) applySpec(specs[specs.length - 1].spec, specs[specs.length - 1].name);
+  else if (!state.spec && state.items.length) state.spec = E.newSpec(state.items.slice(0, 3));
+  if (!state.selected && state.items.length) state.selected = state.items[0].key;
+  state.loadMsgs = msgs;
+  renderAll();
+}
+
+function clearAll() {
+  state.items = []; state.jsonl = new Map(); state.pendingDocs = []; state.selected = null;
+  state.spec = null; state.examples = false; state.loadMsgs = [];
+  $("example-note").hidden = true;
+}
+
+function loadExamples() {
+  clearAll();
+  loadFiles(window.EST_EXAMPLES || [], { examples: true });
+}
+
+function applySpec(spec, name) {
+  state.spec = JSON.parse(JSON.stringify(spec));
+  state.specName = name;
+  showTab("table");
+}
+
+// ------------------------------------------------------------ the records rail
+
+function renderRail() {
+  const groups = $("groups");
+  groups.replaceChildren();
+  const byFile = new Map();
+  for (const it of state.items) {
+    if (!byFile.has(it.file)) byFile.set(it.file, []);
+    byFile.get(it.file).push(it);
+  }
+  const inTable = new Map();
+  for (const c of (state.spec || {}).columns || []) inTable.set(c.record, (inTable.get(c.record) || 0) + 1);
+  for (const [file, items] of byFile) {
+    const g = el("div", { class: "group" }, el("div", { class: "group-head" }, el("span", { class: "mono", text: file }), el("span", { text: items.length === 1 ? "1 record" : `${items.length} records` })));
+    for (const it of items) {
+      const r = it.record;
+      const est = (r.meta || {}).estimator || {};
+      const n = E.num((r.metrics || {}).nobs);
+      const v = (() => { try { return E.pickVcov(r, null); } catch { return null; } })();
+      const count = inTable.get((r.meta || {}).id) || 0;
+      const row = el("div", { class: "rec" + (state.selected === it.key ? " selected" : ""), tabindex: "0", role: "button", "aria-label": `Show ${recordName(it)}` },
+        el("span", { class: "name" }, recordName(it), count ? el("span", { class: "badge", text: count === 1 ? "in table" : `${count}× in table` }) : null),
+        el("button", { class: "btn small add", type: "button", text: "+ Table", "aria-label": `Add ${recordName(it)} to the table`, onclick: (e) => { e.stopPropagation(); addColumn(it); } }),
+        el("span", { class: "meta", text: [est.method || est.family, ((r.meta || {}).responses || []).join(", "), Number.isNaN(n) ? null : `N ${E.statValue(n, 0, ",")}`, v ? E.vcovLabel(v) : null].filter(Boolean).join(" · ") }));
+      const open = () => { state.selected = it.key; state.recordVcov = ""; renderRail(); renderRecord(); showTab("record"); };
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      g.append(row);
+    }
+    groups.append(g);
+  }
+  if (!state.items.length) groups.append(el("p", { class: "empty", style: "padding: 0 14px 12px", text: "No records open." }));
+}
+
+// ------------------------------------------------------------ table builder
+
+function index() {
+  return E.indexRecords(state.items.map((it) => ({ record: it.record, member: it.member, source: it.source })));
+}
+
+function ensureSpec() {
+  if (!state.spec) state.spec = E.newSpec([]);
+  return state.spec;
+}
+
+function addColumn(it) {
+  const s = ensureSpec();
+  s.columns.push({ record: it.record.meta.id, header: `(${s.columns.length + 1})` });
+  renderAll();
+  showTab("table");
+  toast(`Added ${recordName(it)} as column ${s.columns.length}`);
+}
+
+function move(arr, i, d) {
+  const j = i + d;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+}
+
+function toolButtons(arr, i, after, extra) {
+  return el("div", { class: "tools" },
+    el("button", { class: "btn icon", type: "button", "aria-label": "Move up", text: "↑", disabled: i === 0, onclick: () => { move(arr, i, -1); after(); } }),
+    el("button", { class: "btn icon", type: "button", "aria-label": "Move down", text: "↓", disabled: i === arr.length - 1, onclick: () => { move(arr, i, 1); after(); } }),
+    extra || el("button", { class: "btn icon", type: "button", "aria-label": "Remove", text: "×", onclick: () => { arr.splice(i, 1); after(); } }));
+}
+
+function columnRecords(idx) {
+  return (state.spec.columns || []).map((c) => { const f = c.record ? (c.source && idx.get(c.source + "\u0000" + c.record)) || idx.get(c.record) : null; return f ? f.record : null; });
+}
+
+function renderColumns(idx) {
+  const box = $("columns");
+  box.replaceChildren();
+  const cols = state.spec.columns;
+  $("columns-empty").hidden = cols.length > 0;
+  cols.forEach((c, i) => {
+    const f = (c.source && idx.get(c.source + "\u0000" + c.record)) || idx.get(c.record);
+    const rec = f ? f.record : null;
+    const vs = rec ? E.vcovs(rec) : [];
+    const sel = el("select", { id: `col-vcov-${i}`, "aria-label": "Standard errors for this column" });
+    const def = vs.find((v) => v.default) || null;
+    sel.append(el("option", { value: "", text: def ? `${E.vcovLabel(def)} (default)` : "default" }));
+    vs.forEach((v, j) => { if (v !== def) sel.append(el("option", { value: String(j), text: `${v.type}${(v.cluster || []).length ? " " + E.vcovLabel(v) : ""}` })); });
+    if (c.vcov !== undefined && c.vcov !== null) {
+      const j = typeof c.vcov === "number" ? c.vcov : vs.findIndex((v) => [v.type, E.vcovLabel(v), (v.cluster || []).join(" & ")].includes(c.vcov));
+      if (j >= 0) sel.value = String(j);
+    }
+    sel.addEventListener("change", () => {
+      if (sel.value === "") delete c.vcov;
+      else { const v = vs[Number(sel.value)]; c.vcov = vs.filter((x) => x.type === v.type).length === 1 ? v.type : Number(sel.value); }
+      update();
+    });
+    const head = el("input", { type: "text", id: `col-head-${i}`, value: c.header || "", "aria-label": "Column heading" });
+    head.addEventListener("input", () => { c.header = head.value; update({ keepControls: true }); });
+    const name = f ? recordName(state.items.find((x) => (x.record.meta || {}).id === c.record) || { record: rec, member: f.member, file: "" }) : `missing: ${c.record}`;
+    box.append(el("div", { class: "item" + (rec ? "" : " off") },
+      el("div", { class: "fields" }, head, el("span", { class: "hint", text: name }), vs.length > 1 ? sel : null),
+      toolButtons(cols, i, update)));
+  });
+}
+
+// the terms as the builder shows them: listed rows, then (when shown) unlisted terms, then hidden ones
+function termRows(idx) {
+  const s = state.spec;
+  const recs = columnRecords(idx);
+  const all = [];
+  recs.forEach((r, i) => {
+    if (!r) return;
+    let rows;
+    try { rows = E.tidy(r, { vcov: s.columns[i].vcov, component: s.columns[i].component }); } catch { rows = []; }
+    for (const t of rows) if (!all.includes(t.term)) all.push(t.term);
+  });
+  const out = [];
+  const taken = new Set();
+  for (const row of s.rows || []) {
+    const names = row.terms || [row.term];
+    names.forEach((n) => taken.add(n));
+    out.push({ names, label: row.label || "", on: true, listed: true });
+  }
+  const keep = (s.keep || []).map((p) => { try { return new RegExp(p); } catch { return null; } }).filter(Boolean);
+  const drop = (s.drop || []).map((p) => { try { return new RegExp(p); } catch { return null; } }).filter(Boolean);
+  for (const t of all) {
+    if (taken.has(t)) continue;
+    const shown = s.keep_unlisted !== false && (!keep.length || keep.some((k) => k.test(t))) && !drop.some((d) => d.test(t));
+    out.push({ names: [t], label: "", on: shown, listed: false });
+  }
+  return out;
+}
+
+function materializeRows(view) {
+  const s = state.spec;
+  s.rows = view.filter((r) => r.on).map((r) => {
+    const row = r.names.length > 1 ? { terms: r.names } : { term: r.names[0] };
+    if (r.label && r.label !== r.names[0]) row.label = r.label;
+    return row;
+  });
+  s.keep_unlisted = false;
+  delete s.keep;
+  delete s.drop;
+}
+
+function renderRows(idx) {
+  const box = $("rows");
+  box.replaceChildren();
+  const view = termRows(idx);
+  $("opt-unlisted").checked = state.spec.keep_unlisted !== false;
+  if (!view.length) { box.append(el("p", { class: "empty", text: "No terms yet." })); return; }
+  const after = () => { materializeRows(view); update(); };
+  view.forEach((r, i) => {
+    const on = el("input", { type: "checkbox", id: `row-on-${i}`, checked: r.on, "aria-label": `Show ${r.names.join(", ")}` });
+    on.addEventListener("change", () => { r.on = on.checked; after(); });
+    const lab = el("input", { type: "text", id: `row-label-${i}`, value: r.label, placeholder: r.names[0], "aria-label": `Label for ${r.names.join(", ")}` });
+    lab.addEventListener("change", () => { r.label = lab.value; after(); });
+    lab.addEventListener("input", () => { r.label = lab.value; materializeRows(view); update({ keepControls: true }); });
+    box.append(el("div", { class: "item" + (r.on ? "" : " off") },
+      el("div", { class: "fields" },
+        el("label", { class: "inline" }, on, el("span", { class: "mono", text: r.names.join(" | ") })),
+        lab),
+      toolButtons(view, i, after, el("span"))));
+  });
+}
+
+function statLabel(s) {
+  if ("metric" in s) return E.STAT_LABELS[s.metric] || s.metric;
+  if ("vcov" in s) return s.vcov === "type" ? "Std. errors" : "Clusters";
+  if ("fixed_effect" in s) return `FE: ${s.fixed_effect}`;
+  if ("test" in s) return s.test;
+  return s.label || "";
+}
+
+function statKind(s) {
+  if ("metric" in s) return `metric ${s.metric}`;
+  if ("vcov" in s) return s.vcov === "type" ? "the column's standard errors" : "cluster counts";
+  if ("fixed_effect" in s) return `fixed effect ${s.fixed_effect}`;
+  if ("test" in s) return `test ${s.test} (${s.value || "statistic"})`;
+  return "text, one value per column";
+}
+
+function statCandidates(idx) {
+  const s = state.spec;
+  const recs = columnRecords(idx).filter(Boolean);
+  const used = new Set((s.stats || []).map((x) => JSON.stringify(Object.fromEntries(Object.entries(x).filter(([k]) => ["metric", "vcov", "fixed_effect", "test", "value"].includes(k))))));
+  const out = [];
+  const push = (o, text) => { if (!used.has(JSON.stringify(o))) out.push({ o, text }); };
+  const metrics = [];
+  for (const r of recs) {
+    const g = E.glance(r, { metrics: "all" });
+    const t = E.glance(r, { metrics: "table" });
+    for (const k of [...E.TABLE_METRICS.filter((m) => m in t), ...Object.keys(g)]) {
+      if (["vcov_type", "fixed_effects"].includes(k) || metrics.includes(k)) continue;
+      const v = k in g ? g[k] : t[k];
+      if (typeof v === "number" || typeof v === "string") metrics.push(k);
+    }
+  }
+  for (const m of metrics) push({ metric: m }, `${E.STAT_LABELS[m] || m}${E.STAT_LABELS[m] ? ` (${m})` : ""}`);
+  push({ vcov: "type" }, "Std. errors (type)");
+  if (recs.some((r) => E.vcovs(r).some((v) => v.n_clusters))) push({ vcov: "n_clusters" }, "Clusters (counts)");
+  const fes = [];
+  for (const r of recs) for (const f of (r.specification || {}).fixed_effects || []) if (!fes.includes(f)) fes.push(f);
+  for (const f of fes) push({ fixed_effect: f }, `FE: ${f}`);
+  const tests = [];
+  for (const r of recs) for (const t of r.tests || []) { const k = t.label || t.name; if (k && !tests.includes(k)) tests.push(k); }
+  for (const t of tests) { push({ test: t }, `Test ${t}: statistic`); push({ test: t, value: "p_value" }, `Test ${t}: p-value`); }
+  return out;
+}
+
+function renderStats(idx) {
+  const box = $("stats");
+  box.replaceChildren();
+  const s = state.spec;
+  s.stats = s.stats || [];
+  s.stats.forEach((st, i) => {
+    const lab = el("input", { type: "text", id: `stat-label-${i}`, value: st.label || "", placeholder: statLabel(st), "aria-label": "Row label" });
+    lab.addEventListener("input", () => { if (lab.value) st.label = lab.value; else if (!("values" in st)) delete st.label; update({ keepControls: true }); });
+    const fields = [lab, el("span", { class: "hint", text: statKind(st) })];
+    if ("values" in st) {
+      const n = s.columns.length;
+      while (st.values.length < n) st.values.push("");
+      if (st.values.length > n) st.values.length = n;
+      const grid = el("div", { class: "row2" });
+      st.values.forEach((v, j) => {
+        const inp = el("input", { type: "text", id: `stat-${i}-val-${j}`, value: v, placeholder: s.columns[j].header || `(${j + 1})`, "aria-label": `Value for column ${j + 1}` });
+        inp.addEventListener("input", () => { st.values[j] = inp.value; update({ keepControls: true }); });
+        grid.append(inp);
+      });
+      fields.push(grid);
+    }
+    box.append(el("div", { class: "item" }, el("div", { class: "fields" }, ...fields), toolButtons(s.stats, i, update)));
+  });
+  const add = $("stat-add");
+  add.replaceChildren();
+  const cands = statCandidates(idx);
+  for (const [i, c] of cands.entries()) add.append(el("option", { value: String(i), text: c.text }));
+  add._cands = cands;
+  $("stat-add-btn").disabled = !cands.length;
+}
+
+function readOptions() {
+  const s = state.spec;
+  const t = $("opt-title").value.trim();
+  if (t) s.title = t; else delete s.title;
+  s.uncertainty = $("opt-unc").value || null;
+  const st = $("opt-stars").value;
+  if (st) s.stars = st.split(",").map(Number); else delete s.stars;
+  s.format = Object.assign({}, s.format || {});
+  const d = parseInt($("opt-digits").value, 10);
+  if (Number.isFinite(d) && d >= 0 && d <= 12) s.format.digits = d;
+  const fe = $("opt-feyes").value;
+  if (fe && fe !== "Yes") s.format.fe_yes = fe; else delete s.format.fe_yes;
+  if (!Object.keys(s.format).length) delete s.format;
+  const notes = $("opt-notes").value.split("\n").map((x) => x.trim()).filter(Boolean);
+  if (notes.length) s.notes = notes; else delete s.notes;
+}
+
+function writeOptions() {
+  const s = state.spec;
+  $("opt-title").value = s.title || "";
+  $("opt-unc").value = s.uncertainty === null ? "" : s.uncertainty || "std_error";
+  const st = (s.stars || []).join(",");
+  $("opt-stars").value = [...$("opt-stars").options].some((o) => o.value === st) ? st : st ? (() => { $("opt-stars").append(el("option", { value: st, text: (s.stars || []).join(" / ") })); return st; })() : "";
+  $("opt-digits").value = (s.format || {}).digits !== undefined ? s.format.digits : 3;
+  $("opt-feyes").value = (s.format || {}).fe_yes || "Yes";
+  $("opt-notes").value = (s.notes || []).join("\n");
+}
+
+let lastTable = null;
+async function renderTable({ keepControls = false } = {}) {
+  const msgs = $("table-msgs");
+  msgs.replaceChildren();
+  for (const m of state.loadMsgs || []) msgs.append(el("div", { class: `msg ${m.level}`, text: m.message }));
+  if (!state.spec) {
+    $("preview").replaceChildren(el("p", { class: "empty", text: "Open records, then add them as columns." }));
+    $("export-text").value = "";
+    return;
+  }
+  const idx = index();
+  if (!keepControls) { writeOptions(); renderColumns(idx); renderRows(idx); renderStats(idx); }
+  if (!state.spec.columns.length) {
+    $("preview").replaceChildren(el("p", { class: "empty", text: "No columns yet: add records with + Table." }));
+    lastTable = null; renderExport(); return;
+  }
+  try {
+    lastTable = E.buildTable(state.spec, idx);
+    $("preview").innerHTML = E.render(lastTable, "html");
+    for (const w of lastTable.warnings) msgs.append(el("div", { class: "msg warning", text: w.replace(/^warning: /, "") }));
+  } catch (e) {
+    lastTable = null;
+    $("preview").replaceChildren();
+    const missing = /not found/.test(e.message);
+    msgs.append(el("div", { class: "msg error", text: missing ? `${e.message}. Open the files this table uses${(state.spec.sources || []).length ? ": " + state.spec.sources.map((x) => x.path).join(", ") : ""}.` : e.message }));
+  }
+  const pins = await E.checkPins(state.spec, idx);
+  for (const w of pins) msgs.append(el("div", { class: "msg warning", text: `${w.path}: ${w.message}` }));
+  renderExport();
+}
+
+async function specForExport() {
+  const s = JSON.parse(JSON.stringify(state.spec));
+  if ($("opt-pin").checked) {
+    const idx = index();
+    for (const c of s.columns) {
+      const f = (c.source && idx.get(c.source + "\u0000" + c.record)) || idx.get(c.record);
+      if (f) c.sha256 = await E.recordSha256(f.record);
+    }
+  }
+  // sources: the files the columns' records came from
+  const files = [];
+  for (const c of s.columns) {
+    const it = state.items.find((x) => (x.record.meta || {}).id === c.record && (!c.source || x.source === c.source));
+    if (it) { if (!files.includes(it.file)) files.push(it.file); c.source = it.source; }
+  }
+  if (files.length) s.sources = files.map((f) => ({ id: f.replace(/\.(estimation-collection|estimation)?\.json$/, ""), path: f }));
+  else delete s.sources;
+  if (s.sources) for (const c of s.columns) if (c.source && !s.sources.some((x) => x.id === c.source)) delete c.source;
+  return s;
+}
+
+async function renderExport() {
+  for (const b of $("formats").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.f === state.format));
+  $("pin-wrap").hidden = state.format !== "spec";
+  const box = $("export-text");
+  if (state.format === "spec") box.value = state.spec ? JSON.stringify(await specForExport(), null, 2) + "\n" : "";
+  else box.value = lastTable ? E.render(lastTable, state.format) : "";
+}
+
+let pending = null;
+function update(opts) {
+  if (state.spec) readOptions();
+  clearTimeout(pending);
+  pending = setTimeout(() => { renderTable(opts || {}); renderRail(); }, 0);
+}
+
+// ------------------------------------------------------------ one record
+
+function fmtNum(x, d = 4) {
+  if (typeof x !== "number") return x === null || x === undefined ? "" : String(x);
+  if (Number.isNaN(x)) return "NaN";
+  if (!Number.isFinite(x)) return x > 0 ? "Inf" : "-Inf";
+  if (Number.isInteger(x) && Math.abs(x) < 1e15) return E.statValue(x, 0, ",");
+  const a = Math.abs(x);
+  return a !== 0 && (a < 1e-4 || a >= 1e7) ? x.toExponential(d - 1) : Number(x.toPrecision(d)).toString();
+}
+
+function renderRecord() {
+  const box = $("detail");
+  box.replaceChildren();
+  const it = state.items.find((x) => x.key === state.selected);
+  if (!it) { box.append(el("p", { class: "empty", text: "Pick a record in the list." })); return; }
+  const r = it.record, m = r.meta || {}, est = m.estimator || {}, spec = r.specification || {};
+  box.append(el("div", {}, el("h3", { text: recordName(it) }), m.title && m.title !== recordName(it) ? el("div", { class: "hint", text: m.title }) : null));
+  box.append(el("div", { class: "chips" },
+    el("span", { class: "chip" + (m.status === "ok" ? " ok" : ""), text: `status ${m.status || "?"}` }),
+    el("span", { class: "chip", text: [est.family, est.method].filter(Boolean).join(" / ") || "estimator ?" }),
+    ...(m.profiles || []).map((p) => el("span", { class: "chip mono", text: p }))));
+  const kv = el("dl", { class: "kv" });
+  const add = (k, v) => { if (v !== null && v !== undefined && v !== "") kv.append(el("dt", { text: k }), el("dd", {}, v)); };
+  add("Response", (m.responses || []).join(", "));
+  add("Formula", spec.formula ? el("code", { text: typeof spec.formula === "string" ? spec.formula : spec.formula.text }) : null);
+  add("Call", spec.call ? el("code", { text: spec.call }) : null);
+  add("Fixed effects", (spec.fixed_effects || []).join(", "));
+  add("Clusters", (spec.clusters || []).join(", "));
+  const mem = it.member;
+  if (mem) {
+    const locs = mem.locators || (mem.locator ? [mem.locator] : []);
+    add("Member", [mem.label || mem.id, ...locs.map((l) => l.label || Object.entries(l).filter(([, v]) => v !== null).map(([k, v]) => `${k} ${v}`).join(", "))].join(" · "));
+  }
+  const sw = ((r.provenance || {}).software || []);
+  add("Software", (Array.isArray(sw) ? sw : [sw]).filter((s) => ["estimator", "language", "writer"].includes(s.role)).map((s) => `${s.name}${s.version ? " " + s.version : ""}`).join(", "));
+  add("Created", m.created);
+  add("Record id", el("code", { text: m.id || "" }));
+  add("File", el("code", { text: it.file }));
+  box.append(kv);
+
+  // parameters, with a vcov switch
+  const vs = E.vcovs(r);
+  const bar = el("div", { class: "toolbar" }, el("span", { class: "section-title", style: "padding: 0", text: "Estimates" }));
+  if (vs.length > 1) {
+    const sel = el("select", { id: "rec-vcov", "aria-label": "Standard errors" });
+    vs.forEach((v, j) => sel.append(el("option", { value: v.default ? "" : String(j), text: `${v.type}${(v.cluster || []).length ? " " + E.vcovLabel(v) : ""}${v.default ? " (default)" : ""}` })));
+    sel.value = state.recordVcov;
+    sel.addEventListener("change", () => { state.recordVcov = sel.value; renderRecord(); });
+    bar.append(el("label", {}, "Std. errors", sel));
+  }
+  box.append(bar);
+  let rows = [];
+  try { rows = E.tidy(r, { vcov: state.recordVcov === "" ? null : Number(state.recordVcov), component: "all", dropped: true }); } catch (e) { box.append(el("div", { class: "msg error", text: e.message })); }
+  const multi = new Set(rows.map((x) => x.response).filter(Boolean)).size > 1;
+  const t = el("table", { class: "grid" },
+    el("thead", {}, el("tr", {}, ...["Term", "Estimate", "Std. error", "Statistic", "p", "CI low", "CI high"].map((h) => el("th", { text: h })))),
+    el("tbody", {}, ...rows.map((x) => el("tr", {},
+      el("td", {}, x.component ? el("span", { class: "chip", text: x.component }) : null, " ", el("span", { class: "mono", text: (multi && x.response ? x.response + ": " : "") + x.term })),
+      ...(x.dropped ? [el("td", { colspan: "6", style: "text-align: left; color: var(--muted)", text: `(${x.dropped})` })]
+        : [x.estimate, x.std_error, x.statistic, x.p_value, x.conf_low, x.conf_high].map((v) => el("td", { text: fmtNum(v) })))))));
+  box.append(el("div", { class: "scroll" }, t));
+
+  const ms = r.metrics || {};
+  if (Object.keys(ms).length) {
+    box.append(el("span", { class: "section-title", style: "padding: 0", text: "Metrics" }));
+    box.append(el("div", { class: "metrics" }, ...Object.entries(ms).map(([k, v]) => {
+      const val = v && typeof v === "object" && !Array.isArray(v) ? v.value : v;
+      return el("div", { class: "metric", title: v && v.definition ? v.definition : null }, el("div", { class: "k", text: k }), el("div", { class: "v", text: fmtNum(typeof val === "string" ? E.num(val) || val : val) }));
+    })));
+  }
+  if (vs.length) {
+    box.append(el("span", { class: "section-title", style: "padding: 0", text: "Variance estimates" }));
+    box.append(el("div", { class: "scroll" }, el("table", { class: "grid" },
+      el("thead", {}, el("tr", {}, ...["Type", "Clusters", "df for t", "Small-sample correction", ""].map((h) => el("th", { text: h })))),
+      el("tbody", {}, ...vs.map((v) => el("tr", {},
+        el("td", { text: v.type || "?" }),
+        el("td", { text: v.n_clusters ? Object.entries(v.n_clusters).map(([k, n]) => `${k} ${fmtNum(n)}`).join(", ") : (v.cluster || []).join(", ") }),
+        el("td", { text: fmtNum(E.num(v.df_t)) === "NaN" ? "normal" : fmtNum(E.num(v.df_t)) }),
+        el("td", { text: v.ssc ? [v.ssc.convention, v.ssc.formula].filter(Boolean).join(": ") : "" }),
+        el("td", { text: v.default ? "default" : "" })))))));
+  }
+  const fes = (r.structures || {}).fixed_effects;
+  if (fes) {
+    const list = Array.isArray(fes) ? fes : [fes];
+    box.append(el("span", { class: "section-title", style: "padding: 0", text: "Fixed effects" }));
+    box.append(el("div", { class: "scroll" }, el("table", { class: "grid" },
+      el("thead", {}, el("tr", {}, ...["Name", "Levels", "Redundant", "Nested in"].map((h) => el("th", { text: h })))),
+      el("tbody", {}, ...list.map((f) => el("tr", {}, el("td", { class: "mono", text: f.name }), el("td", { text: fmtNum(E.num(f.levels)) }), el("td", { text: f.redundant === undefined ? "" : fmtNum(f.redundant) }), el("td", { text: (f.nested_in || []).join(", ") })))))));
+  }
+  if ((r.tests || []).length) {
+    box.append(el("span", { class: "section-title", style: "padding: 0", text: "Tests" }));
+    box.append(el("div", { class: "scroll" }, el("table", { class: "grid" },
+      el("thead", {}, el("tr", {}, ...["Test", "Statistic", "Distribution", "df", "p"].map((h) => el("th", { text: h })))),
+      el("tbody", {}, ...r.tests.map((x) => el("tr", {}, el("td", { text: x.label || x.name || "" }), el("td", { text: fmtNum(E.num(x.statistic)) }), el("td", { text: x.distribution || "" }), el("td", { text: Array.isArray(x.df) ? x.df.join(", ") : x.df === undefined ? "" : String(x.df) }), el("td", { text: fmtNum(E.num(x.p_value)) })))))));
+  }
+  for (const msg of m.messages || []) box.append(el("div", { class: `msg ${msg.level === "warning" ? "warning" : msg.level === "error" ? "error" : "info"}`, text: msg.message }));
+  box.append(el("details", { class: "raw" }, el("summary", { text: "The record as JSON" }), el("pre", { text: JSON.stringify(r, null, 2) })));
+}
+
+// ------------------------------------------------------------ wiring
+
+function showTab(which) {
+  for (const [t, v] of [["table", "view-table"], ["record", "view-record"]]) {
+    $(`tab-${t}`).setAttribute("aria-selected", String(t === which));
+    $(v).hidden = t !== which;
+  }
+}
+
+function renderAll() { renderRail(); renderTable(); renderRecord(); }
+
+$("tab-table").addEventListener("click", () => showTab("table"));
+$("tab-record").addEventListener("click", () => showTab("record"));
+$("open-files").addEventListener("click", () => $("file-input").click());
+$("open-folder").addEventListener("click", () => $("folder-input").click());
+$("file-input").addEventListener("change", (e) => { loadFiles([...e.target.files]); e.target.value = ""; });
+$("folder-input").addEventListener("change", (e) => { loadFiles([...e.target.files]); e.target.value = ""; });
+$("load-examples").addEventListener("click", loadExamples);
+$("clear").addEventListener("click", () => { clearAll(); renderAll(); });
+$("load-spec").addEventListener("click", () => $("spec-input").click());
+$("spec-input").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const doc = JSON.parse(await f.text());
+    if (doc.schema !== "estimation-table/0.1") throw new Error(`${f.name} is not a table spec`);
+    if (state.examples) clearAll();
+    applySpec(doc, f.name);
+    state.loadMsgs = [];
+    renderAll();
+  } catch (err) { state.loadMsgs = [{ level: "error", message: err.message }]; renderTable(); }
+});
+for (const id of ["opt-title", "opt-notes", "opt-feyes", "opt-digits"]) $(id).addEventListener("input", () => update({ keepControls: true }));
+for (const id of ["opt-unc", "opt-stars"]) $(id).addEventListener("change", () => update({ keepControls: true }));
+$("opt-unlisted").addEventListener("change", () => {
+  const s = state.spec;
+  if ($("opt-unlisted").checked) s.keep_unlisted = true;
+  else { materializeRows(termRows(index())); }
+  update();
+});
+$("opt-pin").addEventListener("change", renderExport);
+$("stat-add-btn").addEventListener("click", () => {
+  const c = ($("stat-add")._cands || [])[Number($("stat-add").value)];
+  if (!c) return;
+  state.spec.stats = state.spec.stats || [];
+  state.spec.stats.push(Object.assign({}, c.o));
+  update();
+});
+$("stat-text").addEventListener("click", () => {
+  const s = ensureSpec();
+  s.stats = s.stats || [];
+  s.stats.push({ label: "Controls", values: s.columns.map(() => "") });
+  update();
+});
+$("formats").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.format = b.dataset.f;
+  renderExport();
+});
+$("copy").addEventListener("click", async () => {
+  const box = $("export-text");
+  try { await navigator.clipboard.writeText(box.value); toast("Copied"); }
+  catch { box.focus(); box.select(); toast("Selected: press Ctrl+C or ⌘C to copy"); }
+});
+const EXT = { latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", spec: "estimation-table.json" };
+$("save").hidden = embedded;
+$("save").addEventListener("click", () => {
+  const text = $("export-text").value;
+  if (!text) return;
+  const base = (state.spec && state.spec.title ? state.spec.title.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() : "") || "table";
+  const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "text/plain" })), download: `${base}.${EXT[state.format]}` });
+  document.body.append(a); a.click(); a.remove();
+});
+document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dragging"); });
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) document.body.classList.remove("dragging"); });
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  document.body.classList.remove("dragging");
+  const files = [];
+  const walk = async (entry) => {
+    if (entry.isFile) files.push(await new Promise((res, rej) => entry.file(res, rej)));
+    else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      let batch;
+      do { batch = await new Promise((res, rej) => reader.readEntries(res, rej)); for (const x of batch) await walk(x); } while (batch.length);
+    }
+  };
+  const entries = [...(e.dataTransfer.items || [])].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (entries.length) for (const en of entries) await walk(en);
+  else files.push(...e.dataTransfer.files);
+  loadFiles(files);
+});
+
+loadExamples();
+</script>
+</body>
+</html>

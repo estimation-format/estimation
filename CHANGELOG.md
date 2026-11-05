@@ -12,6 +12,14 @@
   don't change. Python: `estimation_format.table` (`new_table`, `read_table`, `write_table`,
   `validate_table`, `build_table`, `render`/`render_table` to text, Markdown, LaTeX, HTML
   and CSV, `to_great_table`; `python -m estimation_format.table spec.json -f latex`).
+- The record viewer (`viewer/`, published at
+  https://estimation-format.github.io/estimation/viewer/): a static page that reads records,
+  folders and collections in the browser (nothing is uploaded), shows one record in full, and
+  builds a table: columns from records (each with its own vcov), terms shown, ordered and
+  relabelled, statistics rows, stars and decimals, with a live journal-style preview and
+  LaTeX, Markdown, HTML, CSV, text or table-spec export (optionally pinning record versions).
+  Its logic, `viewer/estimation-table.js`, runs in node too; tests check that it builds and
+  renders the same tables as the Python reference and agrees with its t distribution.
 - estrec reads records: `read_estimation()` (a record, or a folder of them) and
   `read_collection()` (embedded members or a members file) return records of class
   `estimation_record`, kept as written. `print` gives a quick view; `tidy` and `glance`

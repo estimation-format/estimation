@@ -1,11 +1,12 @@
 # Publishes schema/ at https://estimation-format.github.io/estimation/schema/, the schemas'
-# $id base. Needs Settings > Pages > Source: "GitHub Actions".
+# $id base, and the record viewer (viewer/) at .../estimation/viewer/.
+# Needs Settings > Pages > Source: "GitHub Actions".
 name: Pages
 
 on:
   push:
     branches: [main]
-    paths: ["schema/**", ".github/workflows/pages.yml"]
+    paths: ["schema/**", "viewer/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -29,12 +30,15 @@ jobs:
         run: |
           mkdir -p _site
           cp -r schema _site/schema
+          mkdir -p _site/viewer
+          cp viewer/index.html viewer/estimation-table.js viewer/examples.js _site/viewer/
           cat > _site/index.html <<'EOF'
           <!doctype html>
           <meta charset="utf-8">
           <title>estimation format schemas</title>
           <p>JSON Schemas for the <code>estimation</code> format:
           <a href="schema/catalog.json">catalog.json</a>.
+          View records and build tables in your browser: <a href="viewer/">the record viewer</a>.
           Specification and source: <a href="https://github.com/estimation-format/estimation">github.com/estimation-format/estimation</a>.</p>
           EOF
       - uses: actions/configure-pages@v5
