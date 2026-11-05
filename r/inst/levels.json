@@ -1,0 +1,308 @@
+{
+ "schema": "estimation/0.1",
+ "marks": [
+  {
+   "path": "attachments",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "extensions",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "history",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "history[*].by",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "meta",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.*",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "meta.core_digest",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.created",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.disclosure",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.estimator",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "meta.id",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.messages",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "meta.notes",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.parent",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.producer",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "meta.profiles",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.responses",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "meta.status",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.tags",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "meta.title",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "metrics",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "metrics.*",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "metrics.conf_level",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "metrics.df_residual",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "metrics.nobs",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "parameters",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "provenance",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.*",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.agent",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.data",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.data[*].location",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.environment",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.*",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.execution.session",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.software",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*]",
+   "level": 5,
+   "if": [
+    {
+     "field": "role",
+     "in": [
+      "language",
+      "estimator",
+      "writer"
+     ],
+     "level": 4
+    }
+   ]
+  },
+  {
+   "path": "provenance.software[*].container",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].lock",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "provenance.software[*].lock.path",
+   "level": 5,
+   "if": []
+  },
+  {
+   "path": "publication",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "schema",
+   "level": 1,
+   "if": []
+  },
+  {
+   "path": "specification",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "structures.*",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures.first_stage",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "structures.fixed_effects",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures.hyperparameters",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures.numerics",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "structures.random_effects",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "structures.vcov",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "structures.vcov[*].cluster",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures.vcov[*].n_clusters",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "structures.vcov[*].n_clusters_min",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "tests",
+   "level": 2,
+   "if": []
+  },
+  {
+   "path": "tests[*].source",
+   "level": 4,
+   "if": []
+  },
+  {
+   "path": "tests[*].vcov.cluster",
+   "level": 3,
+   "if": []
+  },
+  {
+   "path": "validation",
+   "level": 4,
+   "if": []
+  }
+ ],
+ "purposes": {
+  "aea/0.1": 4
+ }
+}

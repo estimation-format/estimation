@@ -432,9 +432,9 @@ record, not a degraded one. Each level includes everything in the levels below i
 |---|---|
 | 1 | `parameters` (estimates, standard errors, test statistics, p-values, intervals), `metrics.nobs`, `df_residual` and `conf_level`; `meta.id`, `created`, `status`, `parent`, `profiles`, `title`, `tags`, `notes`, `disclosure`, `core_digest`; `publication`; `history` without `by` |
 | 2 | the model's diagnostic and summary measures: the other `metrics`, `meta.estimator`, `responses` and `messages`, `structures.vcov` (without cluster names and counts), `random_effects`, `first_stage`, and `tests` (without `source`); `attachments` |
-| 3 | `specification`; the other structures (`fixed_effects`, `hyperparameters`, ...) and the vcov's `cluster` and `n_clusters` |
+| 3 | `specification`; the other structures (`fixed_effects`, `hyperparameters`, ...) and the vcov's `cluster` and `n_clusters` (and a test's `vcov.cluster`) |
 | 4 | `provenance.software`: the components with `role` `language`, `estimator` or `writer` only, with a `lock` pointer's `format` and `sha256` (which commit to the full environment without listing it); the writer in `meta.producer` and `history[*].by`, so a writer's version can be traced; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
-| 5 | every other software component (dependencies), a `lock`'s `path`, `container`; `provenance.environment`, `execution` and `agent`; data `location`; any other `provenance` member |
+| 5 | every other software component (dependencies), a `lock`'s `path`, `container`; `provenance.environment`, `execution` (except `execution.session`, the session id, at 4) and `agent`; data `location`; any other `provenance` member |
 
 - **Writers** SHOULD let the user choose the level and SHOULD default to **4**. A record
   written at a level declares it in `meta.disclosure.level`, inside the core digest. A reader

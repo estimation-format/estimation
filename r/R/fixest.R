@@ -13,8 +13,10 @@ to_estimation.fixest_multi <- function(fit, ...) {
 to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.95,
                                  tests = NULL, title = NULL, notes = NULL, tags = NULL,
                                  publication = NULL, call = TRUE, identifying = TRUE,
-                                 digest = NULL, ...) {
+                                 digest = NULL, level = NULL, purpose = NULL, program = NULL,
+                                 data_info = NULL, ...) {
   tests_expr <- substitute(tests); tests_env <- parent.frame()
+  level <- .est_resolve_level(level, purpose)
   is_glm <- fit$method %in% c("feglm", "fepois")
   if (!is_glm && fit$method != "feols")
     stop("estrec writes feols, feglm and fepois fits; ", fit$method, " isn't supported yet",
@@ -113,6 +115,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     spec$instruments <- I(fit$iv_inst_names_xpd)
   }
   if (isTRUE(call)) spec$call <- paste(deparse(fit$call, width.cutoff = 500L), collapse = " ")
+  if (!is.null(program)) spec$program <- .est_program(program)
 
   # Structures
   structures <- list(vcov = vcovs)
@@ -144,8 +147,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   provenance <- list(
     software = .est_software("fixest"),
     environment = .est_environment(threads = list(fixest = fixest::getFixest_nthreads())),
-    data = list(.est_compact(list(role = "estimation", rows = fit$nobs_origin,
-                                  columns = if (!is.null(data)) I(names(data))))))
+    data = list(.fx_data_input(fit, data, data_info)))
   if (identifying) {
     provenance$agent <- .est_agent()
     provenance$execution <- list(invocation = list(argv = I(commandArgs())))
@@ -159,7 +161,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     id = .est_uuid(), created = .est_now(), status = if (is_glm && !isTRUE(fit$convStatus)) "warning" else "ok",
     estimator = estimator,
     responses = I(fit$model_info$lhs %||% all.vars(fit$fml_all$linear)[1]),
-    profiles = I(profiles), title = title %||% .fx_title(fit, text), tags = if (length(tags)) I(tags),
+    profiles = I(profiles), title = title %||% if (level >= 3L) .fx_title(fit, text), tags = if (length(tags)) I(tags),
     notes = notes, producer = estrec_info()))
   messages <- sample$messages
   if (is_glm && !isTRUE(fit$convStatus))
@@ -185,8 +187,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
     rec$tests <- lapply(seq_along(fx_tests), function(i) c(list(id = paste0("t", i)), fx_tests[[i]]))
   rec$provenance <- provenance
   if (!is.null(publication)) rec$publication <- publication
-  rec$history <- list(list(when = meta$created, by = estrec_info(), action = "created",
-                           sections = I(setdiff(names(rec), "schema"))))
+  rec <- .est_at_level(rec, level, purpose)
   # Test results given in the call, one or a list (see add_test). The calls that made them are
   # kept, so a wald() test records its terms and each test its call.
   if (!is.null(tests)) {
@@ -203,6 +204,18 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
 }
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
+
+# provenance.data: the data the fit used. Its name is `data_info$name`, else the `data`
+# argument as written in the call when it is a plain name; `data_info` adds the rest
+# (version, source, checksum, publication with a data citation, location).
+.fx_data_input <- function(fit, data, data_info) {
+  arg <- fit$call$data
+  name <- if (is.name(arg)) as.character(arg)
+  d <- .est_compact(list(role = "estimation", name = name, rows = fit$nobs_origin,
+                         columns = if (!is.null(data)) I(names(data))))
+  for (k in names(data_info)) d[[k]] <- data_info[[k]]
+  d
+}
 
 .fx_weight_vars <- function(fit) {
   if (is.null(fit$call$weights)) return(character(0))

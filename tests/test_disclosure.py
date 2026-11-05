@@ -378,3 +378,24 @@ def test_aea_needs_a_seed_for_resampling():
     assert "specification.resampling.seed" in aea_errors(rec)
     rec["specification"]["resampling"]["seed"] = 20261105
     assert not {p for p in aea_errors(rec) if "seed" in p}
+
+
+def test_estrec_levels_file_matches_the_schema():
+    """estrec reads its level marks from r/inst/levels.json; regenerate it with
+    `estimation levels > r/inst/levels.json` after changing a mark."""
+    shipped = est.PACKAGED_SCHEMAS.parent / "r" / "inst" / "levels.json"
+    if not shipped.is_file():
+        pytest.skip("not a source checkout")
+    assert json.loads(shipped.read_text(encoding="utf-8")) == json.loads(json.dumps(est.levels_table()))
+
+
+def test_cli_levels_and_reduce(tmp_path, capsys):
+    assert est.main(["levels"]) == 0
+    table = json.loads(capsys.readouterr().out)
+    assert table["purposes"] == {"aea/0.1": 4} and {"path": "specification", "level": 3, "if": []} in table["marks"]
+    src, dst = tmp_path / "a.estimation.json", tmp_path / "b.estimation.json"
+    est.write(lm_record(), src, level=5)
+    assert est.main(["reduce", str(src), "--level", "1", "-o", str(dst)]) == 0
+    out = est.read(dst)
+    assert out["meta"]["disclosure"] == {"level": 1} and est.check_digest(out) is True
+    assert errors(est.validate(out)) == []

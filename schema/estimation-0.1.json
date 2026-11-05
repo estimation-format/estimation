@@ -104,7 +104,7 @@
           "description": "The structures.vcov entry the test used, matched on type (and cluster). Absent: the default vcov. A string is the type alone.",
           "anyOf": [
             {"type": "string"},
-            {"type": "object", "required": ["type"], "properties": {"type": {"type": "string"}, "cluster": {"$ref": "#/$defs/strings"}}}
+            {"type": "object", "required": ["type"], "properties": {"type": {"type": "string"}, "cluster": {"$ref": "#/$defs/strings", "x-level": 3}}}
           ]
         },
         "options": {"description": "Test-specific settings (e.g. the proportional-hazards time transform).", "type": "object"},
@@ -562,7 +562,7 @@
           "items": {"$ref": "#/$defs/software_component", "x-level": 5, "x-level-if": [{"field": "role", "in": ["language", "estimator", "writer"], "level": 4}]}
         },
         "environment": {"$ref": "#/$defs/environment", "x-level": 5},
-        "execution": {"$ref": "#/$defs/execution", "x-level": 5},
+        "execution": {"$ref": "#/$defs/execution", "x-level": 4},
         "agent": {
           "description": "Who ran it and where.",
           "x-level": 5,
@@ -647,7 +647,9 @@
       }
     },
     "execution": {
+      "description": "Level 5, except the session id (level 4), so a record can name its session (spec 11) without disclosing how it ran.",
       "type": "object",
+      "additionalProperties": {"x-level": 5},
       "properties": {
         "started": {"$ref": "#/$defs/timestamp"},
         "finished": {"$ref": "#/$defs/timestamp"},
@@ -721,7 +723,7 @@
           ]
         },
         "launch": {"description": "Launch parameters, fully resolved.", "type": "object"},
-        "session": {"description": "Session id, when the run came from a session.", "type": "string"}
+        "session": {"description": "Session id, when the run came from a session.", "type": "string", "x-level": 4}
       }
     },
     "data_input": {

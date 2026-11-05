@@ -20,7 +20,8 @@ to_estimation(fit, ...)
 
 \method{to_estimation}{fixest}(fit, data = NULL, vcov = NULL, conf_level = 0.95,
   tests = NULL, title = NULL, notes = NULL, tags = NULL, publication = NULL, call = TRUE,
-  identifying = TRUE, digest = NULL, ...)
+  identifying = TRUE, digest = NULL, level = NULL, purpose = NULL, program = NULL,
+  data_info = NULL, ...)
 
 is_estimation_record(x)
 }
@@ -38,11 +39,28 @@ the default and gives the parameters' standard errors.}
 (\code{fixest::wald()}, \code{marginaleffects::hypotheses()}, ...). The record always has
 fixest's joint Wald test of the coefficients, and for IV the first-stage,
 weak-identification, endogeneity and overidentification tests.}
-\item{title, notes, tags}{user labels for \code{meta}.}
+\item{title, notes, tags}{user labels for \code{meta}. Without a \code{title}, one is made
+from the formula at level 3 or more.}
 \item{publication}{optional \code{publication} section: where the result appears in a paper.}
 \item{call}{include the call as written.}
-\item{identifying}{include the user, host and command line (removable later with
+\item{identifying}{include the user, host and command line, at level 5 (removable later with
 \code{estimation redact}).}
+\item{level}{disclosure level, 1 to 5 (spec 4.9): the most the record discloses. 1: estimates,
+standard errors, p-values, intervals, N, df. 2: the other metrics, the vcovs (without cluster
+names and counts), tests. 3: the specification, fixed-effect and cluster counts. 4 (the
+default): R, fixest and estrec with their versions, data names, numerics. 5: every loaded
+package, the environment, the command line, user and host. Profiles the level makes the
+record fail are not claimed, with a \code{profile_not_claimed} message (and a warning).}
+\item{purpose}{purpose profiles the record is for, e.g. \code{"aea/0.1"} (AEA journals). Each
+is claimed, and \code{level} defaults to the lowest one they allow; a lower \code{level} is an
+error. Whether the record meets them is for the validator: \code{estimation validate}.}
+\item{data_info}{a list describing the data input (\code{provenance.data}): \code{name}
+(by default the \code{data} argument as written in the call), \code{version},
+\code{source}, \code{checksum}, \code{publication} (a data citation), \code{location}.}
+\item{program}{the program in the replication package that ran the fit
+(\code{specification.program}): a path relative to the package root, or
+\code{list(path = , line = )}. Its sha256 is added when the file is found and
+\code{openssl} is installed.}
 \item{digest}{write \code{meta.core_digest} (spec 7.2). By default it is written when the
 \code{openssl} package is installed; \code{TRUE} requires it, \code{FALSE} leaves it out.}
 \item{x}{an object.}

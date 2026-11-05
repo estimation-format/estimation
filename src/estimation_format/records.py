@@ -1514,7 +1514,9 @@ DEFAULT_LEVEL_MARKS = {
     "provenance.data": (4, ()),
     "provenance.data[*].location": (5, ()),
     "provenance.environment": (5, ()),
-    "provenance.execution": (5, ()),
+    "provenance.execution": (4, ()),
+    "provenance.execution.*": (5, ()),
+    "provenance.execution.session": (4, ()),
     "provenance.software": (4, ()),
     "provenance.software[*]": (5, (("role", ("language", "estimator", "writer"), 4),)),
     "provenance.software[*].container": (5, ()),
@@ -1536,6 +1538,7 @@ DEFAULT_LEVEL_MARKS = {
     "structures.vcov[*].n_clusters_min": (3, ()),
     "tests": (2, ()),
     "tests[*].source": (4, ()),
+    "tests[*].vcov.cluster": (3, ()),
     "validation": (4, ()),
 }
 
@@ -1746,10 +1749,13 @@ def _apply_level(rec: dict, level: int, schemas: Schemas | None) -> tuple[list[s
     claimed = list((rec.get("meta") or {}).get("profiles") or [])
     before = {p: _profile_errors(rec, p, schemas) for p in claimed}
     removed = []
+    touched: set[int] = set()
     # list items from the end, so removing one doesn't shift the others
     for container, key, p, _ in sorted(hits, key=lambda h: (isinstance(h[1], int), h[1]), reverse=True):
         del container[key]
+        touched.add(id(container))
         removed.append(p)
+    _prune(rec, touched)
     gone = linked_before - links(rec)
     if gone and isinstance(rec.get("attachments"), list):
         for i in reversed(range(len(rec["attachments"]))):
@@ -1781,6 +1787,18 @@ def _apply_level(rec: dict, level: int, schemas: Schemas | None) -> tuple[list[s
                 for p in dropped
             )
     return sorted(removed), dropped
+
+
+def _prune(node: Any, touched: set[int]) -> None:
+    """Remove the objects and lists that removing fields left empty (not those that were
+    empty to begin with), from the bottom up."""
+    items = list(node.items()) if isinstance(node, dict) else list(enumerate(node)) if isinstance(node, list) else []
+    for k, v in reversed(items):
+        if isinstance(v, (dict, list)):
+            _prune(v, touched)
+            if not v and id(v) in touched:
+                del node[k]
+                touched.add(id(node))
 
 
 def reduce(
@@ -1825,6 +1843,25 @@ def reduce(
     for p in dropped:
         warnings.warn(f"{p} isn't claimed: disclosure level {level} leaves out what it requires")
     return rec
+
+
+def levels_table(schemas: Schemas | None = None) -> dict:
+    """The core's level marks and each purpose profile's minimum level, as plain JSON, for
+    writers in other languages (`estimation levels`; estrec ships it as inst/levels.json)."""
+    schemas = schemas or load_schemas()
+    marks = level_marks(schemas.core, schemas.documents()) if schemas else DEFAULT_LEVEL_MARKS
+    return {
+        "schema": SCHEMA,
+        "marks": [
+            {"path": p, "level": lvl, "if": [{"field": f, "in": list(v), "level": n} for f, v, n in conds]}
+            for p, (lvl, conds) in sorted(marks.items())
+        ],
+        "purposes": {
+            n: min_level(n, schemas) for n in sorted(schemas.profiles) if is_purpose(n, schemas)
+        }
+        if schemas
+        else {},
+    }
 
 
 def _level_issues(enc: dict, issues: list[Issue], schemas: Schemas | None) -> list[Issue]:
@@ -1910,6 +1947,15 @@ def main(argv: list[str] | None = None) -> int:
         "digest", help="print the core digest and whether it matches (each member's, for a collection)"
     )
     d.add_argument("file")
+    lv = sub.add_parser("reduce", help="write a record at a lower disclosure level (a new record, spec 4.9)")
+    lv.add_argument("file")
+    lv.add_argument("--level", type=int, required=True, choices=LEVELS)
+    lv.add_argument("-o", "--output", required=True)
+    lv.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
+    lm = sub.add_parser(
+        "levels", help="print the core schema's disclosure-level marks and the purposes' minimum levels as JSON"
+    )
+    lm.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
     args = ap.parse_args(argv)
 
     from . import collection as coll  # imports this module
@@ -1973,6 +2019,22 @@ def main(argv: list[str] | None = None) -> int:
         out = redact(rec, paths=paths + args.path, salt=salt)
         Path(args.output).write_text(_dumps(out, 1) + "\n", encoding="utf-8")
         print(f"{args.output}: {len(out['history'][-1]['fields'])} fields {out['history'][-1]['method']}")
+        return 0
+
+    if args.cmd == "levels":
+        schemas = _cli_schemas(ap, args.schema_path, False)
+        schemas = load_schemas() if schemas == "auto" else schemas
+        print(json.dumps(levels_table(schemas), indent=1))
+        return 0
+
+    if args.cmd == "reduce":
+        rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)
+        if not isinstance(rec, dict) or coll.is_collection(rec):
+            ap.error(f"{args.file}: reduce takes one record")
+        schemas = _cli_schemas(ap, args.schema_path, False)
+        out = reduce(rec, args.level, schema=schemas)
+        Path(args.output).write_text(_dumps(out, 1) + "\n", encoding="utf-8")
+        print(f"{args.output}: level {args.level}, {len(out['history'][-1].get('fields', []))} fields removed")
         return 0
 
     rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)

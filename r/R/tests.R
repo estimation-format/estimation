@@ -55,6 +55,9 @@ as_estimation_test.data.frame <- function(x, record = NULL, call = NULL, ...)
 .est_add_test <- function(record, test, expr, env, label = NULL, category = NULL,
                           hypothesis = NULL, vcov = NULL, id = NULL, tags = NULL,
                           origin = "postestimation", by = estrec_info()) {
+  level <- .est_declared_level(record)
+  if (!is.null(level) && level < 2L)
+    stop("tests are disclosure level 2; this record declares level ", level, call. = FALSE)
   call <- if (is.call(expr)) paste(deparse(expr, width.cutoff = 500L), collapse = " ")
   ts <- as_estimation_test(test, record = record, call = call, expr = expr, env = env)
   if (length(ts) > 1L && !is.null(id)) stop("give `id` one test at a time", call. = FALSE)
@@ -82,6 +85,8 @@ as_estimation_test.data.frame <- function(x, record = NULL, call = NULL, ...)
     record$history <- c(record$history, list(list(when = added, by = by, action = "extended",
                                                   sections = I("tests"))))
   }
+  # what the record's level withholds (a test's source, the history entry's `by` below 4)
+  if (!is.null(level) && level < 5L) record <- .est_apply_level(record, level)$record
   record
 }
 

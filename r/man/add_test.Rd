@@ -49,8 +49,9 @@ type (\code{"HC1"}) or \code{list(type =, cluster =)}. Recorded only.}
 and the environment to evaluate its arguments in.}
 \item{...}{for methods.}
 }
-\value{\code{add_test}: the record, with the tests appended. \code{as_estimation_test}: a
-list of test objects.}
+\value{\code{add_test}: the record, with the tests appended. A record written at disclosure
+level 1 takes no tests (they are level 2); below level 4 a test's \code{source} and the
+history entry's \code{by} are left out. \code{as_estimation_test}: a list of test objects.}
 \examples{
 if (requireNamespace("fixest", quietly = TRUE)) {
   fit <- fixest::feols(mpg ~ wt + hp | cyl, mtcars)
