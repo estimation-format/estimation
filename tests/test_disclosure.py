@@ -392,10 +392,21 @@ def test_estrec_levels_file_matches_the_schema():
 def test_cli_levels_and_reduce(tmp_path, capsys):
     assert est.main(["levels"]) == 0
     table = json.loads(capsys.readouterr().out)
-    assert table["purposes"] == {"aea/0.1": 4} and {"path": "specification", "level": 3, "if": []} in table["marks"]
+    assert (
+        table["purposes"] == {"aea/0.1": 4}
+        and {"path": "specification", "level": 3, "if": []} in table["marks"]
+    )
     src, dst = tmp_path / "a.estimation.json", tmp_path / "b.estimation.json"
     est.write(lm_record(), src, level=5)
     assert est.main(["reduce", str(src), "--level", "1", "-o", str(dst)]) == 0
     out = est.read(dst)
     assert out["meta"]["disclosure"] == {"level": 1} and est.check_digest(out) is True
     assert errors(est.validate(out)) == []
+
+
+def test_cli_digest_write(tmp_path, capsys):
+    p = tmp_path / "a.estimation.json"
+    rec = est.prepare(lm_record(), digest=False)
+    p.write_text(json.dumps(rec))
+    assert est.main(["digest", "--write", str(p)]) == 0
+    assert est.check_digest(est.read(p)) is True

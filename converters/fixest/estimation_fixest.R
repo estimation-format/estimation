@@ -6,8 +6,15 @@
 #   library(fixest)
 #   source("estimation_fixest.R")
 #   fit <- feols(y ~ x1 + x2 | firm + year, data, cluster = ~firm)
-#   rec <- estimation_record(fit)
+#   rec <- estimation_record(fit)               # disclosure level 4 (the default)
 #   estimation_write(rec, "fit.estimation.json")
+#
+# `level` (1-5, spec 4.9) is the most the record discloses: 1 estimates, SEs, p-values,
+# intervals, N and df; 2 the other metrics, the vcov without its clusters, the model's
+# messages; 3 the specification, clusters and FE counts; 4 R, fixest and this converter with
+# their versions, the data's size, numerics; 5 every loaded package, the environment, the
+# user, host and command line. The rule is written out below for the fields this converter
+# writes; a writer for many fields would read the marks from `estimation levels` instead.
 #
 # The record has no core digest (meta.core_digest is optional): computing it needs RFC 8785
 # canonical JSON. Add it with the reference validator: `estimation digest --write FILE`.
@@ -33,7 +40,7 @@ estimation_converter <- list(name = "estimation_fixest", version = "0.1.0")
   x <- unname(x)
   if (length(x) == 1L && is.numeric(x) && !is.finite(x)) {
     if (is.na(x) && !is.nan(x)) return(NULL)
-    return(if (is.nan(x)) "NaN" else if (x > 0) "Infinity" else "-Infinity")
+    return(if (is.nan(x)) "NaN" else if (x > 0) "Inf" else "-Inf")
   }
   x
 }
@@ -77,20 +84,27 @@ estimation_converter <- list(name = "estimation_fixest", version = "0.1.0")
   character(0)
 }
 
-.est_software <- function() {
-  pkgs <- setdiff(loadedNamespaces(), c(rownames(installed.packages(priority = "base")), "fixest"))
+# provenance.software: fixest, R and this converter (level 4), then the other loaded
+# packages (level 5)
+.est_software <- function(level) {
   comp <- function(p, role) {
     v <- as.character(utils::packageVersion(p))
     list(name = p, version = v, purl = sprintf("pkg:cran/%s@%s", p, v), role = role, source = "CRAN")
   }
   r <- paste(R.version$major, R.version$minor, sep = ".")
-  c(list(comp("fixest", "estimator"),
-         list(name = "R", version = r, purl = sprintf("pkg:generic/r@%s", r), role = "language")),
-    lapply(sort(pkgs), comp, role = "dependency"))
+  out <- list(comp("fixest", "estimator"),
+              list(name = "R", version = r, purl = sprintf("pkg:generic/r@%s", r), role = "language"),
+              c(estimation_converter, list(role = "writer")))
+  if (level >= 5) {
+    pkgs <- setdiff(loadedNamespaces(), c(rownames(installed.packages(priority = "base")), "fixest"))
+    out <- c(out, lapply(sort(pkgs), comp, role = "dependency"))
+  }
+  out
 }
 
-estimation_record <- function(fit, data = NULL, call = TRUE, identifying = TRUE, publication = NULL) {
-  stopifnot(inherits(fit, "fixest"))
+estimation_record <- function(fit, data = NULL, call = TRUE, identifying = TRUE, publication = NULL,
+                              level = 4) {
+  stopifnot(inherits(fit, "fixest"), length(level) == 1, level %in% 1:5)
   if (inherits(fit, "fixest_multi")) stop("a fixest_multi: convert each model, e.g. lapply(as.list(fit), estimation_record)")
   if (fit$method != "feols" || isTRUE(fit$iv)) stop("only OLS feols fits; IV and GLMs need other profiles")
   if (!is.null(fit$call$subset) || !is.null(fit$call$split) || !is.null(fit$call$fsplit))
@@ -193,30 +207,52 @@ estimation_record <- function(fit, data = NULL, call = TRUE, identifying = TRUE,
   }
 
   si <- Sys.info()
-  provenance <- list(software = .est_software(),
-                     environment = list(os = unname(si[["sysname"]]), kernel = unname(si[["release"]]),
-                                        machine = unname(si[["machine"]]),
-                                        lapack = La_version(),
-                                        threads = list(fixest = getFixest_nthreads())),
+  provenance <- list(software = .est_software(level),
                      data = list(list(role = "estimation", rows = rows_input, columns = I(names(data)))))
-  if (identifying) {
-    provenance$agent <- list(user = unname(si[["user"]]), host = unname(si[["nodename"]]))
-    provenance$execution <- list(invocation = list(argv = I(commandArgs())))
+  if (level >= 5) {
+    provenance$environment <- list(os = unname(si[["sysname"]]), kernel = unname(si[["release"]]),
+                                   machine = unname(si[["machine"]]), lapack = La_version(),
+                                   threads = list(fixest = getFixest_nthreads()))
+    if (identifying) {
+      provenance$agent <- list(user = unname(si[["user"]]), host = unname(si[["nodename"]]))
+      provenance$execution <- list(invocation = list(argv = I(commandArgs())))
+    }
   }
 
-  meta <- list(id = .est_uuid(), created = .est_now(), status = "ok",
-               estimator = list(family = "linear", method = "ols"),
-               responses = I(all.vars(fit$fml_all$linear)[1]),
-               profiles = I(if (has_fe) c("inference/0.1", "linear-fe/0.1") else "inference/0.1"))
-  if (n_singletons > 0)
+  # What each level adds (spec 4.9), for the fields this converter writes
+  if (level < 3) {
+    vcov_s[c("cluster", "n_clusters", "n_clusters_min")] <- NULL
+    structures <- list(vcov = list(vcov_s))
+  } else if (level < 4) {
+    structures$numerics <- NULL
+  }
+  if (level < 2) metrics <- metrics[intersect(c("nobs", "df_residual", "conf_level"), names(metrics))]
+  profiles <- c(if (level >= 2) "inference/0.1", if (has_fe && level >= 3) "linear-fe/0.1")
+
+  now <- .est_now()
+  meta <- list(id = .est_uuid(), created = if (level == 1) substr(now, 1, 10) else now, status = "ok")
+  if (level >= 2) {
+    meta$estimator <- list(family = "linear", method = "ols")
+    meta$responses <- I(all.vars(fit$fml_all$linear)[1])
+  }
+  if (length(profiles)) meta$profiles <- I(profiles)
+  meta$disclosure <- list(level = as.integer(level))
+  if (level >= 4) meta$producer <- estimation_converter
+  if (n_singletons > 0 && level >= 2)
     meta$messages <- list(list(level = "info", code = "singletons", source = "fixest",
                                message = sprintf("%d singleton rows dropped", n_singletons)))
 
-  rec <- list(schema = "estimation/0.1", meta = meta, specification = spec, metrics = metrics,
-              parameters = parameters, structures = structures, provenance = provenance)
+  rec <- list(schema = "estimation/0.1", meta = meta, metrics = metrics, parameters = parameters)
+  if (level >= 3) rec$specification <- spec
+  if (level >= 2) rec$structures <- structures
+  if (level >= 4) rec$provenance <- provenance
   if (!is.null(publication)) rec$publication <- publication
-  rec$history <- list(list(when = meta$created, by = estimation_converter, action = "created",
-                           sections = I(setdiff(names(rec), "schema"))))
+  entry <- list(when = meta$created)
+  if (level >= 4) entry$by <- estimation_converter
+  entry$action <- "created"
+  entry$level <- as.integer(level)
+  if (level >= 2) entry$sections <- I(setdiff(names(rec), "schema"))
+  rec$history <- list(entry)
   rec
 }
 

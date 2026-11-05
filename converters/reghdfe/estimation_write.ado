@@ -1,4 +1,4 @@
-*! version 0.1.0  estimation_write: reghdfe e() -> estimation record (linear-fe/0.1)
+*! version 0.2.0  estimation_write: reghdfe e() -> estimation record (linear-fe/0.1)
 *
 * A worked converter: run it right after reghdfe to write the fit as an `estimation`
 * record (JSON). Written against reghdfe 6.13.1 / ftools 2.50.0 on Stata 18.
@@ -11,6 +11,12 @@
 *   noidentifying       leave out user, host and the data file's path
 *   nodatasignature     skip the in-memory data checksum (datasignature)
 *   call(string)        the command as written (default: e(cmdline))
+*   level(#)            disclosure level, 1-5 (spec 4.9; default 4): 1 estimates, SEs,
+*                       p-values, intervals, N and df; 2 the other metrics, the vcov without
+*                       its clusters, the model F; 3 the specification, clusters and FE
+*                       counts; 4 reghdfe, Stata and this writer with their versions, the
+*                       data's size and checksum, numerics; 5 ftools, Stata's attributes,
+*                       the environment, the data file's path, user and host
 *
 * The record has no core digest (meta.core_digest is optional): computing it needs RFC 8785
 * canonical JSON. Add it with the reference validator: `estimation digest --write FILE`.
@@ -19,7 +25,11 @@
 
 program define estimation_write
 	version 16
-	syntax using/ [, REPLACE noIDENTifying noDATASIGnature CALL(string asis)]
+	syntax using/ [, REPLACE noIDENTifying noDATASIGnature CALL(string asis) LEVel(integer 4)]
+	if `level' < 1 | `level' > 5 {
+		di as err "estimation_write: level() must be 1 to 5"
+		exit 198
+	}
 
 	if "`e(cmd)'" != "reghdfe" {
 		di as err "estimation_write: run it right after reghdfe (e(cmd) is `e(cmd)')"
@@ -91,7 +101,7 @@ program define estimation_write
 	}
 
 	mata: _est_write(`"`using'"', "`replace'" != "", "`identifying'" == "", `"`call'"', ///
-		"`created'", `n_complete', `nvars', "`datasig'", "`ver_reghdfe'", "`ver_ftools'")
+		"`created'", `n_complete', `nvars', "`datasig'", "`ver_reghdfe'", "`ver_ftools'", `level')
 	di as txt `"estimation record written to {browse "`using'"}"'
 end
 
@@ -263,7 +273,7 @@ void _est_term(string scalar term, string scalar canon, string scalar dropped)
 
 void _est_write(string scalar fn, real scalar replace, real scalar ident, string scalar call,
 	string scalar created, real scalar n_complete, real scalar nvars, string scalar datasig,
-	string scalar ver_reghdfe, string scalar ver_ftools)
+	string scalar ver_reghdfe, string scalar ver_ftools, real scalar lv)
 {
 	real matrix b, V, dof
 	string matrix cs, rs
@@ -321,7 +331,8 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	vcov = _ej_o(("kind", "labels", "data", "type", "tool_type", "cluster", "n_clusters", "n_clusters_min", "ssc", "df_t", "default"),
 		(_ej_s("matrix"), _ej_sa(terms), "[" + invtokens(vrows, ", ") + "]", _ej_s(vtype),
 		 (vtype != vce ? _ej_s(vce) : ""),
-		 (ncl ? _ej_sa(clusters) : ""), (ncl ? _ej_o(clk, clv) : ""), (ncl ? _est_num("N_clust") : ""),
+		 (ncl & lv >= 3 ? _ej_sa(clusters) : ""), (ncl & lv >= 3 ? _ej_o(clk, clv) : ""),
+		 (ncl & lv >= 3 ? _est_num("N_clust") : ""),
 		 _ej_o(("convention", "formula", "factors", "K_counts"),
 			(_ej_s("reghdfe"),
 			 _ej_s(vtype == "CRV1" ? "(N-1)/(N-K) * G/(G-1), K = df_m + df_a" : (vtype == "HC1" ? "N/(N-K), K = df_m + df_a" : "s2 = RSS/(N-K), K = df_m + df_a")),
@@ -350,7 +361,9 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 	// that use the weights as given (fixest)
 	wtype = st_global("e(wtype)")
 	aw_def = wtype == "aweight" ? ", with aweights rescaled to sum to N" : ""
-	metrics = _ej_o(("nobs", "nobs_full", "n_singletons", "df_residual", "df_model", "df_absorbed", "df_absorbed_nested",
+	if (lv < 2) metrics = _ej_o(("nobs", "df_residual", "conf_level"),
+		(_ej_n(N), (ncl ? _ej_o(("value", "definition"), (_ej_n(df), _ej_s(dfr_def))) : _ej_n(df)), _ej_n(level / 100)))
+	else metrics = _ej_o(("nobs", "nobs_full", "n_singletons", "df_residual", "df_model", "df_absorbed", "df_absorbed_nested",
 		"rss", "tss", "tss_within", "r2", "adj_r2", "r2_within", "adj_r2_within", "sigma", "log_lik", "log_lik_null",
 		"sum_weights", "rank", "conf_level"),
 		(_ej_n(N), _ej_n(Nfull), _ej_n(nsing),
@@ -363,7 +376,7 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 
 	// The model F (Wald F under a robust vcov) goes in tests, not metrics
 	Fv = _est_sc("e(F)")
-	tests = missing(Fv) ? "" : "[" + _ej_o(("id", "category", "name", "origin", "statistic", "distribution", "df1", "df2", "p_value"),
+	tests = (missing(Fv) | lv < 2) ? "" : "[" + _ej_o(("id", "category", "name", "origin", "statistic", "distribution", "df1", "df2", "p_value"),
 		(_ej_s("t1"), _ej_s("model"), _ej_s(vtype == "iid" ? "f" : "wald"), _ej_s("estimation"), _ej_n(Fv), _ej_s("F"),
 		 _est_num("df_m"), _ej_n(df), _ej_n(Ftail(_est_sc("e(df_m)"), df, Fv)))) + "]"
 
@@ -381,44 +394,56 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 		 _ej_o(("drop_singletons"), (_ej_b(_est_sc("e(drop_singletons)"))))))
 
 	structures = _ej_o(("vcov", "fixed_effects", "numerics"),
-		("[" + vcov + "]", "[" + invtokens(fe, ", ") + "]",
-		 _ej_o(("kind", "iterative", "iterations", "converged"),
-			(_ej_s("object"), "true", _est_num("ic"), _ej_b(_est_sc("e(converged)"))))))
+		("[" + vcov + "]", (lv >= 3 ? "[" + invtokens(fe, ", ") + "]" : ""),
+		 (lv >= 4 ? _ej_o(("kind", "iterative", "iterations", "converged"),
+			(_ej_s("object"), "true", _est_num("ic"), _ej_b(_est_sc("e(converged)")))) : "")))
 
 	software = (
 		_ej_o(("name", "version", "purl", "role", "source"), (_ej_s("reghdfe"), _ej_s(ver_reghdfe), _ej_s("pkg:generic/reghdfe@" + ver_reghdfe), _ej_s("estimator"), _ej_s("SSC"))),
 		_ej_o(("name", "version", "purl", "role", "attributes"), (_ej_s("stata"), _ej_s(strofreal(c("stata_version"))),
 			_ej_s("pkg:generic/stata@" + strofreal(c("stata_version"))), _ej_s("language"),
-			_ej_o(("edition", "born_date", "processors"), (_ej_s(c("edition_real")), _ej_s(c("born_date")), _ej_n(c("processors")))))),
-		_ej_o(("name", "version", "purl", "role", "source"), (_ej_s("ftools"), _ej_s(ver_ftools), _ej_s("pkg:generic/ftools@" + ver_ftools), _ej_s("dependency"), _ej_s("SSC"))))
+			(lv >= 5 ? _ej_o(("edition", "born_date", "processors"), (_ej_s(c("edition_real")), _ej_s(c("born_date")), _ej_n(c("processors")))) : ""))),
+		_ej_o(("name", "version", "role"), (_ej_s("estimation_write"), _ej_s("0.2.0"), _ej_s("writer"))))
+	if (lv >= 5) software = software,
+		_ej_o(("name", "version", "purl", "role", "source"), (_ej_s("ftools"), _ej_s(ver_ftools), _ej_s("pkg:generic/ftools@" + ver_ftools), _ej_s("dependency"), _ej_s("SSC")))
 	datain = _ej_o(("role", "location", "rows", "columns", "checksum"),
-		(_ej_s("estimation"), (ident & c("filename") != "" ? _ej_s(c("filename")) : ""), _ej_n(rows_input), _ej_n(nvars),
+		(_ej_s("estimation"), (ident & lv >= 5 & c("filename") != "" ? _ej_s(c("filename")) : ""), _ej_n(rows_input), _ej_n(nvars),
 		 (datasig != "" ? _ej_o(("algorithm", "value", "of", "method"), (_ej_s("datasignature"), _ej_s(datasig), _ej_s("in-memory"), _ej_s("Stata datasignature (rows, columns, names, contents)"))) : "")))
 	provenance = _ej_o(("software", "environment", "data", "agent"),
 		("[" + invtokens(software, ", ") + "]",
-		 _ej_o(("os", "machine", "random"), (_ej_s(c("os")), _ej_s(c("machine_type")), _ej_o("rngtype", _ej_s(c("rngtype"))))),
+		 (lv >= 5 ? _ej_o(("os", "machine", "random"), (_ej_s(c("os")), _ej_s(c("machine_type")), _ej_o("rngtype", _ej_s(c("rngtype"))))) : ""),
 		 "[" + datain + "]",
-		 (ident ? _ej_o(("user", "host"), (_ej_s(c("username")), _ej_s(c("hostname")))) : "")))
+		 (ident & lv >= 5 ? _ej_o(("user", "host"), (_ej_s(c("username")), _ej_s(c("hostname")))) : "")))
 
-	messages = nsing > 0 ? "[" + _ej_o(("level", "code", "source", "message"), (_ej_s("info"), _ej_s("singletons"), _ej_s("reghdfe"), _ej_s(strofreal(nsing) + " singleton rows dropped"))) + "]" : ""
-	meta = _ej_o(("id", "created", "status", "estimator", "responses", "profiles", "messages"),
-		(_ej_s(_est_uuid()), _ej_s(created), _ej_s("ok"), _ej_o(("family", "method"), (_ej_s("linear"), _ej_s("ols"))),
-		 _ej_sa(st_global("e(depvar)")), _ej_sa(("inference/0.1", "linear-fe/0.1")), messages))
-	sections = ("meta", "specification", "metrics", "parameters", "structures", "provenance")
+	messages = (nsing > 0 & lv >= 2) ? "[" + _ej_o(("level", "code", "source", "message"), (_ej_s("info"), _ej_s("singletons"), _ej_s("reghdfe"), _ej_s(strofreal(nsing) + " singleton rows dropped"))) + "]" : ""
+	if (lv == 1) created = substr(created, 1, 10)   // a date, not a time
+	meta = _ej_o(("id", "created", "status", "estimator", "responses", "profiles", "disclosure", "producer", "messages"),
+		(_ej_s(_est_uuid()), _ej_s(created), _ej_s("ok"),
+		 (lv >= 2 ? _ej_o(("family", "method"), (_ej_s("linear"), _ej_s("ols"))) : ""),
+		 (lv >= 2 ? _ej_sa(st_global("e(depvar)")) : ""),
+		 (lv >= 3 ? _ej_sa(("inference/0.1", "linear-fe/0.1")) : (lv == 2 ? _ej_sa("inference/0.1") : "")),
+		 _ej_o("level", _ej_n(lv)),
+		 (lv >= 4 ? _ej_o(("name", "version"), (_ej_s("estimation_write"), _ej_s("0.2.0"))) : ""),
+		 messages))
+	sections = ("meta", "metrics", "parameters")
+	if (lv >= 3) sections = sections, "specification"
+	if (lv >= 2) sections = sections, "structures"
+	if (lv >= 4) sections = sections, "provenance"
 	if (tests != "") sections = sections, "tests"
-	history = "[" + _ej_o(("when", "by", "action", "sections"), (_ej_s(created),
-		_ej_o(("name", "version"), (_ej_s("estimation_write"), _ej_s("0.1.0"))), _ej_s("created"), _ej_sa(sections))) + "]"
+	history = "[" + _ej_o(("when", "by", "action", "level", "sections"), (_ej_s(created),
+		(lv >= 4 ? _ej_o(("name", "version"), (_ej_s("estimation_write"), _ej_s("0.2.0"))) : ""),
+		_ej_s("created"), _ej_n(lv), (lv >= 2 ? _ej_sa(sections) : ""))) + "]"
 
 	nl = char(10)
 	rec = "{" + nl +
 		" " + _ej_s("schema") + ": " + _ej_s("estimation/0.1") + "," + nl +
 		" " + _ej_s("meta") + ": " + meta + "," + nl +
-		" " + _ej_s("specification") + ": " + spec + "," + nl +
+		(lv >= 3 ? " " + _ej_s("specification") + ": " + spec + "," + nl : "") +
 		" " + _ej_s("metrics") + ": " + metrics + "," + nl +
 		" " + _ej_s("parameters") + ": [" + nl + "  " + invtokens(params, "," + nl + "  ") + nl + " ]," + nl +
-		" " + _ej_s("structures") + ": " + structures + "," + nl +
+		(lv >= 2 ? " " + _ej_s("structures") + ": " + structures + "," + nl : "") +
 		(tests != "" ? " " + _ej_s("tests") + ": " + tests + "," + nl : "") +
-		" " + _ej_s("provenance") + ": " + provenance + "," + nl +
+		(lv >= 4 ? " " + _ej_s("provenance") + ": " + provenance + "," + nl : "") +
 		" " + _ej_s("history") + ": " + history + nl + "}" + nl
 
 	if (fileexists(fn)) {

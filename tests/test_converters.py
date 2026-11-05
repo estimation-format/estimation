@@ -247,3 +247,135 @@ def test_model_f_in_tests(pyfixest_records, reghdfe_records, spec):
         assert t["p_value"] == pytest.approx(
             f_dist.sf(t["statistic"], t["df1"], t["df2"]), rel=1e-6, abs=1e-300
         )
+
+
+# ---------------------------------------------------------------- disclosure levels (spec 4.9)
+
+
+def _clean(path: Path) -> dict:
+    """Valid, with no warnings, and the level declared."""
+    rec = ef.read(path)
+    issues = [i for i in ef.validate(rec, base_dir=path.parent) if i.level != "info"]
+    assert not issues, f"{path.name}: {issues}"
+    return rec
+
+
+@pytest.fixture(scope="module")
+def fixest_levels(panel, tmp_path_factory) -> dict:
+    rscript = shutil.which("Rscript")
+    if rscript is None:
+        pytest.skip("Rscript not found")
+    if subprocess.run(
+        [rscript, "-e", "library(fixest); library(jsonlite)"], check=False, capture_output=True
+    ).returncode:
+        pytest.skip("R packages fixest and jsonlite not installed")
+    out = tmp_path_factory.mktemp("fixest-levels")
+    call = SPECS["twofe_crv"][1]
+    lines = [
+        "suppressMessages(library(fixest))",
+        f'source("{CONVERTERS / "fixest" / "estimation_fixest.R"}")',
+        f'd <- read.csv("{panel}")',
+        f"f <- {call}",
+    ]
+    lines += [
+        f'estimation_write(estimation_record(f, level = {n}), "{out}/l{n}.estimation.json")'
+        for n in range(1, 6)
+    ]
+    (out / "run.R").write_text("\n".join(lines) + "\n")
+    run = subprocess.run([rscript, str(out / "run.R")], check=False, capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    return {n: _clean(out / f"l{n}.estimation.json") for n in range(1, 6)}
+
+
+@pytest.mark.parametrize("level", [1, 2, 3, 4, 5])
+def test_fixest_converter_levels(fixest_levels, level):
+    rec = fixest_levels[level]
+    assert rec["meta"]["disclosure"] == {"level": level}
+    assert ef.record_level(rec) <= level
+    names = [s["name"] for s in rec.get("provenance", {}).get("software", [])]
+    if level == 4:
+        assert names == ["fixest", "R", "estimation_fixest"] and "agent" not in rec["provenance"]
+    if level >= 3:
+        assert "linear-fe/0.1" in rec["meta"]["profiles"]
+
+
+@pytest.mark.parametrize("level", [1, 2, 3, 4, 5])
+def test_pyfixest_converter_levels(panel, tmp_path, level):
+    if importlib.util.find_spec("pyfixest") is None:
+        pytest.skip("pyfixest not installed")
+    import warnings
+
+    import pandas as pd
+    import pyfixest as pf
+
+    sys.path.insert(0, str(CONVERTERS / "pyfixest"))
+    try:
+        from estimation_pyfixest import to_record
+    finally:
+        sys.path.pop(0)
+    d = pd.read_csv(panel)
+    (fml, vcov, weights), _, _ = SPECS["twofe_crv"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fit = pf.feols(fml, d, vcov=vcov, weights=weights)
+        rec = to_record(fit, d, program="code/main.py", data_info={"name": "synthetic panel"})
+        ef.write(rec, tmp_path / "r.estimation.json", level=level)
+    out = _clean(tmp_path / "r.estimation.json")
+    assert out["meta"]["disclosure"] == {"level": level}
+    if level == 4:
+        assert [s["name"] for s in out["provenance"]["software"]] == [
+            "pyfixest",
+            "python",
+            "estimation_pyfixest",
+        ]
+        assert out["provenance"]["data"][0]["name"] == "synthetic panel"
+        assert out["specification"]["program"] == {"path": "code/main.py"}
+
+
+@pytest.fixture(scope="module")
+def reghdfe_levels(panel, tmp_path_factory) -> dict:
+    stata = _stata()
+    if stata is None:
+        pytest.skip("Stata not found (set ESTIMATION_STATA)")
+    out = tmp_path_factory.mktemp("reghdfe-levels")
+    lines = [
+        f'adopath ++ "{CONVERTERS / "reghdfe"}"',
+        f'import delimited using "{panel}", clear',
+        SPECS["twofe_crv"][2],
+    ]
+    lines += [f'estimation_write using "{out}/l{n}.estimation.json", replace level({n})' for n in range(1, 6)]
+    (out / "run.do").write_text("\n".join(lines) + "\n")
+    subprocess.run([stata, "-b", "do", "run.do"], cwd=out, check=False, capture_output=True, text=True)
+    log = (out / "run.log").read_text()
+    if "reghdfe" in log and "unrecognized command" in log:
+        pytest.skip("reghdfe isn't installed in this Stata")
+    assert "\nr(" not in log, log[-3000:]
+    return {n: _clean(out / f"l{n}.estimation.json") for n in range(1, 6)}
+
+
+@pytest.mark.parametrize("level", [1, 2, 3, 4, 5])
+def test_reghdfe_converter_levels(reghdfe_levels, level):
+    rec = reghdfe_levels[level]
+    assert rec["meta"]["disclosure"] == {"level": level}
+    assert ef.record_level(rec) <= level
+    if level == 4:
+        names = [s["name"] for s in rec["provenance"]["software"]]
+        assert names == ["reghdfe", "stata", "estimation_write"] and "agent" not in rec["provenance"]
+    if level == 1:
+        assert set(rec) == {"schema", "meta", "metrics", "parameters", "history"}
+
+
+def test_reghdfe_rejects_a_bad_level(panel, tmp_path):
+    stata = _stata()
+    if stata is None:
+        pytest.skip("Stata not found (set ESTIMATION_STATA)")
+    lines = [
+        f'adopath ++ "{CONVERTERS / "reghdfe"}"',
+        f'import delimited using "{panel}", clear',
+        SPECS["twofe_iid"][2],
+        f'capture noisily estimation_write using "{tmp_path}/x.json", level(6)',
+        'display "rc=" _rc',
+    ]
+    (tmp_path / "bad.do").write_text("\n".join(lines) + "\n")
+    subprocess.run([stata, "-b", "do", "bad.do"], cwd=tmp_path, check=False, capture_output=True, text=True)
+    assert "rc=198" in (tmp_path / "bad.log").read_text()

@@ -1792,7 +1792,13 @@ def _apply_level(rec: dict, level: int, schemas: Schemas | None) -> tuple[list[s
 def _prune(node: Any, touched: set[int]) -> None:
     """Remove the objects and lists that removing fields left empty (not those that were
     empty to begin with), from the bottom up."""
-    items = list(node.items()) if isinstance(node, dict) else list(enumerate(node)) if isinstance(node, list) else []
+    items = (
+        list(node.items())
+        if isinstance(node, dict)
+        else list(enumerate(node))
+        if isinstance(node, list)
+        else []
+    )
     for k, v in reversed(items):
         if isinstance(v, (dict, list)):
             _prune(v, touched)
@@ -1856,9 +1862,7 @@ def levels_table(schemas: Schemas | None = None) -> dict:
             {"path": p, "level": lvl, "if": [{"field": f, "in": list(v), "level": n} for f, v, n in conds]}
             for p, (lvl, conds) in sorted(marks.items())
         ],
-        "purposes": {
-            n: min_level(n, schemas) for n in sorted(schemas.profiles) if is_purpose(n, schemas)
-        }
+        "purposes": {n: min_level(n, schemas) for n in sorted(schemas.profiles) if is_purpose(n, schemas)}
         if schemas
         else {},
     }
@@ -1947,15 +1951,21 @@ def main(argv: list[str] | None = None) -> int:
         "digest", help="print the core digest and whether it matches (each member's, for a collection)"
     )
     d.add_argument("file")
+    d.add_argument("--write", action="store_true", help="add (or replace) the record's core digest in place")
     lv = sub.add_parser("reduce", help="write a record at a lower disclosure level (a new record, spec 4.9)")
     lv.add_argument("file")
     lv.add_argument("--level", type=int, required=True, choices=LEVELS)
     lv.add_argument("-o", "--output", required=True)
-    lv.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
-    lm = sub.add_parser(
-        "levels", help="print the core schema's disclosure-level marks and the purposes' minimum levels as JSON"
+    lv.add_argument(
+        "--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)"
     )
-    lm.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
+    lm = sub.add_parser(
+        "levels",
+        help="print the core schema's disclosure-level marks and the purposes' minimum levels as JSON",
+    )
+    lm.add_argument(
+        "--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)"
+    )
     args = ap.parse_args(argv)
 
     from . import collection as coll  # imports this module
@@ -2034,7 +2044,9 @@ def main(argv: list[str] | None = None) -> int:
         schemas = _cli_schemas(ap, args.schema_path, False)
         out = reduce(rec, args.level, schema=schemas)
         Path(args.output).write_text(_dumps(out, 1) + "\n", encoding="utf-8")
-        print(f"{args.output}: level {args.level}, {len(out['history'][-1].get('fields', []))} fields removed")
+        print(
+            f"{args.output}: level {args.level}, {len(out['history'][-1].get('fields', []))} fields removed"
+        )
         return 0
 
     rec = json.loads(Path(args.file).read_bytes(), parse_constant=_reject_constant)
@@ -2058,6 +2070,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if bad else 0
     if not isinstance(rec, dict):
         ap.error(f"{args.file}: not a JSON object")
+    if args.write:
+        add_digest(rec)
+        Path(args.file).write_text(_dumps(rec, 1) + "\n", encoding="utf-8")
+        print(rec["meta"]["core_digest"]["value"], "written")
+        return 0
     ok = check_digest(rec)
     print(core_digest(rec), {None: "(no digest in record)", True: "matches", False: "DOES NOT MATCH"}[ok])
     return 1 if ok is False else 0

@@ -43,6 +43,16 @@ estimation_write using "fit.estimation.json", replace
 The R and Stata writers leave out the core digest (optional in the format), because it needs
 RFC 8785 canonical JSON. `estimation digest --write fit.estimation.json` adds it.
 
+**Disclosure levels** (spec 4.9): each converter writes at level 4 by default: the
+estimates, metrics, vcov, specification, the estimator, language and converter with their
+versions, and the data's size, but not the other packages, the environment, the user, host or
+command line. Choose another level with `ef.write(rec, path, level=1)` (pyfixest),
+`estimation_record(fit, level = 1)` (fixest) or `estimation_write using ..., level(1)` (Stata).
+Level 1 holds only the estimates, standard errors, p-values, intervals, N and df. The pyfixest
+converter also takes `program=` (the program in the replication package) and `data_info=`
+(the data's name, version, checksum and citation), which the `aea/0.1` purpose profile asks
+for.
+
 Each converter handles one OLS fit with absorbed fixed effects (or none). Not handled: IV,
 GLMs, multiple-estimation objects (convert each model), fixest `subset`/`split`.
 

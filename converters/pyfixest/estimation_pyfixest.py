@@ -12,7 +12,11 @@ change between versions.
     rec = to_record(fit, data)
 
     import estimation_format as ef        # optional: adds the core digest, spills, checks
-    ef.write(rec, "fit.estimation.json")
+    ef.write(rec, "fit.estimation.json")  # disclosure level 4 by default; level=1..5, purpose=
+
+`to_record` returns everything the converter knows; `ef.write` (or `ef.prepare`) cuts it to a
+disclosure level (spec 4.9): at the default 4, pyfixest, Python and this converter with their
+versions, without the other packages, the environment, the user, host and command line.
 
 `data` is needed because pyfixest keeps only the rows it used: the rows dropped for missing
 values and the singleton rows are one combined set (`_na_index`), and the only place the
@@ -179,6 +183,7 @@ def _software() -> list[dict]:
         )
     py = platform.python_version()
     out.insert(1, {"name": "python", "version": py, "purl": f"pkg:generic/python@{py}", "role": "language"})
+    out.insert(2, {**CONVERTER, "role": "writer"})
     return out
 
 
@@ -189,12 +194,17 @@ def to_record(
     call: str | None = None,
     identifying: bool = True,
     publication: dict | None = None,
+    program: str | dict | None = None,
+    data_info: dict | None = None,
 ) -> dict:
     """The `estimation` record for one pyfixest `Feols` fit.
 
     `data` is the frame the model was fitted on (for the missing/singleton counts). `call`
     is the command as written, if you have it. `identifying=False` leaves out the user and
-    host (they can also be removed later with `estimation redact`).
+    host (they can also be removed later with `estimation redact`). `program` is the program
+    in the replication package that ran the fit (`specification.program`): a path relative
+    to the package root, or `{path, line, sha256}`. `data_info` describes the data input
+    (`name`, `version`, `checksum`, `publication` with a data citation, ...).
     """
     if getattr(fit, "_is_iv", False) or fit._method != "feols":
         raise NotImplementedError("only OLS feols fits; IV and GLMs need the iv profile or others")
@@ -300,9 +310,16 @@ def to_record(
         "software": _software(),
         "environment": {"os": uname.system, "kernel": uname.release, "machine": uname.machine},
         "data": [
-            {"role": "estimation", "rows": sample["rows_input"], "columns": [str(c) for c in data.columns]}
+            {
+                "role": "estimation",
+                "rows": sample["rows_input"],
+                "columns": [str(c) for c in data.columns],
+                **(data_info or {}),
+            }
         ],
     }
+    if program is not None:
+        specification["program"] = {"path": program} if isinstance(program, str) else dict(program)
     if identifying:
         provenance["agent"] = {"user": getpass.getuser(), "host": socket.gethostname()}
         provenance["execution"] = {"invocation": {"argv": list(sys.argv)}}
@@ -324,6 +341,7 @@ def to_record(
         "estimator": {"family": "linear", "method": "ols"},
         "responses": [fit._depvar],
         "profiles": profiles,
+        "producer": CONVERTER,
     }
     if messages:
         meta["messages"] = messages
