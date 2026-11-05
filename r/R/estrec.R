@@ -23,6 +23,7 @@ write_estimation <- function(x, path, ...) {
           else if (is.list(x) && length(x) && all(vapply(x, is_estimation_record, logical(1)))) x
           else to_estimation(x, ...)
   if (is_estimation_record(recs)) recs <- list(recs)
+  recs <- lapply(recs, .est_plain)
   paths <- if (length(recs) == 1L) path else .est_numbered(path, length(recs))
   for (i in seq_along(recs)) {
     # 17 significant digits, so doubles round-trip exactly

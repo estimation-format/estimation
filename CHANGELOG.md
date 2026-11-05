@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- estrec reads records: `read_estimation()` (a record, or a folder of them) and
+  `read_collection()` (embedded members or a members file) return records of class
+  `estimation_record`, kept as written. `print` gives a quick view; `tidy` and `glance`
+  methods, registered on generics, let modelsummary and other broom-based table packages take
+  records as they take fitted models. `tidy(vcov = "iid")` and other vcovs in the record
+  recompute SEs, tests and intervals; `component =` selects first-stage and other components.
+  The writers accept records read back in.
 - Disclosure levels (spec 4.9; proposal `docs/proposals/disclosure.md`, Ted 2026-11-05):
   how much a record discloses is the sharer's choice, from 1 (estimates, SEs, p-values,
   intervals, N, df) to 5 (environment, execution, agent, every software component). The core

@@ -36,6 +36,7 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
   recs <- if (is_estimation_record(x)) list(x) else to_estimation(x, ...)
   if (is_estimation_record(recs)) recs <- list(recs)
   if (is.null(labels)) labels <- names(recs)
+  recs <- lapply(recs, .est_plain)
   n <- length(recs)
   if (!is.null(labels) && length(labels) != n)
     stop("`labels` has ", length(labels), " entries for ", n, " records", call. = FALSE)
