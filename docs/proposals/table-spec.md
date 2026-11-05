@@ -1,8 +1,12 @@
 # Proposal: a table spec (`estimation-table/0.1`)
 
-Status: **draft for review** (2026-11-05). Ted agreed the idea on 2026-11-05: the browser
-viewer saves a table as a small "recipe" file that R and Python can render again. This
-proposal sets its form. Nothing is built yet.
+Status: **adopted** (Ted, 2026-11-05): recommendations 1-5 as below. On 1, Ted is wary of
+growing the format with something outside a record's scope, so the table spec has its own
+spec page (`spec/table.md`) and schema, versioned on its own like collections; records, the
+record schema and `spec/estimation.md` don't change. Rounding: **no cross-renderer digit
+rule** (Ted: presentation, not estimation); each renderer rounds by its own convention.
+Ted agreed the idea on 2026-11-05: the browser viewer saves a table as a small "recipe" file
+that R and Python can render again.
 
 ## What it is
 
@@ -43,7 +47,7 @@ a new table from the same spec.
    only one tool reads would be simpler, but three renderers (browser, R, Python) have to
    agree on it. A schema is how they agree, and it lets other tools (a Stata `esttab`
    bridge, say) read it later. It's **not** part of a record or a collection: those describe
-   results, and a table is a view of them. Ted to decide.
+   results, and a table is a view of them. Adopted, kept apart: its own spec page and schema.
 
 2. **Columns name records by `meta.id`, with a path as a hint.** The id stays valid when
    files are moved or renamed. `sources` gives the paths to look in first: record files,
@@ -74,11 +78,9 @@ a new table from the same spec.
 
 ## Open details
 
-- **Rounding.** The three renderers have to print the same digits. Proposed: round the
-  double's exact decimal value, with ties away from zero. That matches JavaScript's
-  `toFixed`, and R and Python are made to match it. (`sprintf`/`format` round ties to
-  even, so `0.125` to 2 digits gives `0.12` there and `0.13` in a browser.) The spec states
-  the rule; tests check the three renderers against a shared set of cases.
+- **Rounding.** Each renderer rounds by its own convention (JavaScript's `toFixed`, R's
+  `format`, Python's `format`), so exact binary ties such as `0.125` can differ in the last
+  digit between renderers. Decided: that's presentation, so no shared rule (Ted, 2026-11-05).
 - **Stars and uncertainty.** `uncertainty` is one of `std_error`, `statistic`, `p_value`,
   `conf_int`, or `null` (estimates only). `stars: null` means no stars. The thresholds and
   symbols live in the spec, so the note under the table is written from them.
