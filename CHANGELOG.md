@@ -23,6 +23,20 @@
   no environment, execution, agent or data locations. At
   level 1 `created` may be a date. Validators: fields above the declared level are errors, and
   withheld expected members are information, not warnings. New history action `reduced`.
+- estrec: `to_estimation(level =, purpose =, program =, data_info =)`. Level 4 by default
+  (R, fixest and estrec only; no other packages, environment, user, host or command line);
+  the marks come from `inst/levels.json`, written by `estimation levels` and kept equal to the
+  schema by the Python tests. Profile claims the level breaks are dropped with a
+  `profile_not_claimed` message; `add_test()` respects the declared level; the data input is
+  named after the call's `data` argument.
+- Converters: `level` in the fixest (R) and reghdfe (Stata) converters, default 4; each
+  converter names itself as the writer; pyfixest takes `program=` and `data_info=`. The fixest
+  converter wrote non-finite numbers as `"Infinity"`; now `"Inf"`, as the format says.
+- CLI: `estimation levels` (the marks as JSON, for writers in other languages), `estimation
+  reduce FILE --level N -o OUT`, `estimation digest --write FILE`.
+- Core: `provenance.execution.session` is level 4 (the rest of `execution` stays 5), so
+  session collections work at the default level; a test's `vcov.cluster` is level 3; objects
+  and lists that removing fields leaves empty are removed too.
 - Purpose profiles: a third catalog `kind`, `purpose`, for what a destination needs, with
   `x-min-level`; a floor where the level is a ceiling.
 - Profiles: `aea/0.1`, the first purpose profile (`spec/profiles/aea.md`; proposal
