@@ -1993,7 +1993,19 @@ def main(argv: list[str] | None = None) -> int:
     lm.add_argument(
         "--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)"
     )
+    from . import show as show_mod
+    from . import table as table_mod
+
+    sh = sub.add_parser("show", help="a quick look: one record in detail, or several side by side")
+    show_mod.add_arguments(sh)
+    tb = sub.add_parser("table", help="render or check a table spec (estimation-table/0.1)")
+    table_mod.add_arguments(tb)
     args = ap.parse_args(argv)
+
+    if args.cmd == "show":
+        return show_mod.run(args)
+    if args.cmd == "table":
+        return table_mod.run(args)
 
     from . import collection as coll  # imports this module
 
@@ -2004,6 +2016,10 @@ def main(argv: list[str] | None = None) -> int:
             rec = json.loads(Path(f).read_bytes(), parse_constant=_reject_constant)
             if coll.is_collection(rec):
                 issues = coll.validate_collection(rec, schema=schemas, base_dir=Path(f).parent)
+            elif isinstance(rec, dict) and rec.get("schema") == table_mod.TABLE_SCHEMA:
+                issues = table_mod.validate_table(
+                    rec, base_dir=Path(f).parent, schema=None if args.no_schema else "auto"
+                )
             elif isinstance(rec, dict):
                 issues = validate(rec, schema=schemas, base_dir=Path(f).parent)
             else:

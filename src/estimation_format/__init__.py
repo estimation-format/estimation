@@ -13,6 +13,7 @@ The specification is spec/estimation.md in https://github.com/estimation-format/
 
 __version__ = "0.1.0.dev0"
 
+from . import show, table
 from .collection import (
     COLLECTION_SCHEMA,
     add_event,
@@ -128,7 +129,9 @@ __all__ = [
     "redact_collection",
     "reduce",
     "reduce_collection",
+    "show",
     "spill",
+    "table",
     "tidy",
     "to_json",
     "validate",

@@ -102,14 +102,14 @@ A quick look in the terminal: one record gives a detail view, several records, a
 a collection a side-by-side table (estimates over SEs, N, R2s, SE type, FE rows):
 
 ```bash
-python -m estimation_format.show table2.estimation-collection.json
-python -m estimation_format.show fit.estimation.json --vcov iid
+estimation show table2.estimation-collection.json
+estimation show fit.estimation.json --vcov iid
 ```
 
 **In the browser:** the [record viewer](https://estimation-format.github.io/estimation/viewer/)
 opens records, folders and collections without uploading them, and builds tables you can copy
 as LaTeX, Markdown, HTML or CSV, or save as a table spec (`spec/table.md`) to render again with
-`python -m estimation_format.table table2.estimation-table.json -f latex`.
+`estimation table table2.estimation-table.json -f latex`.
 
 ## Contributing
 

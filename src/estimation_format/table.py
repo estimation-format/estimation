@@ -691,16 +691,17 @@ def to_great_table(table: dict):
 # ---------------------------------------------------------------- command line
 
 
-def main(argv: list[str] | None = None) -> int:
-    import argparse
-    import sys
-
-    p = argparse.ArgumentParser(prog="estimation table", description="Render or check a table spec.")
+def add_arguments(p) -> None:
+    """The `table` options, for the `estimation` CLI and `python -m estimation_format.table`."""
     p.add_argument("spec", help="an *.estimation-table.json file")
     p.add_argument("--format", "-f", default="text", choices=sorted(RENDERERS))
     p.add_argument("--check", action="store_true", help="validate only; exit 1 on errors")
     p.add_argument("-o", "--output", help="write to a file instead of printing")
-    a = p.parse_args(argv)
+
+
+def run(a) -> int:
+    import sys
+
     path = Path(a.spec)
     try:
         spec = read_table(path)
@@ -725,6 +726,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         sys.stdout.write(text)
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    p = argparse.ArgumentParser(prog="estimation table", description="Render or check a table spec.")
+    add_arguments(p)
+    return run(p.parse_args(argv))
 
 
 if __name__ == "__main__":

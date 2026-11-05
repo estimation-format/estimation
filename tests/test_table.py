@@ -212,3 +212,14 @@ def test_great_tables():
     pytest.importorskip("great_tables")
     g = et.to_great_table(et.build_table(spec(), base_dir=EXAMPLES))
     assert "3.206" in g.as_raw_html()
+
+
+def test_estimation_cli_subcommands(capsys):
+    from estimation_format.records import main
+
+    assert main(["table", str(SPEC), "-f", "markdown"]) == 0
+    assert "| Weight (1000 lbs) |" in capsys.readouterr().out
+    assert main(["show", str(EXAMPLES / "paper.estimation-collection.json")]) == 0
+    assert capsys.readouterr().out.split("\n")[0].split() == ["baseline", "horsepower", "full"]
+    assert main(["validate", str(SPEC)]) == 0
+    assert "valid (0 errors)" in capsys.readouterr().out

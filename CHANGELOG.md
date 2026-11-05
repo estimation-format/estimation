@@ -23,6 +23,9 @@
 - estrec `render_table(spec, output, records)`: renders a table spec through modelsummary (each
   column a model from the record's `tidy()` with its vcov; statistics rows by the spec's rules
   as `add_rows`). The example spec gives the same cells as the Python and browser renderers.
+- CLI: `estimation show` (the quick look) and `estimation table` (render or `--check` a table
+  spec); `estimation validate` also takes table specs. `ef.show` and `ef.table` are available
+  from `import estimation_format as ef`.
 - estrec reads records: `read_estimation()` (a record, or a folder of them) and
   `read_collection()` (embedded members or a members file) return records of class
   `estimation_record`, kept as written. `print` gives a quick view; `tidy` and `glance`
