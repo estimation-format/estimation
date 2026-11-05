@@ -97,6 +97,19 @@ written from, coefficients, stars and fit rows alike, except that a Poisson or l
 McFadden pseudo R2 shows as "R2 Pseudo" (fixest puts it in the R2 rows). Records read back in can be written again (`write_estimation`,
 `write_collection`) unchanged.
 
+### Table specs
+
+`render_table()` renders a table spec (`spec/table.md`), such as the
+[record viewer](https://estimation-format.github.io/estimation/viewer/) saves: columns by
+record, each with its own vcov if wanted, rows relabelled, and statistics rows. It finds the
+records in the spec's sources or in `records`, and passes the table to modelsummary, so any of
+modelsummary's outputs work:
+
+```r
+render_table("table2.estimation-table.json", output = "latex")
+render_table(spec, records = read_collection("table2.estimation-collection.json"))
+```
+
 ## What a record holds
 
 | Section | From fixest |
@@ -151,7 +164,7 @@ CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages insta
 - `fenegbin`/`femlm`, `lm`/`glm` and other classes through `insight`.
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
-- Tests: `tests/test-fixest.R`, `tests/test-collection.R` and `tests/test-read.R` (base R). They validate every
+- Tests: `tests/test-fixest.R`, `tests/test-collection.R`, `tests/test-read.R` and `tests/test-table.R` (base R). They validate every
   record and collection when the `estimation` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
   with `ESTREC_PYTHON` (a Python with `estimation_format`), the collection test also checks that
   estrec's canonical JSON equals the reference implementation's.

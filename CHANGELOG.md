@@ -20,6 +20,9 @@
   LaTeX, Markdown, HTML, CSV, text or table-spec export (optionally pinning record versions).
   Its logic, `viewer/estimation-table.js`, runs in node too; tests check that it builds and
   renders the same tables as the Python reference and agrees with its t distribution.
+- estrec `render_table(spec, output, records)`: renders a table spec through modelsummary (each
+  column a model from the record's `tidy()` with its vcov; statistics rows by the spec's rules
+  as `add_rows`). The example spec gives the same cells as the Python and browser renderers.
 - estrec reads records: `read_estimation()` (a record, or a folder of them) and
   `read_collection()` (embedded members or a members file) return records of class
   `estimation_record`, kept as written. `print` gives a quick view; `tidy` and `glance`
