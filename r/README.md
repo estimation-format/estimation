@@ -73,6 +73,27 @@ Labels default to the list's names. With the `openssl` package installed, each m
 the SHA-256 of its record's RFC 8785 canonical JSON, which shows which version of the record the
 collection holds; without it the hashes are left out (they are optional).
 
+## Reading records and making tables
+
+`read_estimation()` reads a record, or every record in a folder; `read_collection()` reads a
+collection's members (embedded or in a members file). Records print a quick view, and have
+`tidy()` and `glance()` methods, so modelsummary and other broom-based table packages take them
+as they take fitted models, whatever wrote the record (estrec, pyfixest, Stata, dfeols).
+
+```r
+r <- read_estimation("fit.estimation.json")
+r                                        # estimates, metrics, FEs, vcov, messages
+tab <- read_collection("table2.estimation-collection.json")
+modelsummary::modelsummary(tab, stars = TRUE, coef_rename = c(price_log = "log(price)"))
+generics::tidy(r, vcov = "iid")          # another vcov in the record: SEs, t, p, CIs recomputed
+generics::tidy(r, component = "first_stage")
+```
+
+`glance()` gives the metrics (broom names: `r.squared`, `r2.within`, `logLik`, ...),
+`vcov.type` (`"by: firm"`) and an `FE: <name>` column per fixed effect, which modelsummary shows
+as it does for fixest. Records read back in can be written again (`write_estimation`,
+`write_collection`) unchanged.
+
 ## What a record holds
 
 | Section | From fixest |
@@ -125,9 +146,11 @@ CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages insta
 ## Not yet
 
 - `fenegbin`/`femlm`, `lm`/`glm` and other classes through `insight`.
+- `tidy`/`glance` are checked against hand-made records and the spec's examples, not yet
+  through modelsummary itself (not installed where estrec was built).
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
-- Tests: `tests/test-fixest.R` and `tests/test-collection.R` (base R). They validate every
+- Tests: `tests/test-fixest.R`, `tests/test-collection.R` and `tests/test-read.R` (base R). They validate every
   record and collection when the `estimation` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
   with `ESTREC_PYTHON` (a Python with `estimation_format`), the collection test also checks that
   estrec's canonical JSON equals the reference implementation's.

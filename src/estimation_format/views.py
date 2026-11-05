@@ -51,13 +51,28 @@ def _betacf(a: float, b: float, x: float) -> float:
     return h
 
 
-def _betainc(a: float, b: float, x: float) -> float:
-    """Regularized incomplete beta I_x(a, b)."""
+def _lgamma_ratio_half(a: float) -> float:
+    """log(Gamma(a + 1/2) / Gamma(a)), without the cancellation of two large lgammas."""
+    if a < 50.0:
+        return math.lgamma(a + 0.5) - math.lgamma(a)
+    # asymptotic series (Tricomi-Erdelyi), accurate to ~1e-17 for a >= 50
+    return 0.5 * math.log(a) - 1 / (8 * a) + 1 / (192 * a**3) - 1 / (640 * a**5)
+
+
+def _betainc(a: float, b: float, x: float, logx: float | None = None, log1mx: float | None = None) -> float:
+    """Regularized incomplete beta I_x(a, b). `logx` and `log1mx` may be given precisely."""
     if x <= 0.0:
         return 0.0
     if x >= 1.0:
         return 1.0
-    lbt = math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log1p(-x)
+    logx = math.log(x) if logx is None else logx
+    log1mx = math.log1p(-x) if log1mx is None else log1mx
+    lg = (
+        _lgamma_ratio_half(a) - math.lgamma(0.5)
+        if b == 0.5
+        else math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+    )
+    lbt = lg + a * logx + b * log1mx
     if x < (a + 1.0) / (a + b + 2.0):
         return math.exp(lbt) * _betacf(a, b, x) / a
     return 1.0 - math.exp(lbt) * _betacf(b, a, 1.0 - x) / b
@@ -72,7 +87,21 @@ def two_sided_p(stat: float, df: float | None = None) -> float:
         return 0.0
     if df is None or math.isinf(df):
         return math.erfc(t / math.sqrt(2.0))
-    return _betainc(df / 2.0, 0.5, df / (df + t * t))
+    if t == 0.0:
+        return 1.0
+    if df >= 1e4:
+        # Hill (1970), ACM Algorithm 395: a normalizing transform, ~1e-12 relative for df >= 1e4,
+        # where the continued fraction would need about sqrt(df) terms
+        a = df - 0.5
+        b = 48.0 * a * a
+        y = a * math.log1p(t * t / df)
+        y = (
+            ((((-0.4 * y - 3.3) * y - 24.0) * y - 85.5) / (0.8 * y * y + 100.0 + b) + y + 3.0) / b + 1.0
+        ) * math.sqrt(y)
+        return math.erfc(y / math.sqrt(2.0))
+    # x = df / (df + t^2); log x and log(1 - x) via log1p, for large df
+    r = t * t / df
+    return _betainc(df / 2.0, 0.5, 1.0 / (1.0 + r), -math.log1p(r), math.log(r) - math.log1p(r))
 
 
 def critical_value(level: float, df: float | None = None) -> float:
@@ -129,7 +158,7 @@ def vcovs(record: dict) -> list[dict]:
 
 
 def vcov_label(v: dict) -> str:
-    """"by: firm" for a clustered vcov, else its type."""
+    """ "by: firm" for a clustered vcov, else its type."""
     cl = v.get("cluster") or []
     if isinstance(cl, str):
         cl = [cl]
@@ -216,8 +245,11 @@ def tidy(
             r["p_value"] = two_sided_p(r["statistic"], df_t)
     level = _num((record.get("metrics") or {}).get("conf_level"))
     want_level = conf_level if conf_level is not None else (0.95 if math.isnan(level) else level)
-    if recompute or math.isnan(level) or abs(want_level - level) > 1e-12 or all(
-        math.isnan(r["conf_low"]) for r in rows
+    if (
+        recompute
+        or math.isnan(level)
+        or abs(want_level - level) > 1e-12
+        or all(math.isnan(r["conf_low"]) for r in rows)
     ):
         q = critical_value(want_level, df_t)
         for r in rows:
@@ -269,7 +301,9 @@ def _members(source: Any, base_dir: str | os.PathLike | None) -> list[tuple[str,
         source = [source]
     if isinstance(source, Mapping):
         return [(str(k), {}, r) for k, r in source.items()]
-    return [(str((r.get("meta") or {}).get("title") or (r.get("meta") or {}).get("id")), {}, r) for r in source]
+    return [
+        (str((r.get("meta") or {}).get("title") or (r.get("meta") or {}).get("id")), {}, r) for r in source
+    ]
 
 
 def parameters_table(

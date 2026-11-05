@@ -53,6 +53,7 @@ from .records import (
     identifying_paths,
     jsonschema_check,
     level_marks,
+    levels_table,
     load_schemas,
     load_structure,
     loads,
@@ -70,7 +71,6 @@ from .records import (
     validate,
     write,
 )
-
 from .views import glance, glance_table, parameters_table, tidy
 
 __all__ = [
@@ -85,10 +85,6 @@ __all__ = [
     "WARN_BYTES",
     "WARN_ELEMENTS",
     "EstimationError",
-    "glance",
-    "glance_table",
-    "parameters_table",
-    "tidy",
     "Issue",
     "Schemas",
     "__version__",
@@ -103,11 +99,14 @@ __all__ = [
     "count_elements",
     "decode_nonfinite",
     "fields_above",
+    "glance",
+    "glance_table",
     "identifying_paths",
     "is_collection",
     "iter_members",
     "jsonschema_check",
     "level_marks",
+    "levels_table",
     "load_schemas",
     "load_structure",
     "loads",
@@ -117,6 +116,7 @@ __all__ = [
     "new_collection",
     "new_member",
     "new_record",
+    "parameters_table",
     "path_level",
     "prepare",
     "read",
@@ -127,6 +127,7 @@ __all__ = [
     "redact_collection",
     "reduce",
     "spill",
+    "tidy",
     "to_json",
     "validate",
     "validate_collection",

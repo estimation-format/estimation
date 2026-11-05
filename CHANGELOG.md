@@ -9,6 +9,11 @@
   records as they take fitted models. `tidy(vcov = "iid")` and other vcovs in the record
   recompute SEs, tests and intervals; `component =` selects first-stage and other components.
   The writers accept records read back in.
+- Python views for tables (`estimation_format.views`): `tidy(record, vcov=, conf_level=,
+  component=, dropped=)`, `glance(record)`, and `parameters_table`/`glance_table` across a
+  collection's members (the flat table of spec 11), as plain dicts for polars, pandas or
+  great_tables. The same semantics as estrec's views; t tests use a stdlib Student t (within
+  2e-12 of scipy at any df).
 - Disclosure levels (spec 4.9; proposal `docs/proposals/disclosure.md`, Ted 2026-11-05):
   how much a record discloses is the sharer's choice, from 1 (estimates, SEs, p-values,
   intervals, N, df) to 5 (environment, execution, agent, every software component). The core

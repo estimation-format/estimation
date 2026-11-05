@@ -85,6 +85,19 @@ ef.write_collection(coll, "table2.estimation-collection.json")   # records embed
 issues = ef.validate_collection(ef.read_collection("table2.estimation-collection.json"), base_dir=".")
 ```
 
+## Tables
+
+The readers give the parameters as rows for any table tool: `estrec::read_collection()` with
+modelsummary in R, and in Python
+
+```python
+rows = ef.parameters_table(ef.read_collection("table2.estimation-collection.json"),
+                           base_dir=".")        # member, locator, term, estimate, std_error, ...
+ef.tidy(rec, vcov="iid")                        # another vcov in the record, recomputed
+ef.glance(rec)                                  # metrics, vcov_type, fixed_effects
+polars.DataFrame(rows)                          # then great_tables, to_latex, ...
+```
+
 ## Contributing
 
 Profiles for new model types or tools come by pull request; see
