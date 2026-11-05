@@ -13,6 +13,10 @@
   AIC, BIC, log-likelihood, F, RMSE as sqrt(rss / nobs)); `metrics = "all"` gives every one.
   estrec's feols records now carry `aic` and `bic`, as its GLM records did. A modelsummary
   table from records matches the one from the fits (tested when broom is installed).
+- A quick look in the terminal (`estimation_format.show`, `python -m estimation_format.show`):
+  a detail view of one record (estimates, metrics, FE level counts, vcov and its ssc, tests,
+  messages), or a side-by-side table of several records, a folder or a collection.
+  `--vcov`, `--digits`, `--table`/`--detail`, `--component`.
 - Python views for tables (`estimation_format.views`): `tidy(record, vcov=, conf_level=,
   component=, dropped=)`, `glance(record)`, and `parameters_table`/`glance_table` across a
   collection's members (the flat table of spec 11), as plain dicts for polars, pandas or

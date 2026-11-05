@@ -1,0 +1,318 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+"""`estimation show`: a quick look at records in the terminal. One record gets a detail view
+(estimates, metrics, fixed effects, vcov, tests, messages); several records, a folder or a
+collection get a side-by-side regression table (estimates over standard errors, then N,
+R-squareds, the standard errors' type and fixed-effect rows)."""
+
+from __future__ import annotations
+
+import math
+import os
+from pathlib import Path
+from typing import Any
+
+from .collection import is_collection, loads_collection
+from .records import loads
+from .views import _locator_label, _num, glance, pick_vcov, tidy, vcovs
+
+STARS = ((0.001, "***"), (0.01, "**"), (0.05, "*"), (0.1, "+"))
+TABLE_ROWS = (
+    ("nobs", "N"),
+    ("r2", "R2"),
+    ("adj_r2", "R2 adj."),
+    ("r2_within", "R2 within"),
+    ("pseudo_r2", "R2 pseudo"),
+    ("aic", "AIC"),
+    ("bic", "BIC"),
+    ("rmse", "RMSE"),
+)
+
+
+def _stars(p: float) -> str:
+    if p is None or math.isnan(p):
+        return ""
+    return next((s for cut, s in STARS if p < cut), "")
+
+
+def _fmt(x: Any, digits: int = 3) -> str:
+    """A number for a table: counts in full with separators, others to `digits` decimals
+    (scientific when that would show nothing)."""
+    if x is None:
+        return ""
+    if isinstance(x, (bool, str)):
+        return str(x)
+    x = float(x)
+    if math.isnan(x):
+        return "NaN"
+    if math.isinf(x):
+        return "Inf" if x > 0 else "-Inf"
+    if x == int(x) and abs(x) < 1e15 and abs(x) >= 1:
+        return f"{int(x):,}"
+    if x != 0 and abs(x) < 0.5 * 10**-digits:
+        return f"{x:.{max(digits - 1, 1)}e}"
+    return f"{x:.{digits}f}"
+
+
+def _fmt_p(p: float) -> str:
+    if p is None or math.isnan(p):
+        return ""
+    return "<1e-16" if p < 1e-16 else f"{p:.3g}"
+
+
+def _table(rows: list[list[str]], right: set[int], header: list[str] | None = None) -> list[str]:
+    """Rows of strings as aligned columns; `right` are the right-aligned column indexes."""
+    allrows = ([header] if header else []) + rows
+    if not allrows:
+        return []
+    widths = [max(len(r[i]) for r in allrows) for i in range(len(allrows[0]))]
+
+    def line(r):
+        cells = [c.rjust(w) if i in right else c.ljust(w) for i, (c, w) in enumerate(zip(r, widths))]
+        return "  ".join(cells).rstrip()
+
+    out = [line(r) for r in allrows]
+    if header:
+        out.insert(1, "  ".join("-" * w for w in widths))
+    return out
+
+
+def _software(rec: dict) -> str | None:
+    sw = (rec.get("provenance") or {}).get("software") or []
+    if isinstance(sw, dict):
+        sw = [sw]
+    pick = [s for s in sw if s.get("role") == "estimator"][:1] or sw[:1]
+    pick += [s for s in sw if s.get("role") == "language"][:1]
+    names = [" ".join(str(x) for x in (s.get("name"), s.get("version")) if x) for s in pick]
+    return ", ".join(n for n in names if n) or None
+
+
+def show_record(rec: dict, *, vcov: Any = None, digits: int = 4, member: dict | None = None) -> str:
+    """A detail view of one record."""
+    meta = rec.get("meta") or {}
+    est = meta.get("estimator") or {}
+    spec = rec.get("specification") or {}
+    out = [f"estimation record{': ' + meta['title'] if meta.get('title') else ''}"]
+    what = " / ".join(x for x in (est.get("family"), est.get("method")) if x) or "?"
+    resp = ", ".join(meta.get("responses") or [])
+    out.append(f"  {what}{' of ' + resp if resp else ''}    status: {meta.get('status', '?')}")
+    formula = (
+        (spec.get("formula") or {}).get("text")
+        if isinstance(spec.get("formula"), dict)
+        else spec.get("formula")
+    )
+    if formula:
+        out.append(f"  {formula}")
+    if member:
+        locs = member.get("locators") or ([member["locator"]] if member.get("locator") else [])
+        loc = "; ".join(filter(None, map(_locator_label, locs)))
+        out.append(f"  member: {member.get('label') or member.get('id')}{'  (' + loc + ')' if loc else ''}")
+    sw = _software(rec)
+    if sw:
+        out.append(f"  software: {sw}")
+    v = pick_vcov(rec, vcov)
+    if v is not None:
+        cl = v.get("cluster") or []
+        cl = [cl] if isinstance(cl, str) else cl
+        ssc = (v.get("ssc") or {}).get("convention")
+        more = len(vcovs(rec)) - 1
+        out.append(
+            f"  vcov: {v.get('type', '?')}"
+            + (f", clustered by {' & '.join(cl)}" if cl else "")
+            + (f" ({ssc} ssc)" if ssc else "")
+            + (f"; {more} more in the record" if more > 0 and vcov is None else "")
+        )
+    out.append("")
+
+    rows = tidy(rec, vcov=vcov, component="all", dropped=True)
+    multi = len({r.get("response") for r in rows if r.get("response")}) > 1
+    body = []
+    for r in rows:
+        name = r["term"]
+        if multi and r.get("response"):
+            name = f"{r['response']}: {name}"
+        if r.get("component"):
+            name = f"[{r['component']}] {name}"
+        if r.get("dropped"):
+            body.append([name, "", "", "", f"({r['dropped']})"])
+            continue
+        body.append(
+            [
+                name,
+                f"{r['estimate']:.{digits}g}",
+                f"{r['std_error']:.{digits}g}" if not math.isnan(r["std_error"]) else "",
+                _fmt_p(r["p_value"]),
+                _stars(r["p_value"]),
+            ]
+        )
+    out += _table(body, right={1, 2, 3}, header=["", "Estimate", "Std. Error", "p value", ""])
+    out.append("")
+
+    ms = glance(rec, vcov=vcov, metrics="all")
+    ms.pop("vcov_type", None)
+    fes = ms.pop("fixed_effects", None)
+    items = [f"{k} {_fmt(v, digits)}" for k, v in ms.items() if not isinstance(v, (list, dict))]
+    line = " "
+    for it in items:
+        if len(line) + len(it) + 2 > 92:
+            out.append(line.rstrip("; "))
+            line = " "
+        line += f" {it};"
+    if items:
+        out.append(line.rstrip("; "))
+    fe_structs = (rec.get("structures") or {}).get("fixed_effects")
+    if isinstance(fe_structs, dict):
+        fe_structs = [fe_structs]
+    if fe_structs:
+        txt = ", ".join(f"{f.get('name')} ({_fmt(_num(f.get('levels')), 0)})" for f in fe_structs)
+        out.append(f"  fixed effects: {txt}")
+    elif fes:
+        out.append(f"  fixed effects: {', '.join(fes)}")
+    tests = rec.get("tests") or []
+    for t in tests:
+        lab = t.get("label") or t.get("name") or "test"
+        stat = _num(t.get("statistic"))
+        p = _num(t.get("p_value"))
+        out.append(
+            f"  test {lab}: "
+            + (f"{t.get('distribution', 'stat')} = {_fmt(stat, 3)}" if not math.isnan(stat) else "")
+            + (f", p = {_fmt_p(p)}" if not math.isnan(p) else "")
+        )
+    for m in meta.get("messages") or []:
+        out.append(f"  {m.get('level', 'note')}: {m.get('message')}")
+    return "\n".join(out)
+
+
+def show_table(
+    named: list[tuple[str, dict]], *, vcov: Any = None, digits: int = 3, component: Any = None
+) -> str:
+    """A side-by-side regression table of several records."""
+    tidies = [tidy(r, vcov=vcov, component=component) for _, r in named]
+    glances = [glance(r, vcov=vcov) for _, r in named]
+    terms: list[str] = []
+    for t in tidies:
+        for row in t:
+            key = f"{row['response']}: {row['term']}" if row.get("response") and component else row["term"]
+            if key not in terms:
+                terms.append(key)
+    header = [""] + [n for n, _ in named]
+    body = []
+    for term in terms:
+        est_row, se_row = [term], [""]
+        for t in tidies:
+            hit = next(
+                (
+                    r
+                    for r in t
+                    if (f"{r['response']}: {r['term']}" if r.get("response") and component else r["term"])
+                    == term
+                ),
+                None,
+            )
+            if hit is None:
+                est_row.append("")
+                se_row.append("")
+            else:
+                est_row.append(_fmt(hit["estimate"], digits) + _stars(hit["p_value"]))
+                se = hit["std_error"]
+                se_row.append(f"({_fmt(se, digits)})" if not math.isnan(se) else "")
+        body += [est_row, se_row]
+    stats = []
+    for key, label in TABLE_ROWS:
+        vals = [g.get(key) for g in glances]
+        if any(v is not None for v in vals):
+            stats.append([label] + [_fmt(v, digits) if v is not None else "" for v in vals])
+    if any(g.get("vcov_type") for g in glances):
+        stats.append(["Std. errors"] + [g.get("vcov_type", "") for g in glances])
+    fe_names: list[str] = []
+    for g in glances:
+        for f in g.get("fixed_effects") or []:
+            if f not in fe_names:
+                fe_names.append(f)
+    for f in fe_names:
+        stats.append([f"FE: {f}"] + ["X" if f in (g.get("fixed_effects") or []) else "" for g in glances])
+    right = set(range(1, len(header)))
+    lines = _table(body + [["-"] * len(header)] + stats, right=right, header=header)
+    # the separator row between estimates and statistics, drawn full width
+    widths = [len(c) for c in lines[1].split("  ")]
+    sep = "  ".join("-" * w for w in widths)
+    lines = [sep if set(ln.replace(" ", "")) == {"-"} and i > 1 else ln for i, ln in enumerate(lines)]
+    lines.append("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
+    return "\n".join(lines)
+
+
+def load_for_show(paths: list[str | os.PathLike]) -> list[tuple[str, dict, dict | None]]:
+    """(name, record, member entry) for each record in `paths`: record files, folders of them
+    (every *.estimation.json, by file stem) and collections (each member, by label)."""
+    out = []
+    for p in map(Path, paths):
+        if p.is_dir():
+            files = sorted(p.glob("*.estimation.json"))
+            if not files:
+                raise ValueError(f"no *.estimation.json files in {p}")
+            out += [(f.name.removesuffix(".estimation.json"), loads(f.read_bytes()), None) for f in files]
+            continue
+        data = p.read_bytes()
+        if p.name.endswith(".estimation-collection.json") or b'"estimation-collection/' in data[:400]:
+            coll = loads_collection(data)
+            if is_collection(coll):
+                from .collection import iter_members
+
+                for i, m, rec in iter_members(coll, p.parent):
+                    if rec is None:
+                        raise ValueError(f"{p}: members[{i}]: record not found")
+                    out.append((str(m.get("label") or m.get("id")), rec, m))
+                continue
+        out.append((p.name.removesuffix(".estimation.json").removesuffix(".json"), loads(data), None))
+    return out
+
+
+def show(
+    paths: list[str | os.PathLike],
+    *,
+    vcov: Any = None,
+    digits: int | None = None,
+    table: bool | None = None,
+    component: Any = None,
+) -> str:
+    """The text `estimation show` prints: a detail view of a single record, else (or with
+    `table=True`) a side-by-side table."""
+    items = load_for_show(paths)
+    if table is None:
+        table = len(items) > 1
+    if not table:
+        return "\n\n".join(show_record(rec, vcov=vcov, digits=digits or 4, member=m) for _, rec, m in items)
+    return show_table([(n, r) for n, r, _ in items], vcov=vcov, digits=digits or 3, component=component)
+
+
+def add_arguments(p) -> None:
+    """The `show` options, for the `estimation` CLI and `python -m estimation_format.show`."""
+    p.add_argument("paths", nargs="+", help="records, folders of records, or collections")
+    p.add_argument("--vcov", help='another vcov in the record: a type ("iid", "HC1") or cluster variables')
+    p.add_argument("--digits", type=int, help="digits (default 4 in the detail view, 3 in the table)")
+    view = p.add_mutually_exclusive_group()
+    view.add_argument("--table", dest="table", action="store_true", default=None, help="side-by-side table")
+    view.add_argument("--detail", dest="table", action="store_false", help="a detail view of each record")
+    p.add_argument("--component", help='with --table: a component to show instead ("first_stage")')
+
+
+def run(args) -> int:
+    try:
+        vcov = int(args.vcov) if args.vcov is not None and args.vcov.isdigit() else args.vcov
+        print(show(args.paths, vcov=vcov, digits=args.digits, table=args.table, component=args.component))
+    except (OSError, ValueError) as e:
+        print(f"estimation show: {e}", file=__import__("sys").stderr)
+        return 1
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    p = argparse.ArgumentParser(prog="estimation show", description=__doc__.split("\n\n")[0])
+    add_arguments(p)
+    return run(p.parse_args(argv))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

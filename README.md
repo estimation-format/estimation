@@ -98,6 +98,14 @@ ef.glance(rec)                                  # metrics, vcov_type, fixed_effe
 polars.DataFrame(rows)                          # then great_tables, to_latex, ...
 ```
 
+A quick look in the terminal: one record gives a detail view, several records, a folder or
+a collection a side-by-side table (estimates over SEs, N, R2s, SE type, FE rows):
+
+```bash
+python -m estimation_format.show table2.estimation-collection.json
+python -m estimation_format.show fit.estimation.json --vcov iid
+```
+
 ## Contributing
 
 Profiles for new model types or tools come by pull request; see
