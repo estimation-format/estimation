@@ -89,6 +89,9 @@ body.dragging .drop { border-color: var(--accent); color: var(--accent); backgro
 .group { border-top: 1px solid var(--line); }
 .group-head { display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px 4px; font-size: 12px; color: var(--muted); }
 .group-head .mono { overflow-wrap: anywhere; }
+.group-head .right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.builder-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.builder-head .hint { font-size: 12px; color: var(--muted); }
 .rec {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center;
   padding: 8px 14px; border-top: 1px solid transparent; cursor: pointer;
@@ -215,6 +218,10 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
     <section class="view" id="view-table" role="tabpanel" aria-labelledby="tab-table">
       <div class="builder">
         <div class="controls">
+          <div class="builder-head">
+            <button class="btn small" id="new-table" type="button">New table</button>
+            <span class="hint">Clears the table; open records stay.</span>
+          </div>
           <fieldset>
             <legend>Table</legend>
             <label class="stack">Title<input type="text" id="opt-title" placeholder="Table 2: ..."></label>
@@ -386,7 +393,7 @@ async function loadFiles(files, { examples = false } = {}) {
   state.examples = examples;
   $("example-note").hidden = !examples;
   if (specs.length) applySpec(specs[specs.length - 1].spec, specs[specs.length - 1].name);
-  else if (!state.spec && state.items.length) state.spec = E.newSpec(state.items.slice(0, 3));
+  else if (!state.spec && state.items.length) state.spec = freshSpec(state.items.slice(0, 3));
   if (!state.selected && state.items.length) state.selected = state.items[0].key;
   state.loadMsgs = msgs;
   renderAll();
@@ -422,7 +429,11 @@ function renderRail() {
   const inTable = new Map();
   for (const c of (state.spec || {}).columns || []) inTable.set(c.record, (inTable.get(c.record) || 0) + 1);
   for (const [file, items] of byFile) {
-    const g = el("div", { class: "group" }, el("div", { class: "group-head" }, el("span", { class: "mono", text: file }), el("span", { text: items.length === 1 ? "1 record" : `${items.length} records` })));
+    const g = el("div", { class: "group" }, el("div", { class: "group-head" },
+      el("span", { class: "mono", text: file }),
+      el("span", { class: "right" },
+        el("span", { text: items.length === 1 ? "1 record" : `${items.length} records` }),
+        el("button", { class: "btn small", type: "button", text: "Table from these", "aria-label": `Start a new table from the records in ${file}`, onclick: () => tableFrom(items, file) }))));
     for (const it of items) {
       const r = it.record;
       const est = (r.meta || {}).estimator || {};
@@ -452,6 +463,33 @@ function index() {
 function ensureSpec() {
   if (!state.spec) state.spec = E.newSpec([]);
   return state.spec;
+}
+
+// a new table: one column per record, with N, R2, the standard errors and each fixed effect
+function freshSpec(items) {
+  const s = E.newSpec(items);
+  const fes = [];
+  for (const it of items) for (const f of (it.record.specification || {}).fixed_effects || []) if (!fes.includes(f)) fes.push(f);
+  for (const f of fes) s.stats.push({ fixed_effect: f, label: `FE: ${f}` });
+  return s;
+}
+
+function tableFrom(items, file) {
+  state.spec = freshSpec(items);
+  state.specName = null;
+  state.loadMsgs = [];
+  renderAll();
+  showTab("table");
+  toast(`New table from ${file}`);
+}
+
+function newTable() {
+  state.spec = E.newSpec([]);
+  state.specName = null;
+  state.loadMsgs = [];
+  renderAll();
+  showTab("table");
+  toast("New table");
 }
 
 function addColumn(it) {
@@ -859,6 +897,7 @@ $("open-folder").addEventListener("click", () => $("folder-input").click());
 $("file-input").addEventListener("change", (e) => { loadFiles([...e.target.files]); e.target.value = ""; });
 $("folder-input").addEventListener("change", (e) => { loadFiles([...e.target.files]); e.target.value = ""; });
 $("load-examples").addEventListener("click", loadExamples);
+$("new-table").addEventListener("click", newTable);
 $("clear").addEventListener("click", () => { clearAll(); renderAll(); });
 $("load-spec").addEventListener("click", () => $("spec-input").click());
 $("spec-input").addEventListener("change", async (e) => {
