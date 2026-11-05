@@ -133,6 +133,10 @@ any string is valid, so a new kind of model needs no change to the format.
 What was asked for, in the estimating software's own terms, fully resolved:
 
 - `call`: the command as written (`feols(y ~ x | fe, data)`, `reghdfe y x, absorb(fe)`).
+- `program`: `{path, line, sha256}`, the program in the replication package that ran the
+  command, with `path` relative to the package root. Unlike
+  `provenance.execution.invocation.script_path` it isn't identifying, so a record can map a
+  result to its program without disclosing where it ran.
 - `formula`: `{text, syntax}`, where `syntax` names the formula language (`R`, `fixest`,
   `patsy`, `stata`, ...).
 - `terms`: the expanded regressors in model order; `factor_terms` with their levels and
@@ -429,8 +433,8 @@ record, not a degraded one. Each level includes everything in the levels below i
 | 1 | `parameters` (estimates, standard errors, test statistics, p-values, intervals), `metrics.nobs`, `df_residual` and `conf_level`; `meta.id`, `created`, `status`, `parent`, `profiles`, `title`, `tags`, `notes`, `disclosure`, `core_digest`; `publication`; `history` without `by` |
 | 2 | the model's diagnostic and summary measures: the other `metrics`, `meta.estimator`, `responses` and `messages`, `structures.vcov` (without cluster names and counts), `random_effects`, `first_stage`, and `tests` (without `source`); `attachments` |
 | 3 | `specification`; the other structures (`fixed_effects`, `hyperparameters`, ...) and the vcov's `cluster` and `n_clusters` |
-| 4 | `provenance.software`: the components with `role` `language`, `estimator` or `writer` only; the writer in `meta.producer` and `history[*].by`, so a writer's version can be traced; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
-| 5 | every other software component (dependencies), `lock` and `container`; `provenance.environment`, `execution` and `agent`; data `location`; any other `provenance` member |
+| 4 | `provenance.software`: the components with `role` `language`, `estimator` or `writer` only, with a `lock` pointer's `format` and `sha256` (which commit to the full environment without listing it); the writer in `meta.producer` and `history[*].by`, so a writer's version can be traced; `provenance.data` without `location`; `structures.numerics`; `validation`; `extensions`; a test's `source` |
+| 5 | every other software component (dependencies), a `lock`'s `path`, `container`; `provenance.environment`, `execution` and `agent`; data `location`; any other `provenance` member |
 
 - **Writers** SHOULD let the user choose the level and SHOULD default to **4**. A record
   written at a level declares it in `meta.disclosure.level`, inside the core digest. A reader
@@ -438,8 +442,9 @@ record, not a degraded one. Each level includes everything in the levels below i
 - **The schemas mark the levels.** Each field carries `"x-level": n`; a field without a mark
   has its parent's level, except that a mark on `*` (`additionalProperties`) applies to every
   key without a mark of its own. `"x-level-if": [{field, in, level}]` gives list items whose
-  `field` is one of `in` another level (software components by `role`). A mark is never lower
-  than an enclosing one. Profiles mark their own fields the same way; where two schemas mark a
+  `field` is one of `in` another level (software components by `role`). A field's level is
+  never below that of what contains it: a mark lower than its parent's has the parent's
+  level (a `lock` is level 4 on a level-4 component, 5 on a level-5 one). Profiles mark their own fields the same way; where two schemas mark a
   path differently, the higher level applies. Writers, validators and tools that lower a
   record need only the schemas.
 - **At level 1**, `meta.created` and a history entry's `when` MAY be dates instead of
@@ -728,6 +733,7 @@ profile: `name`, `file`, `kind` (`standard`, `tool` or `purpose`), `status` (`dr
 | [`causal-ml/0.1`](profiles/causal-ml.md) | standard | `meta.estimator.method`; `specification.causal` (treatment, outcome, estimand), `learners`, `cross_fitting` (folds, repeats, seed); a row with a `causal` estimand, `estimate`, `std_error`; `nobs` |
 | [`gam/0.1`](profiles/gam.md) | standard | `specification.smooths` (basis, k); `options.smoothing_method`; `edf` on smooth rows; `estimate`, `std_error` on parametric rows; `nobs` |
 | [`bayesian/0.1`](profiles/bayesian.md) | standard | `meta.estimator.method`; every prior; chains, draws, warmup and seed for MCMC; a `posterior` object (point, sd, interval with probability and kind) on each row; `nobs` |
+| [`aea/0.1`](profiles/aea.md) | purpose | disclosure level 4; `publication.locator` with `label` and a table, figure, page or section; `estimate` with `std_error` or an interval; `meta.core_digest`; language and estimator with `version`; each data input by `name`; a set seed for resampling, Bayesian and causal-ML records; `specification.program`, data citations and checksums expected |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

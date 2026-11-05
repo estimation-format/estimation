@@ -71,6 +71,8 @@ from .records import (
     write,
 )
 
+from .views import glance, glance_table, parameters_table, tidy
+
 __all__ = [
     "COLLECTION_SCHEMA",
     "CORE",
@@ -83,6 +85,10 @@ __all__ = [
     "WARN_BYTES",
     "WARN_ELEMENTS",
     "EstimationError",
+    "glance",
+    "glance_table",
+    "parameters_table",
+    "tidy",
     "Issue",
     "Schemas",
     "__version__",

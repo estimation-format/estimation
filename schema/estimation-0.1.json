@@ -325,6 +325,16 @@
       "type": "object",
       "properties": {
         "call": {"description": "The command as written.", "type": "string"},
+        "program": {
+          "description": "The program in the replication package that ran the command: path relative to the package root (not identifying, unlike provenance.execution.invocation.script_path), line, and the file's sha256.",
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": {"type": "string"},
+            "line": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
         "formula": {
           "type": "object",
           "required": ["text"],
@@ -591,10 +601,10 @@
           "type": "object",
           "properties": {
             "format": {"type": "string", "x-vocabulary": ["renv.lock", "pylock.toml", "conda-lock", "cyclonedx", "spdx", "pip-freeze"]},
-            "path": {"x-identifying": true, "type": "string"},
+            "path": {"x-identifying": true, "x-level": 5, "type": "string"},
             "sha256": {"$ref": "#/$defs/sha256"}
           },
-          "x-level": 5
+          "x-level": 4
         },
         "container": {
           "x-level": 5,

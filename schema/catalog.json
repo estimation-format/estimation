@@ -246,6 +246,15 @@
       "maintainer": "jemather",
       "description": "Bayesian models (brms, rstanarm, Stan, PyMC/Bambi with ArviZ, Stata bayes): algorithm, every prior, chains/draws/warmup/seed, posterior summaries with the point summary and credible-interval probability and kind, R-hat, ESS, MCSE, sampler diagnostics, LOO/WAIC.",
       "examples": ["examples/bayesian.estimation.json"]
+    },
+    {
+      "name": "aea/0.1",
+      "file": "profiles/aea-0.1.json",
+      "kind": "purpose",
+      "status": "draft",
+      "maintainer": "jemather",
+      "description": "Results in a replication package for an AEA journal (AEA Data and Code Availability Policy, Feb 2026; SSDE README template), at disclosure level 4: the exhibit and its label, estimates with SEs or intervals, the core digest, language and estimator versions, data inputs by name, a set seed for resampling, Bayesian and causal-ML records; the program, data citations and checksums expected.",
+      "examples": ["examples/aea.estimation.json"]
     }
   ]
 }

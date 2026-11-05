@@ -36,8 +36,9 @@ def test_marks_never_go_below_an_enclosing_mark():
         for i in range(1, len(parts)):
             outer = marks.get(".".join(parts[:i]).replace(".[*]", "[*]"))
             if outer and outer[0] is not None:
-                assert lvl >= outer[0], (path, lvl, outer)
-                assert all(c[2] >= outer[0] for c in conds), path
+                lowest = min([outer[0], *(c[2] for c in outer[1])])  # its x-level-if can lower it
+                assert lvl >= lowest, (path, lvl, outer)
+                assert all(c[2] >= lowest for c in conds), path
 
 
 def test_every_top_level_member_is_marked():
@@ -313,3 +314,67 @@ def test_validator_flags_a_purpose_above_the_declared_level(purpose_schemas):
         i for i in errors(est.validate(rec, schema=purpose_schemas)) if i.path == "meta.disclosure.level"
     ]
     assert found and "needs disclosure level 3" in found[0].message
+
+
+# ---------------------------------------------------------------- aea/0.1
+
+
+def aea_record():
+    return est.read(est.PACKAGED_SCHEMAS / "examples" / "aea.estimation.json", nonfinite="string")
+
+
+def aea_errors(rec):
+    est.add_digest(rec)
+    return {i.path for i in errors(est.validate(rec)) if "[aea/0.1]" in i.message}
+
+
+def test_aea_is_a_level_4_purpose():
+    sc = est.load_schemas()
+    assert est.is_purpose("aea/0.1", sc) and est.min_level("aea/0.1", sc) == 4
+    with pytest.raises(est.EstimationError, match="below the 4"):
+        est.prepare(aea_record(), level=3, purpose="aea/0.1")
+
+
+def test_aea_example_meets_it_without_warnings():
+    pytest.importorskip("jsonschema")
+    issues = est.validate(aea_record())
+    assert errors(issues) == [] and warns(issues) == []
+
+
+@pytest.mark.parametrize(
+    "edit, path",
+    [
+        (lambda r: r["publication"]["locator"].pop("label"), "publication.locator.label"),
+        (lambda r: r["publication"]["locator"].pop("table"), "publication.locator"),
+        (lambda r: r["provenance"].pop("data"), "provenance.data"),
+        (lambda r: r["provenance"]["data"][0].pop("name"), "provenance.data[0].name"),
+        (lambda r: r["provenance"]["software"][0].pop("version"), "provenance.software"),
+        # an interval stands in for a standard error; with neither, the row fails
+        (lambda r: [r["parameters"][0].pop(k) for k in ("std_error", "conf_low")], "parameters[0]"),
+    ],
+)
+def test_aea_requirements(edit, path):
+    pytest.importorskip("jsonschema")
+    rec = aea_record()
+    edit(rec)
+    assert path in aea_errors(rec)
+
+
+def test_aea_expects_the_program_and_data_citation():
+    pytest.importorskip("jsonschema")
+    rec = aea_record()
+    del rec["specification"]["program"]
+    del rec["provenance"]["data"][0]["publication"]
+    est.add_digest(rec)
+    found = {i.path for i in warns(est.validate(rec))}
+    assert found == {"specification.program", "provenance.data[0].publication"}
+
+
+def test_aea_needs_a_seed_for_resampling():
+    pytest.importorskip("jsonschema")
+    rec = aea_record()
+    rec["meta"]["profiles"].append("resampling/0.1")
+    rec["specification"]["resampling"] = {"method": "wild_cluster", "reps": 999, "seed": None}
+    assert "specification.resampling.seed" in aea_errors(rec)
+    rec["specification"]["resampling"]["seed"] = 20261105
+    assert not {p for p in aea_errors(rec) if "seed" in p}

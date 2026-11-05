@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/aea-0.1.json",
+  "title": "aea/0.1",
+  "x-license": "CC0-1.0",
+  "x-min-level": 4,
+  "description": "Purpose profile for results in a replication package for an AEA journal, under the AEA Data and Code Availability Policy (revised February 2026, rules numbered by the DCAS) and the Social Science Data Editors' README template. Requires: where the result appears in the paper (a locator with its printed label and a table, figure, page or section); estimates with standard errors or intervals; the core digest; the language and estimator with versions; each data input by name; a seed that was set, for resampling, Bayesian and causal-ML records. Expects: the command and the program that ran it, data citations and checksums, the paper's citation and status, the replication package. Covers only what concerns one result; the README, deposit and rights statements belong to the package. Spec: spec/profiles/aea.md.",
+  "allOf": [
+    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "#/$defs/rules"}
+  ],
+  "$defs": {
+    "exhibit": {
+      "description": "Where in the paper: the label as printed, and the table or figure (in-text numbers: the page or section). DCAS #13 README: map each output to the exhibit it appears in.",
+      "type": "object",
+      "required": ["label"],
+      "anyOf": [
+        {"required": ["table"]},
+        {"required": ["figure"]},
+        {"required": ["page"]},
+        {"required": ["section"]}
+      ]
+    },
+    "seed_set": {"description": "Set, not null: \"The seed should be set once, and not use a time-stamp\" (README template, Controlled Randomness).", "type": ["integer", "string"]},
+    "rules": {
+      "type": "object",
+      "required": ["meta", "publication", "provenance"],
+      "properties": {
+        "meta": {"required": ["core_digest"]},
+        "publication": {
+          "x-expected": ["citation", "status", "replication_package"],
+          "anyOf": [{"required": ["locator"]}, {"required": ["locators"]}],
+          "properties": {
+            "locator": {"$ref": "#/$defs/exhibit"},
+            "locators": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/exhibit"}}
+          }
+        },
+        "parameters": {
+          "items": {
+            "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
+            "else": {
+              "required": ["estimate"],
+              "anyOf": [{"required": ["std_error"]}, {"required": ["conf_low", "conf_high"]}]
+            }
+          }
+        },
+        "specification": {"x-expected": ["call", "program"]},
+        "provenance": {
+          "required": ["software", "data"],
+          "properties": {
+            "software": {
+              "description": "The language and the estimator, each with the version used (DCAS #13; README template: \"In all cases, list the version you used\").",
+              "allOf": [
+                {"contains": {"required": ["role", "version"], "properties": {"role": {"const": "language"}}}},
+                {"contains": {"required": ["role", "version"], "properties": {"role": {"const": "estimator"}}}}
+              ]
+            },
+            "data": {
+              "description": "Every input by name (DCAS #1); a citation (DCAS #6) and a checksum are expected: data the authors created have no citation.",
+              "type": "array",
+              "minItems": 1,
+              "items": {"required": ["name"], "x-expected": ["publication", "checksum"]}
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {"required": ["meta"], "properties": {"meta": {"required": ["profiles"], "properties": {"profiles": {"contains": {"const": "resampling/0.1"}}}}}},
+          "then": {"required": ["specification"], "properties": {"specification": {"required": ["resampling"], "properties": {"resampling": {"required": ["seed"], "properties": {"seed": {"$ref": "#/$defs/seed_set"}}}}}}}
+        },
+        {
+          "if": {"required": ["meta"], "properties": {"meta": {"required": ["profiles"], "properties": {"profiles": {"contains": {"const": "bayesian/0.1"}}}}}},
+          "then": {"required": ["specification"], "properties": {"specification": {"required": ["sampling"], "properties": {"sampling": {"required": ["seed"], "properties": {"seed": {"$ref": "#/$defs/seed_set"}}}}}}}
+        },
+        {
+          "if": {"required": ["meta"], "properties": {"meta": {"required": ["profiles"], "properties": {"profiles": {"contains": {"const": "causal-ml/0.1"}}}}}},
+          "then": {"required": ["specification"], "properties": {"specification": {"required": ["cross_fitting"], "properties": {"cross_fitting": {"required": ["seed"], "properties": {"seed": {"$ref": "#/$defs/seed_set"}}}}}}}
+        }
+      ]
+    }
+  }
+}

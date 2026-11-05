@@ -1,7 +1,12 @@
 # Proposal: a purpose profile for AEA journals
 
-Status: **draft for review** (2026-11-05). The first purpose profile (spec 9.1): what a record
-needs so that the AEA Data Editor, or an author preparing a replication package, can use it.
+Status: **adopted** as `aea/0.1` (Ted, 2026-11-05: the recommendations below, all five).
+Schema `schema/profiles/aea-0.1.json`, page `spec/profiles/aea.md`, example
+`schema/examples/aea.estimation.json`; the core gains `specification.program`, and a software
+`lock` is level 4 without its `path`. The lock is a recommendation in the page, not an
+expected field: the validator can't single out the language component to warn about. The
+first purpose profile (spec 9.1): what a record needs so that the AEA Data Editor, or an
+author preparing a replication package, can use it.
 
 ## Sources
 

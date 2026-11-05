@@ -19,7 +19,14 @@
   level 1 `created` may be a date. Validators: fields above the declared level are errors, and
   withheld expected members are information, not warnings. New history action `reduced`.
 - Purpose profiles: a third catalog `kind`, `purpose`, for what a destination needs, with
-  `x-min-level`; a floor where the level is a ceiling. None registered yet.
+  `x-min-level`; a floor where the level is a ceiling.
+- Profiles: `aea/0.1`, the first purpose profile (`spec/profiles/aea.md`; proposal
+  `docs/proposals/aea-profile.md`): results in a replication package for an AEA journal, from
+  the AEA Data and Code Availability Policy (Feb 2026) and the SSDE README template, at level
+  4. Example `aea.estimation.json`.
+- Core: `specification.program` (`{path, line, sha256}`), the program in the replication
+  package that ran the command, not identifying. A software `lock` is level 4 without its
+  `path` (5). A field's level is never below its parent's.
 - Validator and tools: `prepare` and `write` take `level` and `purpose`, drop the claims of
   model profiles the level breaks (`profile_not_claimed` in `meta.messages`) and fail when a
   purpose can't be met; `reduce(record, level)` writes a lowered copy as a new record with

@@ -527,6 +527,7 @@ def prepare(
     level: int | None = None,
     purpose: str | Iterable[str] | None = None,
     schema: Schemas | str | None = "auto",
+    _digest_later: bool = False,
 ) -> dict:
     """The record as it would be written, without spilling: encoded, `schema`, `meta.id`
     and `meta.created` filled if missing, cut to a disclosure level, optionally redacted,
@@ -573,7 +574,10 @@ def prepare(
     for p in dropped:
         warnings.warn(f"{p} isn't claimed: disclosure level {level} leaves out what it requires")
     for p in purposes:
-        errs = _profile_errors(rec, p, schemas)
+        trial = copy.deepcopy(rec)
+        if digest or _digest_later:  # judged as written: with the digest it will carry
+            add_digest(trial)
+        errs = _profile_errors(trial, p, schemas)
         if errs:
             raise EstimationError(
                 f"the record doesn't meet {p} at disclosure level {level}: " + "; ".join(map(str, errs))
@@ -616,7 +620,13 @@ def write(
     `level` (default 4) and `purpose` are as in `prepare`."""
     path = Path(path)
     rec = prepare(
-        record, digest=False, redact_identifying=redact_identifying, by=by, level=level, purpose=purpose
+        record,
+        digest=False,
+        redact_identifying=redact_identifying,
+        by=by,
+        level=level,
+        purpose=purpose,
+        _digest_later=digest,
     )
     if spill_large:
         stem = path.name.removesuffix(".json").removesuffix(".estimation")
@@ -1508,7 +1518,8 @@ DEFAULT_LEVEL_MARKS = {
     "provenance.software": (4, ()),
     "provenance.software[*]": (5, (("role", ("language", "estimator", "writer"), 4),)),
     "provenance.software[*].container": (5, ()),
-    "provenance.software[*].lock": (5, ()),
+    "provenance.software[*].lock": (4, ()),
+    "provenance.software[*].lock.path": (5, ()),
     "publication": (1, ()),
     "schema": (1, ()),
     "specification": (3, ()),
@@ -1629,7 +1640,7 @@ def _node_level(parts: tuple, node: Any, parent: int, marks: list[_Mark]) -> int
     for field, values, cond_level in m[1]:
         if isinstance(node, dict) and node.get(field) in values:
             lvl = cond_level
-    return lvl
+    return max(lvl, parent) if parts[:-1] else lvl  # never below what contains it
 
 
 def path_level(path: str, marks: list[_Mark]) -> int:
