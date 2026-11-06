@@ -15,7 +15,7 @@ from estimation_format import records as est
 def lm_record():
     """The base R `lm` example from the design doc."""
     return {
-        "schema": "estimation/0.1",
+        "schema": "estrec/0.1",
         "meta": {
             "id": "6f1c0000-0000-4000-8000-000000000001",
             "created": "2026-10-24T15:02:11Z",
@@ -259,7 +259,7 @@ def test_digest_same_for_numpy_and_python_values():
 
 
 def test_write_read_round_trip(tmp_path):
-    p = tmp_path / "m.estimation.json"
+    p = tmp_path / "m.estrec.json"
     out = est.write(fe_record(), p)
     assert out["schema"] == est.SCHEMA and out["meta"]["id"] and out["meta"]["created"]
     assert out["history"][0]["action"] == "created"
@@ -277,14 +277,14 @@ def test_write_read_round_trip(tmp_path):
 def test_write_does_not_change_the_input(tmp_path):
     rec = lm_record()
     before = json.dumps(rec, sort_keys=True)
-    est.write(rec, tmp_path / "a.estimation.json", redact_identifying=True)
+    est.write(rec, tmp_path / "a.estrec.json", redact_identifying=True)
     assert json.dumps(rec, sort_keys=True) == before
 
 
 def test_write_redacts_the_paths_given(tmp_path):
     rec = lm_record()
     rec["extensions"] = {"tool": {"host": "node7", "kept": 1}}
-    out = est.write(rec, tmp_path / "a.estimation.json", redact_identifying=["extensions.tool.host"])
+    out = est.write(rec, tmp_path / "a.estrec.json", redact_identifying=["extensions.tool.host"])
     assert out["extensions"]["tool"] == {"kept": 1}
     assert [h["action"] for h in out["history"]] == ["created", "redacted"]
     assert out["history"][1]["fields"] == ["extensions.tool.host"]
@@ -294,20 +294,20 @@ def test_write_redacts_the_paths_given(tmp_path):
 def test_text_fields_named_like_nonfinite_stay_strings(tmp_path):
     rec = lm_record()
     rec["parameters"][1]["term"] = "Inf"
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     est.write(rec, p)
     assert est.read(p)["parameters"][1]["term"] == "Inf"
 
 
 def test_digest_can_be_turned_off(tmp_path):
-    out = est.write(lm_record(), tmp_path / "a.estimation.json", digest=False)
+    out = est.write(lm_record(), tmp_path / "a.estrec.json", digest=False)
     assert "core_digest" not in out["meta"]
     assert any(i.level == "info" and "no digest" in i.message for i in est.validate(out))
 
 
 def test_bare_nan_is_rejected():
     with pytest.raises(est.EstimationError):
-        est.loads('{"schema": "estimation/0.1", "metrics": {"x": NaN}}')
+        est.loads('{"schema": "estrec/0.1", "metrics": {"x": NaN}}')
 
 
 def test_naive_datetime_is_rejected():
@@ -325,7 +325,7 @@ def test_naive_datetime_is_rejected():
 def test_large_vcov_spills_to_parquet_and_loads_back(tmp_path):
     pytest.importorskip("pyarrow")
     rec = fe_record(k=150)  # 22,500 elements per vcov
-    p = tmp_path / "big.estimation.json"
+    p = tmp_path / "big.estrec.json"
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # spilled, so no size warning
         out = est.write(rec, p)
@@ -352,7 +352,7 @@ def test_large_vcov_spills_to_parquet_and_loads_back(tmp_path):
 def test_matrix_spills_to_json_without_pyarrow(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "pyarrow", None)  # import pyarrow raises ImportError
     rec = fe_record(k=150)
-    p = tmp_path / "big.estimation.json"
+    p = tmp_path / "big.estrec.json"
     out = est.write(rec, p)
     link = out["structures"]["vcov"][1]
     att = est.attachment(out, link["attachment"])
@@ -380,11 +380,11 @@ def test_size_limits(tmp_path):
         {"term": f"x{i}", "estimate": 0.1, "std_error": 0.1, "p_value": 0.5} for i in range(20_000)
     ]
     with pytest.warns(UserWarning, match="elements"):
-        est.write(rec, tmp_path / "w.estimation.json")
+        est.write(rec, tmp_path / "w.estrec.json")
     rec["parameters"] = [{"term": "t" * 200 + str(i), "estimate": 0.1} for i in range(80_000)]
     with pytest.raises(est.EstimationError, match="limit"):
-        est.write(rec, tmp_path / "f.estimation.json")
-    assert not (tmp_path / "f.estimation.json").exists()
+        est.write(rec, tmp_path / "f.estrec.json")
+    assert not (tmp_path / "f.estrec.json").exists()
 
 
 def test_count_elements():
@@ -477,7 +477,7 @@ def test_default_uses_packaged_schemas_or_says_it_fell_back(monkeypatch, tmp_pat
 
 
 def test_profile_file_resolves_the_core_offline():
-    """A profile's allOf refers to ../estimation-0.1.json; with the other schemas as
+    """A profile's allOf refers to ../estrec-0.1.json; with the other schemas as
     documents it resolves locally, and the core's rules apply."""
     sc = schemas()
     check = est.jsonschema_check(sc.profiles["linear-fe/0.1"], sc.documents())
@@ -585,7 +585,7 @@ def test_local_profile_cannot_replace_a_catalog_one(tmp_path):
 
 def test_schema_path_environment(tmp_path, monkeypatch):
     (tmp_path / "toolx-0.1.json").write_text(json.dumps(draft_profile()))
-    monkeypatch.setenv("ESTIMATION_SCHEMA_PATH", str(tmp_path))
+    monkeypatch.setenv("ESTREC_SCHEMA_PATH", str(tmp_path))
     assert "toolx/0.1" in est.load_schemas().profiles
 
 
@@ -694,13 +694,13 @@ def test_identifying_paths_from_schema():
 
 
 def test_cli(tmp_path, capsys, monkeypatch):
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     est.write(lm_record(), p, level=5)
     assert est.main(["validate", str(p)]) == 0
     assert "valid" in capsys.readouterr().out
 
-    o = tmp_path / "r.estimation.json"
-    monkeypatch.setenv("ESTIMATION_REDACT_SALT", "pepper")
+    o = tmp_path / "r.estrec.json"
+    monkeypatch.setenv("ESTREC_REDACT_SALT", "pepper")
     assert est.main(["redact", str(p), "-o", str(o), "--hash"]) == 0
     r = est.read(o)
     assert r["provenance"]["agent"].startswith("hmac-sha256:") and est.check_digest(r) is True
@@ -711,14 +711,14 @@ def test_cli(tmp_path, capsys, monkeypatch):
     bad = json.loads(p.read_text())
     bad["parameters"][0]["estimate"] = 0
     del bad["meta"]["status"]
-    (tmp_path / "b.estimation.json").write_text(json.dumps(bad))
-    assert est.main(["digest", str(tmp_path / "b.estimation.json")]) == 1
-    assert est.main(["validate", "-q", str(tmp_path / "b.estimation.json")]) == 1
+    (tmp_path / "b.estrec.json").write_text(json.dumps(bad))
+    assert est.main(["digest", str(tmp_path / "b.estrec.json")]) == 1
+    assert est.main(["validate", "-q", str(tmp_path / "b.estrec.json")]) == 1
     assert "meta.status" in capsys.readouterr().out
 
 
 def test_cli_schema_options(tmp_path, capsys):
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     rec = est.prepare(fe_record())
     del rec["specification"]["options"]["drop_singletons"]
     p.write_text(json.dumps(rec))
@@ -743,9 +743,9 @@ def test_cli_schema_options(tmp_path, capsys):
 
 
 def test_cli_hash_needs_salt(tmp_path, monkeypatch):
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     est.write(lm_record(), p)
-    monkeypatch.delenv("ESTIMATION_REDACT_SALT", raising=False)
+    monkeypatch.delenv("ESTREC_REDACT_SALT", raising=False)
     with pytest.raises(SystemExit):
         est.main(["redact", str(p), "-o", str(tmp_path / "o.json"), "--hash"])
 
@@ -753,7 +753,7 @@ def test_cli_hash_needs_salt(tmp_path, monkeypatch):
 @pytest.mark.parametrize("name", ["lm-minimal", "dfeols-linear-fe", "iv"])
 def test_schema_examples_validate(name):
     schemas()
-    rec = est.read(est.PACKAGED_SCHEMAS / "examples" / f"{name}.estimation.json")
+    rec = est.read(est.PACKAGED_SCHEMAS / "examples" / f"{name}.estrec.json")
     assert errors(est.validate(rec)) == []
 
 
@@ -769,7 +769,7 @@ def test_expected_profile_fields_warn():
     assert ("metrics", "n_singletons") in est.expected_paths(
         {"$ref": sc.profiles["dfeols/0.1"]["$id"] + "#/$defs/rules"}, sc.documents()
     )
-    iv = json.loads((est.PACKAGED_SCHEMAS / "examples" / "iv.estimation.json").read_text())
+    iv = json.loads((est.PACKAGED_SCHEMAS / "examples" / "iv.estrec.json").read_text())
     iv["tests"] = [t for t in iv["tests"] if t["category"] != "first_stage"]
     issues = est.validate(iv, schema=sc)
     assert errors(issues) == []

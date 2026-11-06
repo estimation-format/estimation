@@ -71,7 +71,7 @@ Egger's and Begg's tests go in `tests` (core 4.8), `category: "small_study"`, `n
 
 ## Example
 
-[`schema/examples/meta-analysis.estimation.json`](../../schema/examples/meta-analysis.estimation.json):
+[`schema/examples/meta-analysis.estrec.json`](../../schema/examples/meta-analysis.estrec.json):
 a real statsmodels DerSimonian-Laird meta-analysis of the 13 BCG vaccine trials (log risk
 ratios). It matches metafor's `rma(method = "DL")`: −0.7141 (SE 0.1787), τ² 0.3088, Q 152.23 on
 12 df, I² 92.1%.

@@ -12,7 +12,7 @@ change between versions.
     rec = to_record(fit, data)
 
     import estimation_format as ef        # optional: adds the core digest, spills, checks
-    ef.write(rec, "fit.estimation.json")  # disclosure level 4 by default; level=1..5, purpose=
+    ef.write(rec, "fit.estrec.json")  # disclosure level 4 by default; level=1..5, purpose=
 
 `to_record` returns everything the converter knows; `ef.write` (or `ef.prepare`) cuts it to a
 disclosure level (spec 4.9): at the default 4, pyfixest, Python and this converter with their
@@ -347,7 +347,7 @@ def to_record(
         meta["messages"] = messages
 
     record: dict[str, Any] = {
-        "schema": "estimation/0.1",
+        "schema": "estrec/0.1",
         "meta": meta,
         "specification": specification,
         "metrics": metrics,

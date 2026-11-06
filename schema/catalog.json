@@ -3,31 +3,31 @@
   "license": "CC0-1.0",
   "description": "The estimation format's registered schemas. Add a profile by pull request: its file under profiles/, at least one example record under examples/, and an entry here (see CONTRIBUTING.md). Everything listed here is CC0-1.0 (LICENSE); contributions must be too. A published entry carries the sha256 of its file and never changes; a fix is a new version.",
   "core": {
-    "name": "estimation/0.1",
-    "file": "estimation-0.1.json",
+    "name": "estrec/0.1",
+    "file": "estrec-0.1.json",
     "status": "draft",
     "maintainer": "jemather",
-    "examples": ["examples/lm-minimal.estimation.json"]
+    "examples": ["examples/lm-minimal.estrec.json"]
   },
   "collection": {
-    "name": "estimation-collection/0.1",
-    "file": "estimation-collection-0.1.json",
+    "name": "estrec-collection/0.1",
+    "file": "estrec-collection-0.1.json",
     "status": "draft",
     "maintainer": "jemather",
     "description": "A set of records: a paper's results (members with locators) or a session's or replication's timeline (events).",
     "examples": [
-      "examples/paper.estimation-collection.json",
-      "examples/session.estimation-collection.json",
-      "examples/replication.estimation-collection.json"
+      "examples/paper.estrec-collection.json",
+      "examples/session.estrec-collection.json",
+      "examples/replication.estrec-collection.json"
     ]
   },
   "table": {
-    "name": "estimation-table/0.1",
-    "file": "estimation-table-0.1.json",
+    "name": "estrec-table/0.1",
+    "file": "estrec-table-0.1.json",
     "status": "draft",
     "maintainer": "jemather",
     "description": "A table spec: how to lay out a regression table from records (columns by meta.id, rows and labels, statistics rows, format). No results; a companion to the format (spec/table.md).",
-    "examples": ["examples/paper.estimation-table.json"]
+    "examples": ["examples/paper.estrec-table.json"]
   },
   "profiles": [
     {
@@ -37,7 +37,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Parameters with estimates, standard errors and p-values; a default vcov with type and ssc; nobs and df_residual.",
-      "examples": ["examples/lm-minimal.estimation.json"]
+      "examples": ["examples/lm-minimal.estrec.json"]
     },
     {
       "name": "linear-fe/0.1",
@@ -46,7 +46,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Linear models with absorbed fixed effects (fixest, lfe, pyfixest, linearmodels, reghdfe, areg, xtreg, FixedEffectModels.jl).",
-      "examples": ["examples/dfeols-linear-fe.estimation.json"]
+      "examples": ["examples/dfeols-linear-fe.estrec.json"]
     },
     {
       "name": "iv/0.1",
@@ -55,7 +55,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Instrumental-variables models: endogenous regressors and instruments; first-stage diagnostics expected.",
-      "examples": ["examples/iv.estimation.json"]
+      "examples": ["examples/iv.estrec.json"]
     },
     {
       "name": "dfeols/0.1",
@@ -64,7 +64,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "dfeols records: linear-fe plus the dfeols extension block (shards, row key, absorption, demeaning, Dask, replay).",
-      "examples": ["examples/dfeols-linear-fe.estimation.json"]
+      "examples": ["examples/dfeols-linear-fe.estrec.json"]
     },
     {
       "name": "did/0.1",
@@ -73,7 +73,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Heterogeneity-robust difference-in-differences and event studies with staggered timing (csdid, R did, did2s, pyfixest did2s): the design, which effect each row is (ATT(g,t), event time, group, calendar, simple), pointwise and uniform bands, cohorts and pre-trend tests.",
-      "examples": ["examples/did2s.estimation.json", "examples/csdid.estimation.json"]
+      "examples": ["examples/did2s.estrec.json", "examples/csdid.estrec.json"]
     },
     {
       "name": "did2s/0.1",
@@ -82,7 +82,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Gardner two-stage DiD records from did2s (Stata, R) and pyfixest: did plus the first- and second-stage specifications, the cluster, and the two-stage GMM (or bootstrap) vcov.",
-      "examples": ["examples/did2s.estimation.json"]
+      "examples": ["examples/did2s.estrec.json"]
     },
     {
       "name": "csdid/0.1",
@@ -91,7 +91,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Stata csdid records: did plus method, agg and typebase, the influence-function or wild-bootstrap vcov, ATT(g,t) alongside any aggregation, and the e(gtt) cells.",
-      "examples": ["examples/csdid.estimation.json"]
+      "examples": ["examples/csdid.estrec.json"]
     },
     {
       "name": "glm/0.1",
@@ -100,7 +100,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Generalized linear models with or without absorbed fixed effects (Stata logit/probit/poisson/glm, ppmlhdfe; R glm, fixest feglm/fepois; statsmodels, pyfixest): distribution and link, convergence, log-likelihood, deviance, separation and offsets.",
-      "examples": ["examples/glm-logit.estimation.json", "examples/ppmlhdfe.estimation.json"]
+      "examples": ["examples/glm-logit.estrec.json", "examples/ppmlhdfe.estrec.json"]
     },
     {
       "name": "ppmlhdfe/0.1",
@@ -109,7 +109,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Stata ppmlhdfe records: glm (Poisson, log) plus separation methods and counts, singletons, absorbed fixed effects, and reghdfe's asymptotic vcov adjustment.",
-      "examples": ["examples/ppmlhdfe.estimation.json"]
+      "examples": ["examples/ppmlhdfe.estrec.json"]
     },
     {
       "name": "conditional-logit/0.1",
@@ -118,7 +118,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Conditional (fixed-effects) logit (Stata clogit, xtlogit fe; R survival::clogit; statsmodels ConditionalLogit): the conditioning groups, exact or approximate likelihood, whether all-0/all-1 groups were dropped, group counts.",
-      "examples": ["examples/conditional-logit.estimation.json"]
+      "examples": ["examples/conditional-logit.estrec.json"]
     },
     {
       "name": "mixed/0.1",
@@ -127,7 +127,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Linear and generalized linear mixed models (lme4, lmerTest, glmmTMB, Stata mixed/me*, statsmodels MixedLM, MixedModels.jl): REML/ML/quadrature, random-effect terms and grouping factors, variance components with their scale, df method, convergence and singular fits.",
-      "examples": ["examples/mixed.estimation.json"]
+      "examples": ["examples/mixed.estrec.json"]
     },
     {
       "name": "choice/0.1",
@@ -136,7 +136,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Discrete-choice models (mlogit, logitr, apollo, xlogit, Biogeme, Stata cmclogit/cmmixlogit/mixlogit): choice situations and alternatives, random parameters and simulation draws, preference or WTP space, null and constants-only log-likelihoods, Hessian vs BFGS-approximate vs robust vcov.",
-      "examples": ["examples/choice-mnl.estimation.json", "examples/choice-mixed-logit.estimation.json"]
+      "examples": ["examples/choice-mnl.estrec.json", "examples/choice-mixed-logit.estrec.json"]
     },
     {
       "name": "sem/0.1",
@@ -145,7 +145,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Structural equation models (lavaan, semopy, Stata sem): estimator, model syntax, partable rows (op, lhs, rhs, free) with standardized estimates, chi-square and fit indices, missing-data and likelihood options.",
-      "examples": ["examples/sem.estimation.json"]
+      "examples": ["examples/sem.estrec.json"]
     },
     {
       "name": "mediation/0.1",
@@ -154,7 +154,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Mediation analyses from regressions or SEM (R mediation, lavaan :=, PROCESS, Stata sem estat teffects, pingouin, statsmodels Mediation): treatment, mediators, outcome, the inference method (bootstrap, quasi-Bayesian, delta) with replications and CI type, and which effect each row is.",
-      "examples": ["examples/mediation.estimation.json"]
+      "examples": ["examples/mediation.estrec.json"]
     },
     {
       "name": "mi/0.1",
@@ -163,7 +163,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Results pooled over multiply imputed data (mice, Stata mi estimate, statsmodels MICE): number of imputations, imputation method, combining rule and df method, per-row within/between variance, riv, lambda and fmi.",
-      "examples": ["examples/mi.estimation.json"]
+      "examples": ["examples/mi.estrec.json"]
     },
     {
       "name": "survey/0.1",
@@ -172,7 +172,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Complex survey designs (R survey, Stata svy, samplics): weights, strata, PSUs, fpc and its convention, variance method (linearization or replicates), single-PSU handling, design df and design effects.",
-      "examples": ["examples/survey.estimation.json"]
+      "examples": ["examples/survey.estrec.json"]
     },
     {
       "name": "multiple-testing/0.1",
@@ -181,7 +181,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Adjusted p-values for families of hypotheses (p.adjust, multipletests, pyfixest bonferroni/rwolf/wyoung, Stata rwolf/wyoung/qqvalue): method, error rate, family size, resampling details.",
-      "examples": ["examples/multiple-testing.estimation.json"]
+      "examples": ["examples/multiple-testing.estrec.json"]
     },
     {
       "name": "resampling/0.1",
@@ -190,7 +190,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Resampling inference (boottest, fwildclusterboot, wildboottest, Stata bootstrap/jackknife, ritest, ri2): method, replications, seed, weights, imposed null, and per-row resampled p-values and intervals.",
-      "examples": ["examples/resampling.estimation.json"]
+      "examples": ["examples/resampling.estrec.json"]
     },
     {
       "name": "survival/0.1",
@@ -199,7 +199,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Time-to-event regression (R survival and cmprsk, lifelines, scikit-survival, statsmodels PHReg, Stata stcox/streg/stcrreg): Cox ties method, parametric distribution and AFT/PH metric, Fine-Gray competing events, event counts, PH tests with their time transform, concordance.",
-      "examples": ["examples/survival-cox-efron.estimation.json", "examples/survival-cox-breslow.estimation.json"]
+      "examples": ["examples/survival-cox-efron.estrec.json", "examples/survival-cox-breslow.estrec.json"]
     },
     {
       "name": "med2s/0.1",
@@ -208,7 +208,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "med2s records (two-stage DiD mediation for staggered adoption): mediation plus the DiD design, placebo adjustment options, cluster-bootstrap percentile inference, and an extensions.med2s block with the signal test, moments, placebo composition, med2s_diag diagnostics and med2s_sens breakdown share.",
-      "examples": ["examples/med2s.estimation.json"]
+      "examples": ["examples/med2s.estrec.json"]
     },
     {
       "name": "meta-analysis/0.1",
@@ -217,7 +217,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Meta-analyses and meta-regressions (metafor, meta, statsmodels combine_effects, Stata meta): effect measure, number of studies, tau2 estimator and interval method, pooled common/random rows with prediction intervals, Q, tau2, I2 (as a proportion), study weights, small-study tests.",
-      "examples": ["examples/meta-analysis.estimation.json"]
+      "examples": ["examples/meta-analysis.estrec.json"]
     },
     {
       "name": "predictive/0.1",
@@ -226,7 +226,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Predictive / machine-learning models (scikit-learn, XGBoost, LightGBM, ranger, tidymodels, mlr3, caret): task, validation scheme and seed, resolved hyperparameters, out-of-sample metrics by split, tuning, early stopping, leakage guards, importances.",
-      "examples": ["examples/predictive.estimation.json"]
+      "examples": ["examples/predictive.estrec.json"]
     },
     {
       "name": "causal-ml/0.1",
@@ -235,7 +235,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Causal estimates with ML nuisance models (DoubleML, EconML, grf): treatment, outcome, estimand, nuisance learners, cross-fitting folds/repeats/aggregation/seed, nuisance losses, overlap, heterogeneity and sensitivity.",
-      "examples": ["examples/causal-ml.estimation.json"]
+      "examples": ["examples/causal-ml.estrec.json"]
     },
     {
       "name": "gam/0.1",
@@ -244,7 +244,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Generalized additive models (mgcv, pyGAM, statsmodels GLMGam): smooth terms with basis and k, smoothing-parameter selection method, per-smooth edf and approximate tests, deviance explained, basis checks and concurvity.",
-      "examples": ["examples/gam.estimation.json"]
+      "examples": ["examples/gam.estrec.json"]
     },
     {
       "name": "bayesian/0.1",
@@ -253,7 +253,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Bayesian models (brms, rstanarm, Stan, PyMC/Bambi with ArviZ, Stata bayes): algorithm, every prior, chains/draws/warmup/seed, posterior summaries with the point summary and credible-interval probability and kind, R-hat, ESS, MCSE, sampler diagnostics, LOO/WAIC.",
-      "examples": ["examples/bayesian.estimation.json"]
+      "examples": ["examples/bayesian.estrec.json"]
     },
     {
       "name": "dcas/0.1",
@@ -262,7 +262,7 @@
       "status": "draft",
       "maintainer": "jemather",
       "description": "Results in a replication package for a journal that follows the Data and Code Availability Standard (DCAS 1.0; the AEA journals, Econometrica, EJ, JPE, JEEA, REStud and others; SSDE README template), at disclosure level 4: the exhibit and its label, estimates with SEs or intervals, the core digest, language and estimator versions, data inputs by name, a set seed for resampling, Bayesian and causal-ML records; the program, data citations and checksums expected.",
-      "examples": ["examples/dcas.estimation.json"]
+      "examples": ["examples/dcas.estrec.json"]
     }
   ]
 }

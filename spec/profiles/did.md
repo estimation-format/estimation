@@ -133,7 +133,7 @@ The joint pre-trend test goes in `tests` (core 4.8) with `category: "pretrend"`,
 
 ## Examples
 
-- [`schema/examples/did2s.estimation.json`](../../schema/examples/did2s.estimation.json): a
+- [`schema/examples/did2s.estrec.json`](../../schema/examples/did2s.estrec.json): a
   real pyfixest `did2s` event study (claims `inference/0.1`, `did/0.1`, `did2s/0.1`).
-- [`schema/examples/csdid.estimation.json`](../../schema/examples/csdid.estimation.json):
+- [`schema/examples/csdid.estrec.json`](../../schema/examples/csdid.estrec.json):
   csdid on `mpdta` with `agg(event)` (a shape example; see its `meta.notes`).

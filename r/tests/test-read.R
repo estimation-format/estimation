@@ -11,7 +11,7 @@ quiet_print <- function(x) invisible(utils::capture.output(print(x)))
 # A hand-made record: a clustered default vcov and an iid one, two FEs, a collinear term, a
 # non-finite metric and an IV-style first-stage row
 rec <- list(
-  schema = "estimation/0.1",
+  schema = "estrec/0.1",
   meta = list(id = "6f1c0000-0000-4000-8000-0000000000aa", created = "2026-11-05T07:00:00Z",
               status = "ok", estimator = list(family = "linear", method = "ols"),
               responses = I("y"), profiles = I(c("inference/0.1", "linear-fe/0.1")),
@@ -36,7 +36,7 @@ rec <- list(
            type = "iid", df_t = 997, default = FALSE)),
     fixed_effects = list(list(kind = "object", name = "firm", levels = 50),
                          list(kind = "object", name = "year", levels = 10))))
-path <- write_estimation(rec, file.path(out, "hand.estimation.json"))
+path <- write_estimation(rec, file.path(out, "hand.estrec.json"))
 r <- read_estimation(path)
 stopifnot(inherits(r, "estimation_record"), is_estimation_record(r))
 quiet_print(r)
@@ -72,7 +72,7 @@ ga <- glance(r, metrics = "all")
 stopifnot(ga$rss == 100, ga$tss == 250, !"rmse" %in% names(ga))
 
 # a read record writes back unchanged
-path2 <- write_estimation(r, file.path(out, "again.estimation.json"))
+path2 <- write_estimation(r, file.path(out, "again.estrec.json"))
 canon <- function(p) estrec:::.est_canonical_json(jsonlite::fromJSON(p, simplifyVector = FALSE))
 stopifnot(identical(canon(path), canon(path2)))
 
@@ -86,7 +86,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   d <- data.frame(id = rep(1:20, each = 10), x = rnorm(200)); d$y <- d$x + rnorm(200)
   f1 <- feols(y ~ x, d, vcov = "iid"); f2 <- feols(y ~ x | id, d, cluster = ~id)
   for (m in c("embed", "jsonl")) {
-    cp <- file.path(out, paste0(m, ".estimation-collection.json"))
+    cp <- file.path(out, paste0(m, ".estrec-collection.json"))
     suppressMessages(write_collection(list(base = f1, fe = f2), cp, kind = "batch", members = m,
                                       locators = list("col. 1", list(table = "2", column = "2"))))
     cl <- read_collection(cp)
@@ -98,7 +98,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
     stopifnot(glance(cl$fe)$`FE: id` == "X", glance(cl$base)$nobs == 200)
     quiet_print(cl$fe)
     # records read from a collection go into another one
-    suppressMessages(write_collection(cl, file.path(out, paste0("re-", m, ".estimation-collection.json")),
+    suppressMessages(write_collection(cl, file.path(out, paste0("re-", m, ".estrec-collection.json")),
                                       kind = "batch"))
   }
   stopifnot(inherits(try(read_estimation(cp), silent = TRUE), "try-error"))
@@ -108,7 +108,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
     d$z <- rnorm(200); d$x <- d$x + d$z; d$cnt <- rpois(200, exp(0.2 * d$x))
     fits <- list(ols = feols(y ~ x, d), fe = feols(y ~ x | id, d, cluster = ~id),
                  iv = feols(y ~ 1 | id | x ~ z, d, vcov = "hetero"), pois = fepois(cnt ~ x, d))
-    mp <- file.path(out, "ms.estimation-collection.json")
+    mp <- file.path(out, "ms.estrec-collection.json")
     suppressMessages(write_collection(fits, mp, kind = "batch"))
     recs <- read_collection(mp)
     ms <- function(m, ...) {
@@ -143,7 +143,7 @@ if (dir.exists(ex)) {
   df <- recs[["dfeols-linear-fe"]]
   stopifnot(glance(df)$vcov.type == "by: firm")
   eq(tidy(df, vcov = "iid")$std.error, sqrt(c(8.1e-05, 7.9e-05)))
-  for (f in list.files(ex, "\\.estimation-collection\\.json$", full.names = TRUE)) {
+  for (f in list.files(ex, "\\.estrec-collection\\.json$", full.names = TRUE)) {
     cl <- read_collection(f)
     for (x in cl) { quiet_print(x); tidy(x); glance(x) }
   }

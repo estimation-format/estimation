@@ -24,24 +24,24 @@ from estimation_pyfixest import to_record
 import estimation_format as ef
 
 fit = pf.feols("y ~ x1 + x2 | firm + year", data, vcov={"CRV1": "firm"})
-ef.write(to_record(fit, data), "fit.estimation.json")  # write adds the core digest
+ef.write(to_record(fit, data), "fit.estrec.json")  # write adds the core digest
 ```
 
 ```r
 library(fixest)
 source("estimation_fixest.R")
 fit <- feols(y ~ x1 + x2 | firm + year, data, cluster = ~firm)
-estimation_write(estimation_record(fit), "fit.estimation.json")
+estimation_write(estimation_record(fit), "fit.estrec.json")
 ```
 
 ```stata
 adopath ++ "path/to/converters/reghdfe"
 reghdfe y x1 x2, absorb(firm year) vce(cluster firm)
-estimation_write using "fit.estimation.json", replace
+estimation_write using "fit.estrec.json", replace
 ```
 
 The R and Stata writers leave out the core digest (optional in the format), because it needs
-RFC 8785 canonical JSON. `estimation digest --write fit.estimation.json` adds it.
+RFC 8785 canonical JSON. `estimation digest --write fit.estrec.json` adds it.
 
 **Disclosure levels** (spec 4.9): each converter writes at level 4 by default: the
 estimates, metrics, vcov, specification, the estimator, language and converter with their

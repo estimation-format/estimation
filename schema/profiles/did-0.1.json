@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/did-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/did-0.1.json",
   "title": "did/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for heterogeneity-robust difference-in-differences and event-study estimators with staggered treatment timing: Stata csdid and did2s; R did (att_gt, aggte) and did2s; Python pyfixest did2s (survey 2026-10-25, spec/profiles/did.md). Requires meta.estimator.method; specification.did with the time variable, the comparison group and the cohort (first-treated period) or treatment indicator; metrics.nobs; estimate and std_error on every row that isn't dropped; a default vcov with type; and a `did` object on at least one row saying which treatment effect the row is (att_gt, event, group, calendar, simple, pre_avg, post_avg). conf_low/conf_high are pointwise; uniform bands go in the row's did.band_low/band_high. structures.did (cohort sizes, uniform-band critical value, per-cell sample sizes) and a pretrend test in `tests` are expected, not required. Does not build on inference/0.1: csdid, R did and Stata did2s use normal inference with no residual df, and csdid's wild bootstrap reports no p-values. Records that meet inference/0.1 too (R and pyfixest did2s) claim both.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -138,7 +138,7 @@
           "x-vocabulary": ["varying", "universal"],
           "x-tools": {"did": "base_period", "csdid": "e(typebase): default = varying; long/long2 compare with g-1 (record the option too)"}
         },
-        "covariates": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"csdid": "varlist after the outcome", "did": "xformla", "pyfixest": "xfml"}}
+        "covariates": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"csdid": "varlist after the outcome", "did": "xformla", "pyfixest": "xfml"}}
       }
     },
     "did_row": {
@@ -156,9 +156,9 @@
         "base_period": {"description": "Period compared with (att_gt).", "type": ["number", "string"]},
         "event_time": {"description": "Periods relative to treatment, e = t - g (event). A binned endpoint keeps its edge value and sets binned.", "type": "number"},
         "binned": {"description": "The row pools event times beyond event_time.", "type": "boolean"},
-        "weight": {"description": "Aggregation weight of this row in the overall ATT, when the tool reports it.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
-        "band_low": {"description": "Lower end of the simultaneous (uniform) confidence band.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
-        "band_high": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"}
+        "weight": {"description": "Aggregation weight of this row in the overall ATT, when the tool reports it.", "$ref": "../estrec-0.1.json#/$defs/number_or_null"},
+        "band_low": {"description": "Lower end of the simultaneous (uniform) confidence band.", "$ref": "../estrec-0.1.json#/$defs/number_or_null"},
+        "band_high": {"$ref": "../estrec-0.1.json#/$defs/number_or_null"}
       },
       "allOf": [
         {"if": {"properties": {"type": {"const": "att_gt"}}}, "then": {"required": ["cohort", "period"]}},
@@ -169,7 +169,7 @@
     },
     "did_structure": {
       "description": "Design and diagnostics of a DiD run: counts, never the unit ids.",
-      "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+      "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
       "properties": {
         "kind": {"enum": ["object", "link"]},
         "cohorts": {
@@ -181,8 +181,8 @@
             "properties": {
               "cohort": {"type": ["number", "string", "null"]},
               "never_treated": {"type": "boolean"},
-              "n_units": {"$ref": "../estimation-0.1.json#/$defs/count"},
-              "n_rows": {"$ref": "../estimation-0.1.json#/$defs/count"}
+              "n_units": {"$ref": "../estrec-0.1.json#/$defs/count"},
+              "n_rows": {"$ref": "../estrec-0.1.json#/$defs/count"}
             }
           }
         },
@@ -198,9 +198,9 @@
               "cohort": {"type": ["number", "string"]},
               "period": {"type": ["number", "string"]},
               "base_period": {"type": ["number", "string"]},
-              "n": {"$ref": "../estimation-0.1.json#/$defs/count"},
-              "n_control": {"$ref": "../estimation-0.1.json#/$defs/count"},
-              "n_treated": {"$ref": "../estimation-0.1.json#/$defs/count"},
+              "n": {"$ref": "../estrec-0.1.json#/$defs/count"},
+              "n_control": {"$ref": "../estrec-0.1.json#/$defs/count"},
+              "n_treated": {"$ref": "../estrec-0.1.json#/$defs/count"},
               "error": {"description": "The tool's return code for the cell (csdid _rc), 0 when it estimated.", "type": ["integer", "null"]}
             }
           }
@@ -209,10 +209,10 @@
           "description": "The simultaneous confidence band behind parameters[*].did.band_low/band_high.",
           "type": "object",
           "properties": {
-            "critical_value": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"did": "c (att_gt), crit.val.egt (aggte)"}},
+            "critical_value": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"did": "c (att_gt), crit.val.egt (aggte)"}},
             "level": {"type": "number", "x-tools": {"did": "1 - alp", "csdid": "level()"}},
             "method": {"type": "string", "x-vocabulary": ["multiplier_bootstrap", "wild_bootstrap"]},
-            "applies_to": {"description": "Row types the band covers.", "$ref": "../estimation-0.1.json#/$defs/strings"}
+            "applies_to": {"description": "Row types the band covers.", "$ref": "../estrec-0.1.json#/$defs/strings"}
           }
         }
       }

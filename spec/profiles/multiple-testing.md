@@ -34,6 +34,6 @@ pyfixest's Romano-Wolf floor is 1/reps, its Westfall-Young floor is 0.
 
 ## Example
 
-[`schema/examples/multiple-testing.estimation.json`](../../schema/examples/multiple-testing.estimation.json):
+[`schema/examples/multiple-testing.estrec.json`](../../schema/examples/multiple-testing.estrec.json):
 a real pyfixest Romano-Wolf adjustment of one coefficient across two outcome models (9999
 wild-bootstrap replications), with the Westfall-Young and Bonferroni values in its notes.

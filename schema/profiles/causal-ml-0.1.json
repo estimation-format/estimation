@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/causal-ml-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/causal-ml-0.1.json",
   "title": "causal-ml/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for causal estimates that use machine-learning nuisance models: double/debiased ML (DoubleML for Python and R, EconML's DML family), generalized random forests and causal forests (R grf, EconML CausalForestDML), and meta-learners (survey 2026-10-25, spec/profiles/causal-ml.md). Requires meta.estimator.method; specification.causal with the treatment, outcome, controls and estimand; specification.learners with each nuisance model and its resolved hyperparameters; specification.cross_fitting with folds, repetitions, the aggregation rule across repetitions and the seed (defaults differ: DoubleML 5 folds and median aggregation, EconML 2 folds and mean, grf a random seed unless set); at least one row with a `causal` object naming its estimand, with estimate and std_error; and metrics.nobs. Nuisance losses (structures.nuisance), overlap and trimming, heterogeneity tests and sensitivity bounds are vocabulary; unit-level CATEs go in attachments.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -36,12 +36,12 @@
                 "treatment": {"type": "string", "x-tools": {"DoubleML": "d_cols", "EconML": "T", "grf": "W"}},
                 "treatment_type": {"type": "string", "x-vocabulary": ["binary", "continuous", "multivalued"]},
                 "outcome": {"type": "string", "x-tools": {"DoubleML": "y_col", "EconML": "Y", "grf": "Y"}},
-                "controls": {"description": "Confounders adjusted for (DoubleML x_cols; EconML W and X; grf X).", "$ref": "../estimation-0.1.json#/$defs/strings"},
-                "effect_modifiers": {"description": "Variables the effect varies with (EconML X).", "$ref": "../estimation-0.1.json#/$defs/strings"},
-                "instruments": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "z_cols", "grf": "Z"}},
+                "controls": {"description": "Confounders adjusted for (DoubleML x_cols; EconML W and X; grf X).", "$ref": "../estrec-0.1.json#/$defs/strings"},
+                "effect_modifiers": {"description": "Variables the effect varies with (EconML X).", "$ref": "../estrec-0.1.json#/$defs/strings"},
+                "instruments": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "z_cols", "grf": "Z"}},
                 "estimand": {"type": "string", "x-vocabulary": ["ate", "att", "atc", "late", "ate_overlap", "partial_linear", "cate", "gate", "blp"], "x-tools": {"DoubleML": "score (\"partialling out\", \"IV-type\"; IRM \"ATE\", \"ATTE\")", "grf": "average_treatment_effect(target.sample = \"all\", \"treated\", \"control\", \"overlap\")", "EconML": "ate(), effect(), const_marginal_effect()"}},
                 "score": {"description": "Orthogonal score / ATE method as the tool names it.", "type": "string", "x-tools": {"DoubleML": "score", "grf": "average_treatment_effect(method = \"AIPW\" default, \"TMLE\")"}},
-                "clusters": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "cluster_cols", "grf": "clusters"}}
+                "clusters": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"DoubleML": "cluster_cols", "grf": "clusters"}}
               }
             },
             "learners": {
@@ -97,7 +97,7 @@
           "properties": {
             "nuisance": {
               "description": "Out-of-fold loss per nuisance role: {kind: \"object\", losses: {role: {metric, value, per_repeat}}}.",
-              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
               "properties": {"kind": {"const": "object"}, "losses": {"type": "object"}},
               "x-tools": {"DoubleML": "nuisance_loss (RMSE / log loss), evaluate_learners()", "EconML": "nuisance_scores_y, nuisance_scores_t"}
             },

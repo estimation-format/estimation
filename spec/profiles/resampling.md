@@ -38,6 +38,6 @@ resolution is about 1/reps. `metrics.n_reps_failed` records Stata's `e(N_misreps
 
 ## Example
 
-[`schema/examples/resampling.estimation.json`](../../schema/examples/resampling.estimation.json):
+[`schema/examples/resampling.estrec.json`](../../schema/examples/resampling.estrec.json):
 a real pyfixest regression with CRV1 standard errors (claims `inference/0.1` too) and a
 restricted wild cluster bootstrap of one coefficient, 9999 Rademacher replications.

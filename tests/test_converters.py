@@ -4,7 +4,7 @@ The same four specifications are fitted on one synthetic panel (two fixed effect
 singletons, two rows with a missing value, a factor, an interaction, weights) in pyfixest,
 fixest (R) and reghdfe (Stata). A tool that isn't installed is skipped: pyfixest needs the
 package, fixest needs Rscript with fixest and jsonlite, reghdfe needs Stata (on PATH, or
-$ESTIMATION_STATA) with reghdfe installed.
+$ESTREC_STATA) with reghdfe installed.
 
 Across tools the records must agree on N, the singleton count, the coefficients and the
 standard errors. Fields the tools define differently are recorded as {value, definition}
@@ -54,7 +54,7 @@ SPECS = {
 
 
 def _stata() -> str | None:
-    env = os.environ.get("ESTIMATION_STATA")
+    env = os.environ.get("ESTREC_STATA")
     if env:
         return env
     for name in ("stata-mp", "stata-se", "stata"):
@@ -137,8 +137,8 @@ def pyfixest_records(panel, tmp_path_factory) -> dict:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fit = pf.feols(fml, d, vcov=vcov, weights=weights)
-        ef.write(to_record(fit, d), out / f"{name}.estimation.json")
-        recs[name] = _check(out / f"{name}.estimation.json")
+        ef.write(to_record(fit, d), out / f"{name}.estrec.json")
+        recs[name] = _check(out / f"{name}.estrec.json")
     return recs
 
 
@@ -159,19 +159,19 @@ def fixest_records(panel, tmp_path_factory) -> dict:
         f'd <- read.csv("{panel}")',
     ]
     for name, (_, call, _) in SPECS.items():
-        lines.append(f'estimation_write(estimation_record({call}), "{out / name}.estimation.json")')
+        lines.append(f'estimation_write(estimation_record({call}), "{out / name}.estrec.json")')
     script = out / "run.R"
     script.write_text("\n".join(lines) + "\n")
     run = subprocess.run([rscript, str(script)], check=False, capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
-    return {name: _check(out / f"{name}.estimation.json") for name in SPECS}
+    return {name: _check(out / f"{name}.estrec.json") for name in SPECS}
 
 
 @pytest.fixture(scope="module")
 def reghdfe_records(panel, tmp_path_factory) -> dict:
     stata = _stata()
     if stata is None:
-        pytest.skip("Stata not found (set ESTIMATION_STATA)")
+        pytest.skip("Stata not found (set ESTREC_STATA)")
     out = tmp_path_factory.mktemp("reghdfe")
     probe = out / "probe.do"
     probe.write_text("sysuse auto, clear\nreghdfe price weight, absorb(turn)\n")
@@ -185,12 +185,12 @@ def reghdfe_records(panel, tmp_path_factory) -> dict:
         f'import delimited using "{panel}", clear',
     ]
     for name, (_, _, cmd) in SPECS.items():
-        lines += [cmd, f'estimation_write using "{out / name}.estimation.json", replace']
+        lines += [cmd, f'estimation_write using "{out / name}.estrec.json", replace']
     (out / "run.do").write_text("\n".join(lines) + "\n")
     subprocess.run([stata, "-b", "do", "run.do"], cwd=out, check=False, capture_output=True, text=True)
     log = (out / "run.log").read_text()
     assert "\nr(" not in log, log[-3000:]
-    return {name: _check(out / f"{name}.estimation.json") for name in SPECS}
+    return {name: _check(out / f"{name}.estrec.json") for name in SPECS}
 
 
 def _value(x):
@@ -278,13 +278,12 @@ def fixest_levels(panel, tmp_path_factory) -> dict:
         f"f <- {call}",
     ]
     lines += [
-        f'estimation_write(estimation_record(f, level = {n}), "{out}/l{n}.estimation.json")'
-        for n in range(1, 6)
+        f'estimation_write(estimation_record(f, level = {n}), "{out}/l{n}.estrec.json")' for n in range(1, 6)
     ]
     (out / "run.R").write_text("\n".join(lines) + "\n")
     run = subprocess.run([rscript, str(out / "run.R")], check=False, capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
-    return {n: _clean(out / f"l{n}.estimation.json") for n in range(1, 6)}
+    return {n: _clean(out / f"l{n}.estrec.json") for n in range(1, 6)}
 
 
 @pytest.mark.parametrize("level", [1, 2, 3, 4, 5])
@@ -319,8 +318,8 @@ def test_pyfixest_converter_levels(panel, tmp_path, level):
         warnings.simplefilter("ignore")
         fit = pf.feols(fml, d, vcov=vcov, weights=weights)
         rec = to_record(fit, d, program="code/main.py", data_info={"name": "synthetic panel"})
-        ef.write(rec, tmp_path / "r.estimation.json", level=level)
-    out = _clean(tmp_path / "r.estimation.json")
+        ef.write(rec, tmp_path / "r.estrec.json", level=level)
+    out = _clean(tmp_path / "r.estrec.json")
     assert out["meta"]["disclosure"] == {"level": level}
     if level == 4:
         assert [s["name"] for s in out["provenance"]["software"]] == [
@@ -336,21 +335,21 @@ def test_pyfixest_converter_levels(panel, tmp_path, level):
 def reghdfe_levels(panel, tmp_path_factory) -> dict:
     stata = _stata()
     if stata is None:
-        pytest.skip("Stata not found (set ESTIMATION_STATA)")
+        pytest.skip("Stata not found (set ESTREC_STATA)")
     out = tmp_path_factory.mktemp("reghdfe-levels")
     lines = [
         f'adopath ++ "{CONVERTERS / "reghdfe"}"',
         f'import delimited using "{panel}", clear',
         SPECS["twofe_crv"][2],
     ]
-    lines += [f'estimation_write using "{out}/l{n}.estimation.json", replace level({n})' for n in range(1, 6)]
+    lines += [f'estimation_write using "{out}/l{n}.estrec.json", replace level({n})' for n in range(1, 6)]
     (out / "run.do").write_text("\n".join(lines) + "\n")
     subprocess.run([stata, "-b", "do", "run.do"], cwd=out, check=False, capture_output=True, text=True)
     log = (out / "run.log").read_text()
     if "reghdfe" in log and "unrecognized command" in log:
         pytest.skip("reghdfe isn't installed in this Stata")
     assert "\nr(" not in log, log[-3000:]
-    return {n: _clean(out / f"l{n}.estimation.json") for n in range(1, 6)}
+    return {n: _clean(out / f"l{n}.estrec.json") for n in range(1, 6)}
 
 
 @pytest.mark.parametrize("level", [1, 2, 3, 4, 5])
@@ -368,7 +367,7 @@ def test_reghdfe_converter_levels(reghdfe_levels, level):
 def test_reghdfe_rejects_a_bad_level(panel, tmp_path):
     stata = _stata()
     if stata is None:
-        pytest.skip("Stata not found (set ESTIMATION_STATA)")
+        pytest.skip("Stata not found (set ESTREC_STATA)")
     lines = [
         f'adopath ++ "{CONVERTERS / "reghdfe"}"',
         f'import delimited using "{panel}", clear',

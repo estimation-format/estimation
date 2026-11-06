@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/gam-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/gam-0.1.json",
   "title": "gam/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for generalized additive models with penalized smooth terms: R mgcv (gam, bam, gamm), Python pyGAM and statsmodels GLMGam (survey 2026-10-25, spec/profiles/gam.md). Requires specification.smooths (each smooth's variables, basis and basis dimension k); specification.options.smoothing_method (mgcv defaults to GCV.Cp, though REML is recommended; pyGAM grid-searches lambda on GCV/UBRE); a `smooth` object with edf on each smooth-term row; estimate and std_error on parametric rows; and metrics.nobs. GLM-style distribution and link follow glm/0.1's names. Smooth-term p-values are approximate and tools compute them differently (pyGAM's are known to be too small when smoothing parameters are estimated); the basis-dimension check and concurvity are vocabulary.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -37,7 +37,7 @@
                 "required": ["term", "variables", "basis", "k"],
                 "properties": {
                   "term": {"description": "As the tool names it: s(times), te(x,z), s(0).", "type": "string"},
-                  "variables": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "variables": {"$ref": "../estrec-0.1.json#/$defs/strings"},
                   "basis": {"type": "string", "x-vocabulary": ["tp", "ts", "cr", "cs", "cc", "ps", "bs", "re", "te", "ti", "gp", "fs", "ad"], "x-tools": {"mgcv": "bs (\"tp\" default)", "pyGAM": "s() B-splines with a difference penalty (\"ps\")", "statsmodels": "BSplines, CyclicCubicSplines"}},
                   "k": {"description": "Basis dimension.", "type": "integer", "x-tools": {"mgcv": "k (10 for one-variable tp)", "pyGAM": "n_splines (20)", "statsmodels": "df"}},
                   "by": {"type": ["string", "null"]},

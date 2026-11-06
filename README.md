@@ -23,18 +23,18 @@ standard errors, convergence, the software and environment, and the data's check
 
 | Path | What | License |
 |---|---|---|
-| [`spec/estimation.md`](spec/estimation.md) | the specification | CC0 1.0 |
+| [`spec/estrec.md`](spec/estrec.md) | the specification | CC0 1.0 |
 | [`spec/profiles/`](spec/profiles/) | the profiles, with field mappings across Stata, R, Python and Julia tools | CC0 1.0 |
 | [`schema/`](schema/) | JSON Schemas (2020-12) for the core, the profiles and collections; the catalog; example records and collections | CC0 1.0 |
 | [`src/estimation_format/`](src/estimation_format/) | `estimation-format`, the reference validator, writer and redactor (Python) | MIT |
 | [`r/`](r/) | `estrec`, an R package that writes records from fitted models (fixest `feols` so far) | MIT |
 
-Schemas are served at `https://estimation-format.github.io/estimation/schema/`.
+Schemas are served at `https://estrec.org/schema/`.
 
 ## A minimal record
 
 ```json
-{"schema": "estimation/0.1",
+{"schema": "estrec/0.1",
  "meta": {"id": "6f1c0000-0000-4000-8000-000000000001", "created": "2026-10-24T15:02:11Z",
           "status": "ok", "estimator": {"family": "linear", "method": "ols"},
           "responses": ["mpg"], "profiles": ["inference/0.1"]},
@@ -51,9 +51,9 @@ Schemas are served at `https://estimation-format.github.io/estimation/schema/`.
 
 ```bash
 pip install 'estimation-format[jsonschema]'      # not yet on PyPI; for now: pip install .
-estimation validate model.estimation.json
-estimation redact model.estimation.json -o shareable.estimation.json
-estimation digest model.estimation.json
+estimation validate model.estrec.json
+estimation redact model.estrec.json -o shareable.estrec.json
+estimation digest model.estrec.json
 ```
 
 ```python
@@ -65,15 +65,15 @@ rec = ef.new_record(
     profiles=["inference/0.1"],
     metrics={"nobs": 32, "df_residual": 30},
 )
-ef.write(rec, "model.estimation.json")  # spills large structures, adds the digest
-for issue in ef.validate(ef.read("model.estimation.json")):
+ef.write(rec, "model.estrec.json")  # spills large structures, adds the digest
+for issue in ef.validate(ef.read("model.estrec.json")):
     print(issue)
 ```
 
 It needs only the standard library; `jsonschema` adds full schema validation and `pyarrow`
 writes large structures as Parquet attachments.
 
-A **collection** (`estimation-collection/0.1`, spec section 11) holds a set of records: a
+A **collection** (`estrec-collection/0.1`, spec section 11) holds a set of records: a
 paper's results with where each appears, or a session's or replication's timeline. The same
 commands validate, redact and digest collections.
 
@@ -81,8 +81,8 @@ commands validate, redact and digest collections.
 coll = ef.new_collection({"baseline": rec1, "full": rec2}, kind="paper",
                          locators=["Table 2, col. (1)", {"table": "2", "column": "2"}],
                          publication={"citation": {"type": "report", "title": "..."}})
-ef.write_collection(coll, "table2.estimation-collection.json")   # records embedded
-issues = ef.validate_collection(ef.read_collection("table2.estimation-collection.json"), base_dir=".")
+ef.write_collection(coll, "table2.estrec-collection.json")   # records embedded
+issues = ef.validate_collection(ef.read_collection("table2.estrec-collection.json"), base_dir=".")
 ```
 
 ## Tables
@@ -91,7 +91,7 @@ The readers give the parameters as rows for any table tool: `estrec::read_collec
 modelsummary in R, and in Python
 
 ```python
-rows = ef.parameters_table(ef.read_collection("table2.estimation-collection.json"),
+rows = ef.parameters_table(ef.read_collection("table2.estrec-collection.json"),
                            base_dir=".")        # member, locator, term, estimate, std_error, ...
 ef.tidy(rec, vcov="iid")                        # another vcov in the record, recomputed
 ef.glance(rec)                                  # metrics, vcov_type, fixed_effects
@@ -102,14 +102,14 @@ A quick look in the terminal: one record gives a detail view, several records, a
 a collection a side-by-side table (estimates over SEs, N, R2s, SE type, FE rows):
 
 ```bash
-estimation show table2.estimation-collection.json
-estimation show fit.estimation.json --vcov iid
+estimation show table2.estrec-collection.json
+estimation show fit.estrec.json --vcov iid
 ```
 
-**In the browser:** the [record viewer](https://estimation-format.github.io/estimation/viewer/)
+**In the browser:** the [record viewer](https://estrec.org/viewer/)
 opens records, folders and collections without uploading them, and builds tables you can copy
 as LaTeX, Markdown, HTML or CSV, or save as a table spec (`spec/table.md`) to render again with
-`estimation table table2.estimation-table.json -f latex`.
+`estimation table table2.estrec-table.json -f latex`.
 
 ## Contributing
 

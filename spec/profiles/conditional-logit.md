@@ -65,7 +65,7 @@ not converge"). That's why convergence isn't required here, unlike [`glm/0.1`](g
 
 ## Example
 
-[`schema/examples/conditional-logit.estimation.json`](../../schema/examples/conditional-logit.estimation.json):
+[`schema/examples/conditional-logit.estrec.json`](../../schema/examples/conditional-logit.estrec.json):
 a real statsmodels run on R's `infert` matched case-control data (83 strata, each with one case and one or two
 controls). The estimates (spontaneous 1.986, induced 1.409) match `survival::clogit` on
 the same data.

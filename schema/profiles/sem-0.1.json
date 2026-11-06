@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/sem-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/sem-0.1.json",
   "title": "sem/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for structural equation models (CFA, path models, full SEM; single- or multi-group): R lavaan; Python semopy; Stata sem (survey 2026-10-25, spec/profiles/sem.md). Requires meta.estimator.method (ml, mlr, wlsmv, ...); specification.formula with the model syntax; a `sem` object (op, lhs, rhs, free) on every row that isn't dropped, with estimate, and std_error on free parameters; metrics.nobs; a model_fit chi-square test with its df in `tests`; a default vcov with type; and structures.numerics.converged. cfi, tli, rmsea and srmr are expected. Fit indices that tools define differently (N vs N-1 in the chi-square, semopy's LogLik) are recorded as {value, definition}. Indirect effects defined in the model (lavaan :=) can also be described by mediation/0.1.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -35,7 +35,7 @@
           "required": ["formula"],
           "properties": {
             "formula": {"description": "The model as written, with syntax lavaan, stata or semopy.", "x-tools": {"lavaan": "model syntax", "semopy": "model description (lavaan-like)", "Stata sem": "path notation"}},
-            "groups": {"description": "Grouping variable(s) of a multi-group model.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"lavaan": "group", "semopy": "fit(groups=)", "Stata sem": "group()"}},
+            "groups": {"description": "Grouping variable(s) of a multi-group model.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"lavaan": "group", "semopy": "fit(groups=)", "Stata sem": "group()"}},
             "options": {
               "properties": {
                 "missing": {"type": "string", "x-vocabulary": ["listwise", "fiml", "pairwise"], "x-tools": {"lavaan": "missing (\"listwise\"; \"ml\" = fiml)", "Stata sem": "method(mlmv) = fiml", "semopy": "obj=\"FIML\""}},
@@ -149,8 +149,8 @@
         "free": {"description": "false for fixed parameters (marker loadings, fixed variances); they have no standard error.", "type": "boolean"},
         "group": {"type": ["integer", "string"]},
         "label": {"type": "string"},
-        "std_all": {"description": "Fully standardized estimate.", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.all", "semopy": "inspect(std_est=True) Est. Std", "Stata sem": "standardized"}},
-        "std_lv": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.lv"}}
+        "std_all": {"description": "Fully standardized estimate.", "$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.all", "semopy": "inspect(std_est=True) Est. Std", "Stata sem": "standardized"}},
+        "std_lv": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"lavaan": "std.lv"}}
       }
     }
   }

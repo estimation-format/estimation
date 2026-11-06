@@ -139,6 +139,6 @@ Two-stage DiD mediation with `med2s` has its own tool profile, [`med2s/0.1`](med
 
 ## Example
 
-[`schema/examples/mediation.estimation.json`](../../schema/examples/mediation.estimation.json):
+[`schema/examples/mediation.estrec.json`](../../schema/examples/mediation.estrec.json):
 a real pingouin run on the JOBS II data from R's mediation package (treatment → job-search
 self-efficacy → depression), no covariates, 5000 bias-corrected bootstrap replications.

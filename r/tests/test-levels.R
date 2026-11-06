@@ -12,7 +12,7 @@ d$x <- rnorm(n); d$y <- d$x + rnorm(n); d$cnt <- rpois(n, exp(0.2 * d$x))
 validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estimation"))
 out <- tempfile("estrec-levels"); dir.create(out)
 check <- function(rec, name) {
-  path <- write_estimation(rec, file.path(out, paste0(name, ".estimation.json")))
+  path <- write_estimation(rec, file.path(out, paste0(name, ".estrec.json")))
   if (nzchar(validator)) {
     res <- system2(validator, c("validate", path), stdout = TRUE, stderr = TRUE)
     status <- attr(res, "status")
@@ -125,7 +125,7 @@ coll_check <- function(path) {
 }
 cdir <- tempfile("estrec-coll"); dir.create(cdir)
 # fits: written at the default level 4, declared on the collection
-p <- file.path(cdir, "paper.estimation-collection.json")
+p <- file.path(cdir, "paper.estrec-collection.json")
 write_collection(list(a = f, b = feols(y ~ x | id, d)), p, kind = "paper",
                  locators = list("Table 1, col. (1)", "Table 1, col. (2)"),
                  publication = list(citation = list(type = "report", title = "A paper")))
@@ -134,7 +134,7 @@ pc <- jsonlite::fromJSON(p, simplifyVector = FALSE)
 stopifnot(pc$meta$disclosure$level == 4L, pc$members[[1]]$record$meta$disclosure$level == 4L)
 # level-5 records lowered to 2: new records pointing at the originals
 recs <- list(to_estimation(f, level = 5), to_estimation(f, level = 5, vcov = list("iid")))
-p2 <- file.path(cdir, "batch2.estimation-collection.json")
+p2 <- file.path(cdir, "batch2.estrec-collection.json")
 quiet(write_collection(recs, p2, kind = "batch", level = 2))
 coll_check(p2)
 b2 <- jsonlite::fromJSON(p2, simplifyVector = FALSE)
@@ -143,7 +143,7 @@ stopifnot(b2$meta$disclosure$level == 2L,
           b2$members[[1]]$id == b2$members[[1]]$record$meta$id,
           is.null(b2$members[[1]]$record$provenance), is.null(b2$history[[1]]$by))
 # records only, no level: kept as they are
-p3 <- file.path(cdir, "batch5.estimation-collection.json")
+p3 <- file.path(cdir, "batch5.estrec-collection.json")
 write_collection(recs, p3, kind = "batch")
 b3 <- jsonlite::fromJSON(p3, simplifyVector = FALSE)
 stopifnot(is.null(b3$meta$disclosure), b3$members[[1]]$id == recs[[1]]$meta$id)
@@ -152,7 +152,7 @@ s5 <- lapply(recs, function(r) { r$provenance$execution$session <- "s1"; r })
 ev <- list(list(when = "2026-11-05T10:00:00Z", type = "fit", member = s5[[1]]$meta$id),
            list(when = "2026-11-05T10:00:01Z", type = "worker_lost", detail = list(host = "node7")),
            list(when = "2026-11-05T10:00:02Z", type = "fit", member = s5[[2]]$meta$id))
-p4 <- file.path(cdir, "session.estimation-collection.json")
+p4 <- file.path(cdir, "session.estrec-collection.json")
 quiet(write_collection(s5, p4, kind = "session", level = 4, events = ev,
                        session = list(id = "s1", status = "closed", started = "2026-11-05T09:59:00Z",
                                       clients = list(list(language = "R", host = "laptop")))))

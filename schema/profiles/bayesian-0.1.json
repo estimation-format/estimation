@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/bayesian-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/bayesian-0.1.json",
   "title": "bayesian/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for Bayesian models fit by MCMC or approximate inference: R brms, rstanarm and Stan interfaces (rstan, cmdstanr, CmdStanPy), Python PyMC and Bambi summarized with ArviZ, Stata bayes / bayesmh (survey 2026-10-25, spec/profiles/bayesian.md). Requires meta.estimator.method (nuts, mh, gibbs, advi, laplace, inla, ...); specification.priors (every prior in effect, defaults included); for sampling methods, specification.sampling with chains, draws, warmup, thinning and seed; a `posterior` object on every row that isn't dropped, with the point summary it uses, the posterior SD, and the credible interval with its probability and kind (equal-tailed or HPD); and metrics.nobs. Convergence (R-hat, bulk and tail ESS, MCSE) per row and sampler diagnostics (divergences, tree depth, E-BFMI) are expected for MCMC; LOO and WAIC are vocabulary. Does not build on inference/0.1: there are no p-values or sampling-theory standard errors.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {

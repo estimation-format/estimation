@@ -72,7 +72,7 @@ The fitted model itself belongs in an attachment (with its sha256), not in the r
 
 ## Example
 
-[`schema/examples/predictive.estimation.json`](../../schema/examples/predictive.estimation.json):
+[`schema/examples/predictive.estrec.json`](../../schema/examples/predictive.estrec.json):
 a real scikit-learn random forest on the Wisconsin breast-cancer data, tuned by a 4-candidate
 grid search with 5-fold stratified CV on a 75% training split and evaluated on the 25% test
 split (ROC AUC 0.987 in CV, 0.998 on test).

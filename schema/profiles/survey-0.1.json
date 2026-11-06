@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/survey-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/survey-0.1.json",
   "title": "survey/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for estimates from complex survey designs: R survey (svydesign, svyrepdesign, svyglm, svymean), Stata svyset / svy:, Python samplics (survey 2026-10-25, spec/profiles/survey.md). Combines with the analysis model's profile. Requires specification.survey_design with the weights, strata, PSUs, finite-population correction (with its convention: the tools take population sizes, sampling fractions or 1 - fractions) and the variance method (linearization or a replication method), plus how strata with a single PSU were handled; estimate and std_error on every row that isn't dropped; metrics.nobs; and a default vcov with type. Design counts and df, design effects per row, and replicate-weight details are vocabulary.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -22,8 +22,8 @@
         "parameters": {
           "items": {
             "properties": {
-              "deff": {"description": "Design effect (variance ratio to simple random sampling of the same size).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"R survey": "svymean(deff = TRUE), deff()", "Stata": "estat effects: deff (deft, meff, meft)", "samplics": "estimate(deff=True)"}},
-              "deft": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"Stata": "estat effects deft"}}
+              "deff": {"description": "Design effect (variance ratio to simple random sampling of the same size).", "$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"R survey": "svymean(deff = TRUE), deff()", "Stata": "estat effects: deff (deft, meff, meft)", "samplics": "estimate(deff=True)"}},
+              "deft": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"Stata": "estat effects deft"}}
             },
             "if": {"required": ["dropped"], "properties": {"dropped": {"type": "string"}}},
             "else": {"required": ["estimate", "std_error"]}
@@ -62,8 +62,8 @@
       "required": ["weights", "strata", "psu", "fpc", "variance", "single_psu"],
       "properties": {
         "weights": {"description": "Sampling-weight variable, or null.", "type": ["string", "null"], "x-tools": {"R survey": "weights / probs", "Stata": "svyset [pw=]", "samplics": "samp_weight"}},
-        "strata": {"description": "Stratum variable(s); [] when unstratified.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"R survey": "strata", "Stata": "strata(), e(strata1)", "samplics": "stratum"}},
-        "psu": {"description": "PSU (cluster) variable per stage; [] when PSUs are individual rows.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"R survey": "ids", "Stata": "svyset psu || ssu, e(su1)", "samplics": "psu, ssu"}},
+        "strata": {"description": "Stratum variable(s); [] when unstratified.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"R survey": "strata", "Stata": "strata(), e(strata1)", "samplics": "stratum"}},
+        "psu": {"description": "PSU (cluster) variable per stage; [] when PSUs are individual rows.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"R survey": "ids", "Stata": "svyset psu || ssu, e(su1)", "samplics": "psu, ssu"}},
         "nest": {"description": "PSU ids are only unique within strata.", "type": "boolean", "x-tools": {"R survey": "nest (FALSE)"}},
         "fpc": {
           "description": "Finite-population correction, or null when none.",
@@ -94,7 +94,7 @@
           "description": "Replicate-weight details.",
           "type": "object",
           "properties": {
-            "weights": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+            "weights": {"$ref": "../estrec-0.1.json#/$defs/strings"},
             "n": {"type": "integer"},
             "fay_rho": {"type": ["number", "null"]},
             "scale": {"type": ["number", "null"], "x-tools": {"R survey": "scale, rscales", "Stata": "svyset ... mse"}},

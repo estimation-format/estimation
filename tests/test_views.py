@@ -16,7 +16,7 @@ def hand_record():
     """A clustered default vcov and an iid one, two FEs, a collinear term, a structured and a
     non-finite metric, and a first-stage row (the same record as estrec's test-read.R)."""
     return {
-        "schema": "estimation/0.1",
+        "schema": "estrec/0.1",
         "meta": {
             "id": "6f1c0000-0000-4000-8000-0000000000aa",
             "created": "2026-11-05T07:00:00Z",
@@ -145,7 +145,7 @@ def test_glance():
 
 
 def test_read_record_strings_decode(tmp_path):
-    path = tmp_path / "hand.estimation.json"
+    path = tmp_path / "hand.estrec.json"
     ef.write(hand_record(), path)
     rec = ef.read(path, nonfinite="string")  # "Inf" left as a string
     assert math.isinf(ef.glance(rec)["f_stat"])
@@ -159,7 +159,7 @@ def test_parameters_table_collection(tmp_path, members):
     coll = ef.new_collection(
         {"base": a, "full": b}, kind="batch", locators=["col. 1", {"table": "2", "column": "2"}]
     )
-    path = tmp_path / "t.estimation-collection.json"
+    path = tmp_path / "t.estrec-collection.json"
     ef.write_collection(coll, path, members=members) if members == "jsonl" else ef.write_collection(
         coll, path
     )
@@ -182,7 +182,7 @@ def test_parameters_table_mapping_and_list():
     assert ef.parameters_table([hand_record()])[0]["member"] == "hand-made"
 
 
-@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estimation.json")), ids=lambda p: p.name)
+@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estrec.json")), ids=lambda p: p.name)
 def test_examples(path):
     rec = ef.read(path)
     rows = ef.tidy(rec)
@@ -190,7 +190,7 @@ def test_examples(path):
     ef.glance(rec)
 
 
-@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estimation-collection.json")), ids=lambda p: p.name)
+@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estrec-collection.json")), ids=lambda p: p.name)
 def test_example_collections(path):
     coll = ef.read_collection(path)
     rows = ef.parameters_table(coll, base_dir=path.parent)
@@ -198,10 +198,10 @@ def test_example_collections(path):
 
 
 def test_examples_iv_and_dfeols():
-    iv = ef.read(EXAMPLES / "iv.estimation.json")
+    iv = ef.read(EXAMPLES / "iv.estrec.json")
     assert "z" not in [r["term"] for r in ef.tidy(iv)]
     assert ef.tidy(iv, component="first_stage")
-    d = ef.read(EXAMPLES / "dfeols-linear-fe.estimation.json")
+    d = ef.read(EXAMPLES / "dfeols-linear-fe.estrec.json")
     assert [r["std_error"] for r in ef.tidy(d, vcov="iid")] == pytest.approx(
         [math.sqrt(8.1e-05), math.sqrt(7.9e-05)]
     )

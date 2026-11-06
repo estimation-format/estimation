@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/survival-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/survival-0.1.json",
   "title": "survival/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for time-to-event regression: Cox proportional hazards, parametric (AFT or PH) models, and Fine-Gray competing risks. R survival (coxph, survreg, cox.zph, finegray) and cmprsk; Python lifelines, scikit-survival, statsmodels PHReg; Stata stcox, streg, stcrreg (survey 2026-10-25, spec/profiles/survival.md). Requires meta.estimator.method; specification.survival with the time and event variables; estimate and std_error on every row that isn't dropped (on the estimation scale, or exponentiated with the core's scale field); metrics.nobs and n_events; and a default vcov with type. Cox and Fine-Gray models also require specification.options.ties (defaults differ: Efron in R and lifelines, Breslow in Stata, statsmodels and scikit-survival); parametric models require meta.estimator.distribution and metric (Stata streg's default PH metric vs survreg's AFT changes the coefficients' sign and scale). Proportional-hazards tests (in `tests`, with options.transform) and concordance (with its definition) are vocabulary.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -161,9 +161,9 @@
         "censor_codes": {"type": "array", "x-tools": {"cmprsk": "cencode (0)"}},
         "competing_event_codes": {"description": "Fine-Gray: values marking competing events.", "type": "array", "x-tools": {"Stata stcrreg": "compete()", "cmprsk": "other values of fstatus"}},
         "id": {"description": "Subject id for multiple-record data.", "type": ["string", "null"], "x-tools": {"Stata": "stset id()", "coxph": "id", "lifelines": "id_col"}},
-        "strata": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"coxph": "strata()", "Stata": "strata()", "lifelines": "strata", "statsmodels": "strata"}},
+        "strata": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"coxph": "strata()", "Stata": "strata()", "lifelines": "strata", "statsmodels": "strata"}},
         "time_scale": {"description": "What time measures (time since entry, age, calendar time).", "type": "string"},
-        "time_varying": {"description": "Time-varying covariates or coefficients (tt(), tvc()).", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"coxph": "tt()", "Stata stcox": "tvc(), texp()"}}
+        "time_varying": {"description": "Time-varying covariates or coefficients (tt(), tvc()).", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"coxph": "tt()", "Stata stcox": "tvc(), texp()"}}
       }
     }
   }

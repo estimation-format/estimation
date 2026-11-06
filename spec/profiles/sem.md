@@ -85,6 +85,6 @@ so.
 
 ## Example
 
-[`schema/examples/sem.estimation.json`](../../schema/examples/sem.estimation.json): a real
+[`schema/examples/sem.estrec.json`](../../schema/examples/sem.estrec.json): a real
 semopy fit of the three-factor Holzinger-Swineford CFA. It matches lavaan's `cfa()` of the
 same model (χ² 85.31 on 24 df, CFI 0.931, TLI 0.896, RMSEA 0.092, SRMR 0.065).

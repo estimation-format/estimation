@@ -58,7 +58,7 @@ t−1 before it with the default `typebase`.
 
 ## Example
 
-[`schema/examples/csdid.estimation.json`](../../schema/examples/csdid.estimation.json):
+[`schema/examples/csdid.estrec.json`](../../schema/examples/csdid.estrec.json):
 `csdid lemp, ivar(countyreal) time(year) gvar(first_treat) method(reg) agg(event)` on
 `mpdta`. A shape example: the values were computed with the csdid Python port (same
 estimator and variance formula), not by Stata, and match the published R `did` results.

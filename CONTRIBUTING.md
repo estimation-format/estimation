@@ -18,7 +18,7 @@ records (`dfeols/0.1`). To add one, open a pull request with:
 
 - `schema/profiles/<name>-<version>.json`: a JSON Schema (draft 2020-12) whose `title` is the
   profile name (`reghdfe/0.1`) and whose `$id` is
-  `https://estimation-format.github.io/estimation/schema/profiles/<file>`. Its rules go in
+  `https://estrec.org/schema/profiles/<file>`. Its rules go in
   `$defs/rules`, and the file is `allOf: [core, #/$defs/rules]`, like the existing profiles.
 - At least one example record in `schema/examples/` that claims the profile.
 - `"x-license": "CC0-1.0"` in the profile file.
@@ -49,7 +49,7 @@ Tool profiles are encouraged to stay close to a standard one:
 valid, names and files match, examples validate, every departure from a base is declared, and
 published files are unchanged. A published version never changes; a fix is a new version
 (`/0.2`). To try a profile before submitting it, put it in a folder and point
-`ESTIMATION_SCHEMA_PATH` (or `estimation validate --schema-path DIR`) at it; a local profile
+`ESTREC_SCHEMA_PATH` (or `estimation validate --schema-path DIR`) at it; a local profile
 can't replace one in the catalog.
 
 ## Changing the core or a standard profile
@@ -66,4 +66,4 @@ pytest
 ```
 
 The spec's JSON examples are tested: `tests/test_schema.py` validates every ```json block in
-`spec/estimation.md`, so keep them valid.
+`spec/estrec.md`, so keep them valid.

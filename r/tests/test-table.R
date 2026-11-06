@@ -6,7 +6,7 @@ cells <- function(x, label) unname(unlist(x[x$term == label, setdiff(names(x), c
 # the spec's example, as the Python reference and the browser render it
 ex <- Sys.getenv("ESTREC_EXAMPLES", "../../schema/examples")
 if (dir.exists(ex)) {
-  x <- render_table(file.path(ex, "paper.estimation-table.json"), output = "data.frame")
+  x <- render_table(file.path(ex, "paper.estrec-table.json"), output = "data.frame")
   stopifnot(identical(names(x)[4:6], c("(1)", "(2)", "(3)")),
             identical(cells(x, "Weight (1000 lbs)"), c("-3.206***", "-3.181***", "-3.310***")),
             identical(unname(unlist(x[2, 4:6])), c("(0.754)", "(0.693)", "(1.064)")),
@@ -20,7 +20,7 @@ if (dir.exists(ex)) {
             !"qsec" %in% x$term)
 
   # several lines under each estimate, p-value formats (the Python reference's cells)
-  spec <- jsonlite::fromJSON(file.path(ex, "paper.estimation-table.json"), simplifyVector = FALSE)
+  spec <- jsonlite::fromJSON(file.path(ex, "paper.estrec-table.json"), simplifyVector = FALSE)
   spec$uncertainty <- list("std_error", "[{p_value}]", "t = {statistic}")
   spec$format <- list(digits = 3, p_style = "less_than")
   x <- render_table(spec, output = "data.frame", base_dir = ex)
@@ -47,7 +47,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   d <- data.frame(id = sample(30, n, TRUE), x = rnorm(n), z = rnorm(n)); d$y <- d$x + 0.5 * d$z + rnorm(n)
   r1 <- to_estimation(feols(y ~ x, d), vcov = list("iid", "hetero"))
   r2 <- to_estimation(feols(y ~ x + z | id, d), vcov = list(~id, "iid"))
-  spec <- list(schema = "estimation-table/0.1",
+  spec <- list(schema = "estrec-table/0.1",
                meta = list(id = "8c0e5d1a-6b3f-4e2a-9d17-3f5a2c4b6e02", created = "2026-11-05T10:00:00Z"),
                columns = list(list(record = r1$meta$id, header = "A"),
                               list(record = r2$meta$id, header = "B"),

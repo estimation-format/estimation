@@ -245,17 +245,17 @@ def show_table(
 
 def load_for_show(paths: list[str | os.PathLike]) -> list[tuple[str, dict, dict | None]]:
     """(name, record, member entry) for each record in `paths`: record files, folders of them
-    (every *.estimation.json, by file stem) and collections (each member, by label)."""
+    (every *.estrec.json, by file stem) and collections (each member, by label)."""
     out = []
     for p in map(Path, paths):
         if p.is_dir():
-            files = sorted(p.glob("*.estimation.json"))
+            files = sorted(p.glob("*.estrec.json"))
             if not files:
-                raise ValueError(f"no *.estimation.json files in {p}")
-            out += [(f.name.removesuffix(".estimation.json"), loads(f.read_bytes()), None) for f in files]
+                raise ValueError(f"no *.estrec.json files in {p}")
+            out += [(f.name.removesuffix(".estrec.json"), loads(f.read_bytes()), None) for f in files]
             continue
         data = p.read_bytes()
-        if p.name.endswith(".estimation-collection.json") or b'"estimation-collection/' in data[:400]:
+        if p.name.endswith(".estrec-collection.json") or b'"estrec-collection/' in data[:400]:
             coll = loads_collection(data)
             if is_collection(coll):
                 from .collection import iter_members
@@ -265,7 +265,7 @@ def load_for_show(paths: list[str | os.PathLike]) -> list[tuple[str, dict, dict 
                         raise ValueError(f"{p}: members[{i}]: record not found")
                     out.append((str(m.get("label") or m.get("id")), rec, m))
                 continue
-        out.append((p.name.removesuffix(".estimation.json").removesuffix(".json"), loads(data), None))
+        out.append((p.name.removesuffix(".estrec.json").removesuffix(".json"), loads(data), None))
     return out
 
 

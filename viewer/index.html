@@ -135,17 +135,17 @@ label.stack { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
 /* the table preview: a journal table */
 .preview-wrap { min-width: 0; display: grid; gap: 14px; }
 .paper { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 20px; overflow-x: auto; }
-table.estimation-table { border-collapse: collapse; font-family: var(--font-table); font-size: 15px; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
-table.estimation-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; text-wrap: balance; }
-table.estimation-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
-table.estimation-table th, table.estimation-table td { padding: 1px 14px; white-space: nowrap; }
-table.estimation-table tbody th { text-align: left; font-weight: 400; }
-table.estimation-table td { text-align: center; }
-table.estimation-table tr.uncertainty td { color: var(--muted); }
-table.estimation-table tbody tr.estimate:not(:first-child) th, table.estimation-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
-table.estimation-table tr.first-stat th, table.estimation-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
-table.estimation-table tbody tr:last-child th, table.estimation-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
-table.estimation-table tfoot td { font-size: 12.5px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
+table.estrec-table { border-collapse: collapse; font-family: var(--font-table); font-size: 15px; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
+table.estrec-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; text-wrap: balance; }
+table.estrec-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: nowrap; }
+table.estrec-table tbody th { text-align: left; font-weight: 400; }
+table.estrec-table td { text-align: center; }
+table.estrec-table tr.uncertainty td { color: var(--muted); }
+table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
+table.estrec-table tr.first-stat th, table.estrec-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
+table.estrec-table tbody tr:last-child th, table.estrec-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
+table.estrec-table tfoot td { font-size: 12.5px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
 
 .msgs { display: grid; gap: 6px; }
 .msg { font-size: 13px; padding: 6px 10px; border-radius: var(--r); overflow-wrap: anywhere; }
@@ -160,9 +160,9 @@ table.estimation-table tfoot td { font-size: 12.5px; color: var(--muted); paddin
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
 .export-head .spacer { flex: 1; }
 .export-note { margin: 0; padding: 8px 10px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
-table.estimation-table thead th.linked { cursor: pointer; }
-table.estimation-table thead th.linked span { border-bottom: 1px dotted var(--muted); }
-table.estimation-table thead th.linked:hover span, table.estimation-table thead th.linked:focus-visible span { color: var(--accent); border-bottom-color: var(--accent); }
+table.estrec-table thead th.linked { cursor: pointer; }
+table.estrec-table thead th.linked span { border-bottom: 1px dotted var(--muted); }
+table.estrec-table thead th.linked:hover span, table.estrec-table thead th.linked:focus-visible span { color: var(--accent); border-bottom-color: var(--accent); }
 .export textarea { border: 0; border-radius: 0 0 var(--r) var(--r); font: 12.5px/1.5 var(--font-mono); min-height: 220px; padding: 10px; white-space: pre; overflow: auto; }
 
 /* one record */
@@ -212,7 +212,7 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
   <aside class="panel" id="rail">
     <h2>Records</h2>
     <p class="example-note" id="example-note" hidden>Showing the format's example records. Open your own files to replace them.</p>
-    <div class="drop" id="drop">Drop <code>.estimation.json</code> records, collections (with their <code>.members.jsonl</code>) or a table spec here. Files stay on this computer.</div>
+    <div class="drop" id="drop">Drop <code>.estrec.json</code> records, collections (with their <code>.members.jsonl</code>) or a table spec here. Files stay on this computer.</div>
     <div id="groups"></div>
   </aside>
 
@@ -375,14 +375,14 @@ function toast(text) {
 
 function recordName(it) {
   const m = it.member || {};
-  return m.label || (it.record.meta || {}).title || it.file.replace(/\.estimation\.json$/, "");
+  return m.label || (it.record.meta || {}).title || it.file.replace(/\.estrec\.json$/, "");
 }
 
 function addDoc(name, doc) {
-  if (doc && doc.schema === "estimation-table/0.1") return { spec: doc };
+  if (doc && doc.schema === "estrec-table/0.1") return { spec: doc };
   const got = E.recordsIn(doc, state.jsonl);
   if (!got) return { error: `${name} is not an estimation record, collection or table spec` };
-  const source = name.replace(/\.(estimation-collection|estimation|estimation-table)?\.json$/, "");
+  const source = name.replace(/\.(estrec-collection|estrec|estrec-table)?\.json$/, "");
   for (const it of got.items) {
     const id = (it.record.meta || {}).id;
     const key = `${name}\u0000${id}`;
@@ -1022,7 +1022,7 @@ $("spec-input").addEventListener("change", async (e) => {
   if (!f) return;
   try {
     const doc = JSON.parse(await f.text());
-    if (doc.schema !== "estimation-table/0.1") throw new Error(`${f.name} is not a table spec`);
+    if (doc.schema !== "estrec-table/0.1") throw new Error(`${f.name} is not a table spec`);
     if (state.examples) clearAll();
     applySpec(doc, f.name);
     state.loadMsgs = [];
@@ -1102,7 +1102,7 @@ $("copy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(box.value); toast("Copied"); }
   catch { box.focus(); box.select(); toast("Selected: press Ctrl+C or ⌘C to copy"); }
 });
-const EXT = { word: "html", latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", web: "html", spec: "estimation-table.json" };
+const EXT = { word: "html", latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", web: "html", spec: "estrec-table.json" };
 $("save").hidden = embedded;
 $("save").addEventListener("click", () => {
   const text = $("export-text").value;

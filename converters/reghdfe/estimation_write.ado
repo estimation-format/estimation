@@ -4,7 +4,7 @@
 * record (JSON). Written against reghdfe 6.13.1 / ftools 2.50.0 on Stata 18.
 *
 *   reghdfe y x1 x2, absorb(firm year) vce(cluster firm)
-*   estimation_write using "fit.estimation.json", replace
+*   estimation_write using "fit.estrec.json", replace
 *
 * Options:
 *   replace             overwrite the file
@@ -436,7 +436,7 @@ void _est_write(string scalar fn, real scalar replace, real scalar ident, string
 
 	nl = char(10)
 	rec = "{" + nl +
-		" " + _ej_s("schema") + ": " + _ej_s("estimation/0.1") + "," + nl +
+		" " + _ej_s("schema") + ": " + _ej_s("estrec/0.1") + "," + nl +
 		" " + _ej_s("meta") + ": " + meta + "," + nl +
 		(lv >= 3 ? " " + _ej_s("specification") + ": " + spec + "," + nl : "") +
 		" " + _ej_s("metrics") + ": " + metrics + "," + nl +

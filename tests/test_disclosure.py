@@ -145,7 +145,7 @@ def test_bad_level():
 
 
 def test_write_takes_a_level(tmp_path):
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     est.write(lm_record(), p, level=1)
     back = est.read(p)
     assert back["meta"]["disclosure"] == {"level": 1} and "provenance" not in back
@@ -261,7 +261,7 @@ def purpose_schemas(tmp_path):
         "x-license": "CC0-1.0",
         "x-min-level": 3,
         "allOf": [
-            {"$ref": "https://estimation-format.github.io/estimation/schema/estimation-0.1.json"},
+            {"$ref": "https://estrec.org/schema/estrec-0.1.json"},
             {"$ref": "#/$defs/rules"},
         ],
         "$defs": {
@@ -320,7 +320,7 @@ def test_validator_flags_a_purpose_above_the_declared_level(purpose_schemas):
 
 
 def dcas_record():
-    return est.read(est.PACKAGED_SCHEMAS / "examples" / "dcas.estimation.json", nonfinite="string")
+    return est.read(est.PACKAGED_SCHEMAS / "examples" / "dcas.estrec.json", nonfinite="string")
 
 
 def dcas_errors(rec):
@@ -396,7 +396,7 @@ def test_cli_levels_and_reduce(tmp_path, capsys):
         table["purposes"] == {"dcas/0.1": 4}
         and {"path": "specification", "level": 3, "if": []} in table["marks"]
     )
-    src, dst = tmp_path / "a.estimation.json", tmp_path / "b.estimation.json"
+    src, dst = tmp_path / "a.estrec.json", tmp_path / "b.estrec.json"
     est.write(lm_record(), src, level=5)
     assert est.main(["reduce", str(src), "--level", "1", "-o", str(dst)]) == 0
     out = est.read(dst)
@@ -405,7 +405,7 @@ def test_cli_levels_and_reduce(tmp_path, capsys):
 
 
 def test_cli_digest_write(tmp_path, capsys):
-    p = tmp_path / "a.estimation.json"
+    p = tmp_path / "a.estrec.json"
     rec = est.prepare(lm_record(), digest=False)
     p.write_text(json.dumps(rec))
     assert est.main(["digest", "--write", str(p)]) == 0

@@ -9,14 +9,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "schema" / "examples"
 FILES = [
-    "paper.estimation-collection.json",
-    "session.estimation-collection.json",
-    "replication.estimation-collection.json",
+    "paper.estrec-collection.json",
+    "session.estrec-collection.json",
+    "replication.estrec-collection.json",
     "replication.members.jsonl",
-    "iv.estimation.json",
-    "glm-logit.estimation.json",
-    "dfeols-linear-fe.estimation.json",
-    "paper.estimation-table.json",
+    "iv.estrec.json",
+    "glm-logit.estrec.json",
+    "dfeols-linear-fe.estrec.json",
+    "paper.estrec-table.json",
 ]
 
 

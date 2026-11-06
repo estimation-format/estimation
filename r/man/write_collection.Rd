@@ -2,7 +2,7 @@
 \alias{write_collection}
 \title{Write estimation records as a collection}
 \description{
-Writes a set of records as one \code{estimation-collection/0.1} file (spec section 11): a
+Writes a set of records as one \code{estrec-collection/0.1} file (spec section 11): a
 paper's results with where each appears (\code{kind = "paper"}), a session or replication
 with its timeline of \code{events}, or a batch of runs. The records are embedded whole and
 never changed; the collection adds labels, locators and what is true of the set.
@@ -23,7 +23,7 @@ write_collection(x, path, kind = c("paper", "session", "replication", "batch", "
 \arguments{
 \item{x}{a list of fitted models or records (converted as by \code{\link{to_estimation}}), or
 one fit such as a \code{fixest_multi}.}
-\item{path}{the file to write, \code{<name>.estimation-collection.json}.}
+\item{path}{the file to write, \code{<name>.estrec-collection.json}.}
 \item{kind}{what the collection is: it sets which parts a validator expects.}
 \item{labels}{the collection's name for each member; by default the names of \code{x}.}
 \item{locators}{where each record appears in \code{publication}, one entry per record: a
@@ -50,7 +50,7 @@ replication collection needs level 4 or more.}
 if (requireNamespace("fixest", quietly = TRUE)) {
   fits <- list(base = fixest::feols(mpg ~ wt | cyl, mtcars),
                full = fixest::feols(mpg ~ wt + hp | cyl, mtcars))
-  write_collection(fits, tempfile(fileext = ".estimation-collection.json"),
+  write_collection(fits, tempfile(fileext = ".estrec-collection.json"),
                    locators = c("Table 2, col. 1", "Table 2, col. 2"),
                    publication = list(citation = list(type = "report", title = "A working paper")))
 }

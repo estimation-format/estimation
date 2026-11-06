@@ -4,7 +4,7 @@
 \description{
 Writes one record per file, with doubles to 17 significant digits so they round-trip
 exactly. With several records (a \code{fixest_multi}), \code{path} is numbered:
-\code{fit.estimation.json} becomes \code{fit-1.estimation.json}, \code{fit-2.estimation.json}, ...
+\code{fit.estrec.json} becomes \code{fit-1.estrec.json}, \code{fit-2.estrec.json}, ...
 }
 \usage{
 write_estimation(x, path, ...)
@@ -18,6 +18,6 @@ write_estimation(x, path, ...)
 \examples{
 if (requireNamespace("fixest", quietly = TRUE)) {
   fit <- fixest::feols(mpg ~ wt | cyl, mtcars)
-  write_estimation(fit, tempfile(fileext = ".estimation.json"))
+  write_estimation(fit, tempfile(fileext = ".estrec.json"))
 }
 }

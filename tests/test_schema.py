@@ -11,8 +11,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "schema"
-DOC = ROOT / "spec" / "estimation.md"
-CORE = "estimation-0.1.json"
+DOC = ROOT / "spec" / "estrec.md"
+CORE = "estrec-0.1.json"
 PROFILES = {
     "inference/0.1": "profiles/inference-0.1.json",
     "linear-fe/0.1": "profiles/linear-fe-0.1.json",
@@ -103,9 +103,7 @@ def block_kind(b):
     """A block's first key; a collection (spec 11) is "collection", not "schema"."""
     first = b[0]
     return (
-        "collection"
-        if str(first.get("schema", "")).startswith("estimation-collection/")
-        else next(iter(first))
+        "collection" if str(first.get("schema", "")).startswith("estrec-collection/") else next(iter(first))
     )
 
 
@@ -137,25 +135,25 @@ def test_doc_examples_validate():
     assert errors(PROFILES["dfeols/0.1"], ext[0]["extensions"]["dfeols"], "extension") == []
     assert profile_errors(record[0]) == []
     # the collection's own structure (its member records are elided in the spec)
-    assert errors("estimation-collection-0.1.json", ex["collection"][0]) == []
+    assert errors("estrec-collection-0.1.json", ex["collection"][0]) == []
 
 
 def test_doc_lm_example_matches_file():
     record = doc_examples()["schema"][0]
     record["meta"]["id"] = "6f1c0000-0000-4000-8000-000000000001"
-    assert record == example("lm-minimal.estimation.json")
+    assert record == example("lm-minimal.estrec.json")
 
 
 @pytest.mark.parametrize("name", ["lm-minimal", "dfeols-linear-fe", "iv"])
 def test_example_records_validate(name):
-    assert profile_errors(example(f"{name}.estimation.json")) == []
+    assert profile_errors(example(f"{name}.estrec.json")) == []
 
 
 # ---------------------------------------------------------------- core rules
 
 
 def test_core_required_and_encodings():
-    rec = example("lm-minimal.estimation.json")
+    rec = example("lm-minimal.estrec.json")
     assert errors(CORE, {k: v for k, v in rec.items() if k != "parameters"})
     bad = copy.deepcopy(rec)
     bad["meta"]["status"] = "fine"
@@ -212,7 +210,7 @@ def test_core_publication():
 
 
 def test_core_redacted_values_validate():
-    rec = example("dfeols-linear-fe.estimation.json")
+    rec = example("dfeols-linear-fe.estrec.json")
     h = "hmac-sha256:" + "0" * 64
     rec["provenance"]["agent"] = h
     rec["provenance"]["execution"]["invocation"]["argv"] = h
@@ -224,7 +222,7 @@ def test_core_redacted_values_validate():
 
 
 def test_inference_requires():
-    rec = example("lm-minimal.estimation.json")
+    rec = example("lm-minimal.estrec.json")
     p = PROFILES["inference/0.1"]
     for path in (
         ("metrics", "nobs"),
@@ -245,7 +243,7 @@ def test_inference_requires():
 
 
 def test_inference_default_vcov():
-    rec = example("dfeols-linear-fe.estimation.json")
+    rec = example("dfeols-linear-fe.estrec.json")
     p = PROFILES["inference/0.1"]
     two_defaults = copy.deepcopy(rec)
     two_defaults["structures"]["vcov"][1]["default"] = True
@@ -259,7 +257,7 @@ def test_inference_default_vcov():
 
 
 def test_linear_fe_requires():
-    rec = example("dfeols-linear-fe.estimation.json")
+    rec = example("dfeols-linear-fe.estrec.json")
     p = PROFILES["linear-fe/0.1"]
     assert errors(p, rec) == []
     for path in (
@@ -287,7 +285,7 @@ def test_linear_fe_requires():
 
 
 def test_iv_and_dfeols_require():
-    iv = example("iv.estimation.json")
+    iv = example("iv.estrec.json")
     p = PROFILES["iv/0.1"]
     for key in ("endogenous", "instruments"):
         bad = copy.deepcopy(iv)
@@ -306,7 +304,7 @@ def test_iv_and_dfeols_require():
     bad["tests"][2] = {"category": "endogeneity", "name": "wu_hausman"}  # no statistic or p_value
     assert errors(p, bad)
 
-    rec = example("dfeols-linear-fe.estimation.json")
+    rec = example("dfeols-linear-fe.estrec.json")
     p = PROFILES["dfeols/0.1"]
     bad = copy.deepcopy(rec)
     del bad["extensions"]["dfeols"]
@@ -333,7 +331,7 @@ def test_identifying_marks_match_library():
 
 def test_tests_section():
     """Core tests: a name and a statistic or p-value; profile rules on tests by category."""
-    rec = example("survival-cox-efron.estimation.json")
+    rec = example("survival-cox-efron.estrec.json")
     p = "profiles/survival-0.1.json"
     assert errors(p, rec) == []
     bad = copy.deepcopy(rec)
@@ -342,7 +340,7 @@ def test_tests_section():
     bad = copy.deepcopy(rec)
     del bad["tests"][1]["options"]  # a proportional-hazards test needs its time transform
     assert errors(p, bad)
-    rec = example("sem.estimation.json")
+    rec = example("sem.estrec.json")
     p = "profiles/sem-0.1.json"
     bad = copy.deepcopy(rec)
     bad["tests"] = [t for t in bad["tests"] if t["category"] != "model_fit"]

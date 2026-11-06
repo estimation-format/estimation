@@ -9,8 +9,8 @@ Lines members file beside the collection when the file would pass 16 MB.
 
     coll = new_collection([rec1, rec2], kind="paper", labels=["col8", "col9"],
                           locators=["Table 3, col. 8", {"table": "3", "column": "9"}])
-    write_collection(coll, "table3.estimation-collection.json")
-    issues = validate_collection(read_collection("table3.estimation-collection.json"),
+    write_collection(coll, "table3.estrec-collection.json")
+    issues = validate_collection(read_collection("table3.estrec-collection.json"),
                                  base_dir=".")
 """
 
@@ -59,7 +59,7 @@ from .records import (
     validate,
 )
 
-COLLECTION_SCHEMA = "estimation-collection/0.1"
+COLLECTION_SCHEMA = "estrec-collection/0.1"
 KINDS = ("paper", "session", "replication", "batch", "other")
 # in the order a writer puts them: what the collection is, then its records, then the rest
 SECTIONS = (
@@ -86,7 +86,7 @@ COLLECTION_IDENTIFYING = (
 
 def is_collection(doc: Any) -> bool:
     """True if `doc` claims to be an `estimation-collection` (any version)."""
-    return isinstance(doc, dict) and str(doc.get("schema", "")).startswith("estimation-collection/")
+    return isinstance(doc, dict) and str(doc.get("schema", "")).startswith("estrec-collection/")
 
 
 def member_sha256(record: dict) -> str:
@@ -489,7 +489,7 @@ def _without_records(coll: dict, placeholder: bool = False) -> dict:
 
 def _stem(path: Path) -> str:
     name = path.name
-    for suffix in (".json", ".estimation-collection"):
+    for suffix in (".json", ".estrec-collection"):
         name = name.removesuffix(suffix)
     return name
 
@@ -503,7 +503,7 @@ def write_collection(
     by: dict | None = None,
     indent: int | None = 1,
 ) -> dict:
-    """Write `collection` to `path` (`<name>.estimation-collection.json`) and return it as
+    """Write `collection` to `path` (`<name>.estrec-collection.json`) and return it as
     written.
 
     `members="embed"` keeps the records in the file; `"jsonl"` writes them to
@@ -588,9 +588,7 @@ def _to_members_file(coll: dict, path: Path) -> dict:
 def loads_collection(text: str | bytes, *, nonfinite: str = "float") -> dict:
     coll = json.loads(text, parse_constant=_reject_constant)
     if not is_collection(coll):
-        raise EstimationError(
-            "not an estimation-collection (schema must be 'estimation-collection/<version>')"
-        )
+        raise EstimationError("not an estimation-collection (schema must be 'estrec-collection/<version>')")
     if nonfinite == "float":
         return _decode_members(coll)
     if nonfinite != "string":

@@ -13,11 +13,11 @@ to_estimation.default <- function(fit, ...) {
 }
 
 is_estimation_record <- function(x) {
-  is.list(x) && identical(x$schema, "estimation/0.1")
+  is.list(x) && identical(x$schema, "estrec/0.1")
 }
 
 # Write one record per file. `x` is a fitted model, a record, or a list of records. With more
-# than one record, `path` is numbered: fit.estimation.json -> fit-1.estimation.json, ...
+# than one record, `path` is numbered: fit.estrec.json -> fit-1.estrec.json, ...
 write_estimation <- function(x, path, ...) {
   recs <- if (is_estimation_record(x)) list(x)
           else if (is.list(x) && length(x) && all(vapply(x, is_estimation_record, logical(1)))) x
@@ -34,7 +34,7 @@ write_estimation <- function(x, path, ...) {
 }
 
 .est_numbered <- function(path, n) {
-  ext <- regmatches(path, regexpr("(\\.estimation)?\\.json$", path))
+  ext <- regmatches(path, regexpr("(\\.estrec)?\\.json$", path))
   if (!length(ext)) ext <- ""
   stem <- substr(path, 1L, nchar(path) - nchar(ext))
   sprintf("%s-%d%s", stem, seq_len(n), if (nzchar(ext)) ext else ".json")
@@ -141,7 +141,7 @@ write_estimation <- function(x, path, ...) {
       commit = sha, ref = d$RemoteRef, subdir = d$RemoteSubdir))))
   }
   if (identical(p, "estrec"))
-    return(list(purl = "pkg:github/estimation-format/estimation#r", source = "local"))
+    return(list(purl = "pkg:github/estrec/estrec#r", source = "local"))
   if (!is.null(d$Repository))
     return(list(purl = sprintf("pkg:generic/%s@%s", p, v), source = d$Repository))
   list(purl = sprintf("pkg:generic/%s@%s", p, v), source = "local")

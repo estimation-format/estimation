@@ -1,0 +1,123 @@
+{
+ "schema": "estrec-collection/0.1",
+ "meta": {
+  "id": "c0110000-0000-4000-8000-000000000003",
+  "created": "2026-11-01T12:30:00Z",
+  "kind": "replication",
+  "title": "Replication of Table 2, columns 1 and 3",
+  "notes": "Example collection. The records are real fixest fits on R's mtcars written by estrec; the paper is invented."
+ },
+ "publication": {
+  "citation": {
+   "type": "report",
+   "title": "An illustrative working paper on fuel economy",
+   "author": [
+    {
+     "family": "Example",
+     "given": "Ada"
+    }
+   ],
+   "issued": {
+    "date-parts": [
+     [
+      2026
+     ]
+    ]
+   },
+   "number": "WP-1",
+   "publisher": "Example Institute",
+   "DOI": "10.0000/example.wp1"
+  },
+  "status": "working-paper"
+ },
+ "members": [
+  {
+   "id": "2b7e6e56-b511-4f23-a5de-666356d56f36",
+   "created": "2026-11-01T15:46:18Z",
+   "label": "t2c1",
+   "locator": {
+    "table": "2",
+    "column": "1"
+   },
+   "sha256": "cd867f320b92a2a26f5a6f0a08893a95449607ca18999ca44e7ea0aedaa93deb",
+   "attachment": "members"
+  },
+  {
+   "id": "380a95f5-b77e-4f3b-9c02-43e15c2b5eed",
+   "created": "2026-11-01T15:46:18Z",
+   "label": "t2c3",
+   "locator": {
+    "table": "2",
+    "column": "3"
+   },
+   "sha256": "218b98558109327d9b46ee9b3d17a5581176d36d4d2da43a99deba9b08811ee9",
+   "attachment": "members"
+  }
+ ],
+ "events": [
+  {
+   "when": "2026-11-01T12:20:00Z",
+   "type": "data_loaded",
+   "detail": {
+    "name": "mtcars",
+    "rows": 32,
+    "source": "R datasets"
+   }
+  },
+  {
+   "when": "2026-11-01T12:20:01Z",
+   "type": "command",
+   "detail": {
+    "language": "R",
+    "code": "f1 <- feols(mpg ~ wt | cyl, mtcars)"
+   }
+  },
+  {
+   "when": "2026-11-01T12:20:01Z",
+   "type": "fit",
+   "member": "2b7e6e56-b511-4f23-a5de-666356d56f36"
+  },
+  {
+   "when": "2026-11-01T12:20:02Z",
+   "type": "command",
+   "detail": {
+    "language": "R",
+    "code": "f3 <- feols(mpg ~ wt + hp + qsec | cyl, mtcars, vcov = \"hetero\")"
+   }
+  },
+  {
+   "when": "2026-11-01T12:20:02Z",
+   "type": "fit",
+   "member": "380a95f5-b77e-4f3b-9c02-43e15c2b5eed"
+  }
+ ],
+ "attachments": [
+  {
+   "id": "members",
+   "role": "members",
+   "path": "replication.members.jsonl",
+   "media_type": "application/jsonl",
+   "created": "2026-11-01T15:47:02.715919Z",
+   "sha256": "b4db03721f017740cfc86e99f163ebb25963331effc15c00d925ce640eeaa29e",
+   "bytes": 9810,
+   "rows": 2
+  }
+ ],
+ "history": [
+  {
+   "when": "2026-11-01T15:47:02.714552Z",
+   "by": {
+    "name": "estimation-format",
+    "version": "0.1.0.dev0"
+   },
+   "action": "created",
+   "sections": [
+    "meta",
+    "publication",
+    "members",
+    "events",
+    "history"
+   ]
+  }
+ ]
+}

@@ -320,7 +320,7 @@ def _members(source: Any, base_dir: str | os.PathLike | None) -> list[tuple[str,
                 raise ValueError(f"members[{i}]: record not found (pass base_dir, the collection's folder)")
             out.append((str(m.get("label") or m.get("id")), m, rec))
         return out
-    if isinstance(source, Mapping) and source.get("schema") == "estimation/0.1":
+    if isinstance(source, Mapping) and source.get("schema") == "estrec/0.1":
         source = [source]
     if isinstance(source, Mapping):
         return [(str(k), {}, r) for k, r in source.items()]

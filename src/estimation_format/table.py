@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estimation-format contributors
-"""Table specs (`estimation-table/0.1`, spec/table.md): build, read, write, validate and
+"""Table specs (`estrec-table/0.1`, spec/table.md): build, read, write, validate and
 render regression tables from records.
 
     import estimation_format.table as et
-    spec = et.new_table(ef.read_collection("table2.estimation-collection.json"),
+    spec = et.new_table(ef.read_collection("table2.estrec-collection.json"),
                         stats=["nobs", "r2_within", {"vcov": "type"}])
-    et.write_table(spec, "table2.estimation-table.json")
-    print(et.render_table("table2.estimation-table.json", "latex"))
+    et.write_table(spec, "table2.estrec-table.json")
+    print(et.render_table("table2.estrec-table.json", "latex"))
 
 A spec holds no numbers: rendering reads the records it names (by `meta.id`) from its
 `sources`, or from records passed in.
@@ -29,7 +29,7 @@ from .collection import is_collection, iter_members, loads_collection, member_sh
 from .records import PACKAGED_SCHEMAS, Issue, jsonschema_check, loads
 from .views import _num, glance, pick_vcov, tidy, vcov_label
 
-TABLE_SCHEMA = "estimation-table/0.1"
+TABLE_SCHEMA = "estrec-table/0.1"
 DEFAULT_STARS = [0.1, 0.05, 0.01]
 STAT_LABELS = {
     "nobs": "N",
@@ -136,7 +136,7 @@ class _Found:
 def _records_in(path: Path) -> list[tuple[dict, dict | None]]:
     """(record, member entry) for a record file, a folder of records, or a collection."""
     if path.is_dir():
-        return [(loads(f.read_bytes()), None) for f in sorted(path.glob("*.estimation.json"))]
+        return [(loads(f.read_bytes()), None) for f in sorted(path.glob("*.estrec.json"))]
     data = path.read_bytes()
     doc = json.loads(data)
     if is_collection(doc):
@@ -156,7 +156,7 @@ def _as_records(records: Any) -> list[tuple[dict, dict | None]]:
         return []
     if is_collection(records):
         return [(r, m) for _, m, r in iter_members(records) if r is not None]
-    if isinstance(records, Mapping) and records.get("schema") == "estimation/0.1":
+    if isinstance(records, Mapping) and records.get("schema") == "estrec/0.1":
         return [(records, None)]
     if isinstance(records, Mapping):
         return [(r, {"label": str(k)}) for k, r in records.items()]
@@ -281,7 +281,7 @@ def write_table(spec: dict, path: str | os.PathLike) -> Path:
 
 def _schema_issues(spec: dict) -> list[Issue]:
     try:
-        check = jsonschema_check(PACKAGED_SCHEMAS / "estimation-table-0.1.json")
+        check = jsonschema_check(PACKAGED_SCHEMAS / "estrec-table-0.1.json")
     except ImportError:
         return []
     return check(spec)
@@ -654,7 +654,7 @@ def _render_latex(t: dict, escape: bool = True) -> str:
 
 def _render_html(t: dict) -> str:
     h = html.escape
-    out = ['<table class="estimation-table">']
+    out = ['<table class="estrec-table">']
     if t["title"]:
         out.append(f"<caption>{h(t['title'])}</caption>")
     out.append("<thead><tr><th></th>" + "".join(f"<th>{h(x)}</th>" for x in t["header"]) + "</tr></thead>")
@@ -846,7 +846,7 @@ def to_great_table(table: dict):
 
 def add_arguments(p) -> None:
     """The `table` options, for the `estimation` CLI and `python -m estimation_format.table`."""
-    p.add_argument("spec", help="an *.estimation-table.json file")
+    p.add_argument("spec", help="an *.estrec-table.json file")
     p.add_argument("--format", "-f", default="text", choices=sorted(RENDERERS))
     p.add_argument("--check", action="store_true", help="validate only; exit 1 on errors")
     p.add_argument("-o", "--output", help="write to a file instead of printing")

@@ -182,7 +182,7 @@ to_estimation.fixest <- function(fit, data = NULL, vcov = NULL, conf_level = 0.9
   messages <- c(messages, attr(iv_tests, "messages"))
   if (length(messages)) meta$messages <- messages
 
-  rec <- list(schema = "estimation/0.1", meta = meta, specification = spec, metrics = metrics,
+  rec <- list(schema = "estrec/0.1", meta = meta, specification = spec, metrics = metrics,
               parameters = parameters, structures = structures)
   if (length(fx_tests))
     rec$tests <- lapply(seq_along(fx_tests), function(i) c(list(id = paste0("t", i)), fx_tests[[i]]))

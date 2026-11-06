@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estimation-format contributors
-"""Read, write, validate and redact `estimation` records (spec/estimation.md).
+"""Read, write, validate and redact `estimation` records (spec/estrec.md).
 
 One record describes one estimation run as a JSON object. This module uses only
 the standard library. It accepts numpy arrays and scalars without importing numpy,
@@ -15,7 +15,7 @@ otherwise), and validates against the JSON Schemas when jsonschema is installed.
 
 The JSON Schemas ship in the package (estimation_format/schema/: catalog.json, the core,
 the profiles), and draft profiles can be added from local folders
-($ESTIMATION_SCHEMA_PATH). `validate` checks the core schema plus each profile the record
+($ESTREC_SCHEMA_PATH). `validate` checks the core schema plus each profile the record
 claims, and compares the record with the profiles those build on; `redact` takes the
 fields marked `x-identifying` in the core and each claimed profile. Without the
 `jsonschema` package (`pip install 'estimation-format[jsonschema]'`), `validate` falls back
@@ -46,7 +46,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
-SCHEMA = "estimation/0.1"
+SCHEMA = "estrec/0.1"
 WARN_BYTES = 1_000_000  # whole record
 WARN_ELEMENTS = 10_000  # one array (nested lists count their leaves)
 FAIL_BYTES = 16_000_000
@@ -382,7 +382,7 @@ def _write_spill(s: dict, data: dict, path_stem: Path) -> tuple[Path, dict]:
                     }
                 )
                 extra = {k: data[k] for k in ("labels", "col_labels") if k in data}
-                table = table.replace_schema_metadata({"estimation": json.dumps(extra)})
+                table = table.replace_schema_metadata({"estrec": json.dumps(extra)})
             else:
                 cols = data.get("columns", [])
                 rows = data.get("rows", [])
@@ -482,7 +482,7 @@ def load_structure(record_path: str | os.PathLike, record: dict, link: dict, ver
 
         t = pq.read_table(path)
         if s["kind"] == "matrix":
-            extra = json.loads((t.schema.metadata or {}).get(b"estimation", b"{}"))
+            extra = json.loads((t.schema.metadata or {}).get(b"estrec", b"{}"))
             s.update(extra)
             s["data"] = t.column("row").to_pylist()
             if "labels" not in extra:
@@ -612,7 +612,7 @@ def write(
     level: int | None = None,
     purpose: str | Iterable[str] | None = None,
 ) -> dict:
-    """Write `record` to `path` (`<name>.estimation.json`) and return it as written.
+    """Write `record` to `path` (`<name>.estrec.json`) and return it as written.
 
     Large structures are spilled to side files next to it (`spill`), the core digest is
     computed after spilling (on by default), and the size limits are applied: a warning
@@ -629,7 +629,7 @@ def write(
         _digest_later=digest,
     )
     if spill_large:
-        stem = path.name.removesuffix(".json").removesuffix(".estimation")
+        stem = path.name.removesuffix(".json").removesuffix(".estrec")
         spill(rec, path.parent, stem)
     if digest:
         add_digest(rec)
@@ -698,8 +698,8 @@ def _check_core(rec: dict, structural: bool = True) -> list[Issue]:
     xerr = lambda p, m: issues.append(Issue("error", p, m))  # always: the schema can't check these
     warn = lambda p, m: issues.append(Issue("warning", p, m))
     schema = rec.get("schema")
-    if not isinstance(schema, str) or not schema.startswith("estimation/"):
-        err("schema", f"expected 'estimation/<version>', got {schema!r}")
+    if not isinstance(schema, str) or not schema.startswith("estrec/"):
+        err("schema", f"expected 'estrec/<version>', got {schema!r}")
     elif schema != SCHEMA:
         warn("schema", f"{schema} is not {SCHEMA}; checked as {SCHEMA}")
     for k in REQUIRED:
@@ -1030,7 +1030,7 @@ def _load_schemas(packaged: str, folders: tuple[str, ...]) -> Schemas | None:
             except (OSError, ValueError):
                 continue
             name = doc.get("title") if isinstance(doc, dict) else None
-            if not name or "$id" not in doc or name.startswith("estimation") or "catalog" in doc:
+            if not name or "$id" not in doc or name.startswith("estrec") or "catalog" in doc:
                 continue  # not a profile (the core or collection schema, a catalog, an example)
             if name in profiles:
                 which = "the catalog's" if name not in local else "one found earlier"
@@ -1045,10 +1045,10 @@ def load_schemas(
     folders: Iterable[str | os.PathLike] = (), *, packaged: str | os.PathLike | None = None
 ) -> Schemas | None:
     """The packaged catalog's schemas, plus draft profiles in `folders` and in the folders
-    listed in $ESTIMATION_SCHEMA_PATH (a profile is any JSON Schema with a `title` and an
+    listed in $ESTREC_SCHEMA_PATH (a profile is any JSON Schema with a `title` and an
     `$id`, in a folder or its profiles/ subfolder). A local profile can't replace a catalog
     one: it is ignored with a warning. None if the packaged schemas are missing."""
-    env = [d for d in os.environ.get("ESTIMATION_SCHEMA_PATH", "").split(os.pathsep) if d]
+    env = [d for d in os.environ.get("ESTREC_SCHEMA_PATH", "").split(os.pathsep) if d]
     dirs = tuple(str(Path(d).resolve()) for d in [*folders, *env])
     return _load_schemas(str(Path(packaged or PACKAGED_SCHEMAS).resolve()), dirs)
 
@@ -1469,7 +1469,7 @@ def redact(
         del entry["by"]  # withheld below level 4 (spec 4.9)
     if salt is not None:
         # names the salt without revealing it, so readers know which records are comparable
-        entry["salt_id"] = hashlib.sha256(b"estimation-salt-id:" + salt).hexdigest()[:16]
+        entry["salt_id"] = hashlib.sha256(b"estrec-salt-id:" + salt).hexdigest()[:16]
     rec.setdefault("history", []).append(entry)
     return rec
 
@@ -1966,7 +1966,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument(
         "--hash",
         action="store_true",
-        help="replace values with HMAC-SHA256; the salt comes from --salt-file or $ESTIMATION_REDACT_SALT",
+        help="replace values with HMAC-SHA256; the salt comes from --salt-file or $ESTREC_REDACT_SALT",
     )
     r.add_argument("--salt-file")
     r.add_argument("--schema-path", action="append", default=[], help="folder of draft profiles (repeatable)")
@@ -1998,7 +1998,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sh = sub.add_parser("show", help="a quick look: one record in detail, or several side by side")
     show_mod.add_arguments(sh)
-    tb = sub.add_parser("table", help="render or check a table spec (estimation-table/0.1)")
+    tb = sub.add_parser("table", help="render or check a table spec (estrec-table/0.1)")
     table_mod.add_arguments(tb)
     args = ap.parse_args(argv)
 
@@ -2042,9 +2042,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.salt_file:
                 salt = Path(args.salt_file).read_bytes().strip()
             else:
-                salt = os.environ.get("ESTIMATION_REDACT_SALT", "").encode() or None
+                salt = os.environ.get("ESTREC_REDACT_SALT", "").encode() or None
             if not salt:
-                ap.error("--hash needs a salt: --salt-file or $ESTIMATION_REDACT_SALT")
+                ap.error("--hash needs a salt: --salt-file or $ESTREC_REDACT_SALT")
         if not isinstance(rec, dict):
             ap.error(f"{args.file}: not a JSON object")
         if coll.is_collection(rec):

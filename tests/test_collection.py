@@ -19,7 +19,7 @@ SCHEMAS = ["auto", None]  # with the JSON Schemas (when jsonschema is installed)
 def record(i, **extra):
     """A small valid record with a fixed id."""
     rec = {
-        "schema": "estimation/0.1",
+        "schema": "estrec/0.1",
         "meta": {
             "id": f"6f1c0000-0000-4000-8000-{i:012d}",
             "created": f"2026-11-01T10:00:0{i}Z",
@@ -54,7 +54,7 @@ def messages(issues, level=None):
 
 def test_new_collection_members():
     c = paper(title="Table 1")
-    assert c["schema"] == "estimation-collection/0.1"
+    assert c["schema"] == "estrec-collection/0.1"
     assert c["meta"]["kind"] == "paper" and c["meta"]["title"] == "Table 1"
     m1, m2 = c["members"]
     assert m1["id"] == m1["record"]["meta"]["id"] and m1["label"] == "col1"
@@ -74,7 +74,7 @@ def test_new_collection_refuses():
     with pytest.raises(est.EstimationError, match="more than once"):
         ef.new_collection([record(1), record(1)], kind="paper")
     with pytest.raises(est.EstimationError, match="meta.id"):
-        ef.new_collection([{"schema": "estimation/0.1", "meta": {}}], kind="batch")
+        ef.new_collection([{"schema": "estrec/0.1", "meta": {}}], kind="batch")
     with pytest.raises(est.EstimationError, match="one entry per record"):
         ef.new_collection([record(1)], kind="batch", labels=["a", "b"])
 
@@ -91,7 +91,7 @@ def test_member_sha256_is_over_the_record_as_written():
 
 
 def test_write_and_read_embedded(tmp_path):
-    p = tmp_path / "t1.estimation-collection.json"
+    p = tmp_path / "t1.estrec-collection.json"
     written = ef.write_collection(paper(), p)
     assert list(written)[:3] == ["schema", "meta", "publication"]
     assert written["history"][-1]["action"] == "created"
@@ -103,7 +103,7 @@ def test_write_and_read_embedded(tmp_path):
 
 
 def test_write_members_file(tmp_path):
-    p = tmp_path / "t1.estimation-collection.json"
+    p = tmp_path / "t1.estrec-collection.json"
     written = ef.write_collection(paper(), p, members="jsonl")
     f = tmp_path / "t1.members.jsonl"
     lines = f.read_text(encoding="utf-8").splitlines()
@@ -121,7 +121,7 @@ def test_write_members_file(tmp_path):
     emb = ef.read_collection(p, embed=True)
     assert "attachments" not in emb and emb["members"][1]["record"]["parameters"][0]["statistic"] == math.inf
     # written again, embedded, from the members file
-    q = tmp_path / "t2.estimation-collection.json"
+    q = tmp_path / "t2.estrec-collection.json"
     again = ef.write_collection(coll, q, members="embed", source_dir=tmp_path)
     assert (
         "attachments" not in again and again["members"][0]["record"]["meta"]["id"] == coll["members"][0]["id"]
@@ -130,7 +130,7 @@ def test_write_members_file(tmp_path):
 
 def test_auto_switches_to_a_members_file_above_the_limit(tmp_path, monkeypatch):
     monkeypatch.setattr(col, "FAIL_BYTES", 2_000)
-    p = tmp_path / "big.estimation-collection.json"
+    p = tmp_path / "big.estrec-collection.json"
     written = ef.write_collection(paper(), p)
     assert written["attachments"][0]["role"] == "members"
     assert (tmp_path / "big.members.jsonl").is_file()
@@ -147,12 +147,12 @@ def test_reading_a_record_is_refused():
 @pytest.mark.parametrize("schema", SCHEMAS)
 def test_examples_are_valid(schema):
     for name in ("paper", "session", "replication"):
-        coll = ef.read_collection(EXAMPLES / f"{name}.estimation-collection.json")
+        coll = ef.read_collection(EXAMPLES / f"{name}.estrec-collection.json")
         issues = ef.validate_collection(coll, schema=schema, base_dir=EXAMPLES)
         own = [m for m in messages(issues) if ".record" not in m and not m.startswith(": ")]
         assert messages(issues, "error") == [] and own == [], name
     # the replication's records come from its members file and are checked
-    rep = ef.read_collection(EXAMPLES / "replication.estimation-collection.json")
+    rep = ef.read_collection(EXAMPLES / "replication.estrec-collection.json")
     assert [r is not None for _, _, r in ef.iter_members(rep, EXAMPLES)] == [True, True]
 
 
@@ -259,7 +259,7 @@ def test_kind_expectations(schema):
 
 @pytest.mark.parametrize("schema", SCHEMAS)
 def test_members_file_checks(tmp_path, schema):
-    p = tmp_path / "m.estimation-collection.json"
+    p = tmp_path / "m.estrec-collection.json"
     ef.write_collection(paper(), p, members="jsonl")
     coll = ef.read_collection(p, nonfinite="string")
     infos = messages(ef.validate_collection(coll, schema=schema), "info")
@@ -304,7 +304,7 @@ def test_redact_collection(tmp_path, schema):
     c = paper()
     c["session"] = {"id": "s1", "clients": [{"language": "R", "host": "laptop"}]}
     c["provenance"] = {"agent": {"user": "ada", "host": "valiant"}, "environment": {"hostname": "valiant"}}
-    p = tmp_path / "r.estimation-collection.json"
+    p = tmp_path / "r.estrec-collection.json"
     ef.write_collection(c, p, members="jsonl")
     coll = ef.read_collection(p, nonfinite="string")
     out = ef.redact_collection(coll, base_dir=tmp_path, schema=schema)
@@ -331,21 +331,21 @@ def test_redact_collection(tmp_path, schema):
 
 
 def test_cli(tmp_path, capsys):
-    p = tmp_path / "c.estimation-collection.json"
+    p = tmp_path / "c.estrec-collection.json"
     ef.write_collection(paper(), p, members="jsonl")
     assert est.main(["validate", str(p)]) == 0
     assert "valid (0 errors)" in capsys.readouterr().out
     assert est.main(["digest", str(p)]) == 0
     out = capsys.readouterr().out
     assert out.count("sha256") == 2 and "DOES NOT MATCH" not in out
-    o = tmp_path / "shared.estimation-collection.json"
+    o = tmp_path / "shared.estrec-collection.json"
     assert est.main(["redact", str(p), "-o", str(o)]) == 0
     assert "collection and 2 member records removed" in capsys.readouterr().out
     shared = ef.read_collection(o)
     assert all("agent" not in m["record"]["provenance"] for m in shared["members"])
     bad = json.loads(p.read_text(encoding="utf-8"))
     bad["members"][0]["sha256"] = "0" * 64
-    q = tmp_path / "bad.estimation-collection.json"
+    q = tmp_path / "bad.estrec-collection.json"
     q.write_text(json.dumps(bad), encoding="utf-8")
     (tmp_path / "c.members.jsonl").rename(tmp_path / "keep.jsonl")
     assert est.main(["digest", str(q)]) == 0  # members file missing: records not found, nothing compared
@@ -357,7 +357,7 @@ def test_cli(tmp_path, capsys):
 
 
 def test_records_still_validate_through_the_cli(tmp_path, capsys):
-    p = tmp_path / "r.estimation.json"
+    p = tmp_path / "r.estrec.json"
     ef.write(record(1), p)
     assert est.main(["validate", str(p)]) == 0
     assert Path(p).is_file() and "valid" in capsys.readouterr().out
@@ -446,21 +446,21 @@ def test_validator_checks_the_collection_level(schema):
 
 def test_reduce_collection(tmp_path):
     c = session_coll(level=5)
-    written = ef.write_collection(c, tmp_path / "s.estimation-collection.json", members="jsonl")
+    written = ef.write_collection(c, tmp_path / "s.estrec-collection.json", members="jsonl")
     assert written["history"][-1]["by"]["name"] and written["history"][-1]["level"] == 5
     low = ef.reduce_collection(written, 4, base_dir=tmp_path)
     assert low["meta"]["parent"] == written["meta"]["id"] and low["meta"]["id"] != written["meta"]["id"]
     assert low["history"][-1]["action"] == "reduced" and "session.started" in low["history"][-1]["fields"]
     assert "clients" not in low["session"] and all("record" in m for m in low["members"])
     assert not [i for i in ef.validate_collection(low) if i.level == "error"]
-    out = ef.write_collection(paper(level=2), tmp_path / "p.estimation-collection.json")
+    out = ef.write_collection(paper(level=2), tmp_path / "p.estrec-collection.json")
     assert "by" not in out["history"][-1] and out["history"][-1]["level"] == 2
 
 
 def test_cli_reduce_collection(tmp_path, capsys):
-    src = tmp_path / "s.estimation-collection.json"
+    src = tmp_path / "s.estrec-collection.json"
     ef.write_collection(session_coll(level=5), src)
-    dst = tmp_path / "t.estimation-collection.json"
+    dst = tmp_path / "t.estrec-collection.json"
     assert ef.main(["reduce", str(src), "--level", "4", "-o", str(dst)]) == 0
     back = ef.read_collection(dst)
     assert back["meta"]["disclosure"] == {"level": 4}

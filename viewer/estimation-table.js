@@ -10,7 +10,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const TABLE_SCHEMA = "estimation-table/0.1";
+  const TABLE_SCHEMA = "estrec-table/0.1";
   const DEFAULT_STARS = [0.1, 0.05, 0.01];
   const TABLE_METRICS = ["nobs", "r2", "adj_r2", "r2_within", "adj_r2_within", "pseudo_r2", "aic", "bic", "log_lik", "f_stat", "rmse"];
   const STAT_LABELS = {
@@ -614,7 +614,7 @@
 
   function renderHTML(t) {
     const h = escHTML;
-    const out = ['<table class="estimation-table">'];
+    const out = ['<table class="estrec-table">'];
     if (t.title) out.push(`<caption>${h(t.title)}</caption>`);
     out.push("<thead><tr><th></th>" + t.header.map((x) => `<th>${h(x)}</th>`).join("") + "</tr></thead>");
     out.push("<tbody>");
@@ -729,7 +729,7 @@
     }
     if (changed.length) {
       out.history = out.history || [];
-      out.history.push({ when: new Date().toISOString().replace(/\.\d+Z$/, "Z"), by: by || { name: "estimation viewer", version: "0.1" }, action: "redacted", method: "removed", fields: changed.sort() });
+      out.history.push({ when: new Date().toISOString().replace(/\.\d+Z$/, "Z"), by: by || { name: "estrec viewer", version: "0.1" }, action: "redacted", method: "removed", fields: changed.sort() });
     }
     return { record: out, removed: changed };
   }
@@ -754,23 +754,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
-<meta name="generator" content="estimation viewer (estimation-table/0.1)">
+<meta name="generator" content="estrec viewer (estrec-table/0.1)">
 <style>
 :root { --bg: #ffffff; --ink: #18212b; --muted: #5a6573; --line: #d6dce3; --accent: #2b5f8e; --soft: #eef3f8; }
 @media (prefers-color-scheme: dark) { :root { --bg: #14191f; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541; --accent: #84b3df; --soft: #1d2732; color-scheme: dark; } }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Georgia, "Times New Roman", serif; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
 .wrap { overflow-x: auto; }
-table.estimation-table { border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
-table.estimation-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; }
-table.estimation-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
-table.estimation-table th, table.estimation-table td { padding: 1px 14px; white-space: nowrap; }
-table.estimation-table tbody th { text-align: left; font-weight: 400; }
-table.estimation-table td { text-align: center; }
-table.estimation-table tr.uncertainty td { color: var(--muted); }
-table.estimation-table tbody tr.estimate:not(:first-child) th, table.estimation-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
-table.estimation-table tr.first-stat th, table.estimation-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
-table.estimation-table tbody tr:last-child th, table.estimation-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
-table.estimation-table tfoot td { font-size: 13px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
+table.estrec-table { border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
+table.estrec-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; }
+table.estrec-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: nowrap; }
+table.estrec-table tbody th { text-align: left; font-weight: 400; }
+table.estrec-table td { text-align: center; }
+table.estrec-table tr.uncertainty td { color: var(--muted); }
+table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
+table.estrec-table tr.first-stat th, table.estrec-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
+table.estrec-table tbody tr:last-child th, table.estrec-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
+table.estrec-table tfoot td { font-size: 13px; color: var(--muted); padding-top: 8px; white-space: normal; text-align: left; }
 button.col { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-bottom: 1px dotted var(--muted); }
 button.col:hover, button.col:focus-visible { color: var(--accent); border-bottom-color: var(--accent); outline: none; }
 td.hl, th.hl { background: var(--soft); }
@@ -800,11 +800,11 @@ code { font: 12.5px ui-monospace, Menlo, monospace; }
 ${table}</div>
 <p class="hint">Hover over a column heading for its estimation; click it for the full record.</p>
 <dialog id="rec"><div class="dhead"><h2 id="rec-title"></h2><form method="dialog"><button class="btn">Close</button></form></div><div class="dbody" id="rec-body"></div></dialog>
-<script type="application/json" id="estimation-records">${json}</script>
+<script type="application/json" id="estrec-records">${json}</script>
 <script>
 (function () {
   "use strict";
-  var data = JSON.parse(document.getElementById("estimation-records").textContent);
+  var data = JSON.parse(document.getElementById("estrec-records").textContent);
   var recs = {}; data.records.forEach(function (r) { recs[r.meta.id] = r; });
   function num(v) { if (v && typeof v === "object") v = v.value; if (typeof v === "number") return v; if (v === "Inf") return Infinity; if (v === "-Inf") return -Infinity; return NaN; }
   function fmt(x) { if (typeof x !== "number") return x == null ? "" : String(x); if (isNaN(x)) return ""; if (!isFinite(x)) return x > 0 ? "Inf" : "-Inf"; if (Number.isInteger(x) && Math.abs(x) < 1e15) return x.toLocaleString("en-US"); var a = Math.abs(x); return a !== 0 && (a < 1e-4 || a >= 1e7) ? x.toExponential(3) : String(Number(x.toPrecision(4))); }
@@ -835,12 +835,12 @@ ${table}</div>
     if ((r.tests || []).length) h.push("<h3>Tests</h3>" + table(["Test", "Statistic", "Distribution", "df", "p"], r.tests.map(function (t) { return [t.label || t.name || "", fmt(num(t.statistic)), t.distribution || "", Array.isArray(t.df) ? t.df.join(", ") : t.df == null ? "" : String(t.df), fmt(num(t.p_value))]; })));
     var text = JSON.stringify(r, null, 2);
     var name = (m.title || m.id || "record").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "record";
-    h.push('<details><summary>The record as JSON</summary><pre>' + esc(text) + '</pre></details><p><a class="btn" download="' + esc(name) + '.estimation.json" href="data:application/json;charset=utf-8,' + encodeURIComponent(text) + '">Download the record</a></p>');
+    h.push('<details><summary>The record as JSON</summary><pre>' + esc(text) + '</pre></details><p><a class="btn" download="' + esc(name) + '.estrec.json" href="data:application/json;charset=utf-8,' + encodeURIComponent(text) + '">Download the record</a></p>');
     return h.join("");
   }
   var tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; document.body.appendChild(tip);
   var dlg = document.getElementById("rec");
-  function cells(i, on) { var trs = document.querySelectorAll("table.estimation-table tr"); for (var k = 0; k < trs.length; k++) { var c = trs[k].children[i + 1]; if (c) c.classList.toggle("hl", on); } }
+  function cells(i, on) { var trs = document.querySelectorAll("table.estrec-table tr"); for (var k = 0; k < trs.length; k++) { var c = trs[k].children[i + 1]; if (c) c.classList.toggle("hl", on); } }
   document.querySelectorAll("button.col").forEach(function (b) {
     var i = Number(b.dataset.col), r = recs[data.columns[i]];
     if (!r) return;
@@ -862,8 +862,8 @@ ${table}</div>
   // A parsed JSON document -> [{record, member}] (a record, or a collection's members). Members
   // in a members file are looked up in `jsonl` (a map from file name to its text).
   function recordsIn(doc, jsonl) {
-    if (doc && doc.schema === "estimation/0.1") return { items: [{ record: doc, member: null }], missing: [] };
-    if (doc && typeof doc.schema === "string" && doc.schema.startsWith("estimation-collection/")) {
+    if (doc && doc.schema === "estrec/0.1") return { items: [{ record: doc, member: null }], missing: [] };
+    if (doc && typeof doc.schema === "string" && doc.schema.startsWith("estrec-collection/")) {
       const items = [], missing = [];
       const files = new Map();
       const atts = new Map((doc.attachments || []).map((a) => [a.id, a]));
@@ -897,7 +897,7 @@ ${table}</div>
     const uuid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-4000-8000-" + String(Date.now()).padStart(12, "0").slice(-12);
     const spec = {
       schema: TABLE_SCHEMA,
-      meta: { id: uuid, created: new Date().toISOString().replace(/\.\d+Z$/, "Z"), producer: { name: "estimation viewer", version: "0.1" } },
+      meta: { id: uuid, created: new Date().toISOString().replace(/\.\d+Z$/, "Z"), producer: { name: "estrec viewer", version: "0.1" } },
       columns: items.map((it, i) => ({ record: it.record.meta.id, header: (it.member || {}).label || `(${i + 1})` })),
       uncertainty: "std_error",
       stars: DEFAULT_STARS.slice(),

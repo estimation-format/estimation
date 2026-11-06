@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/csdid-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/csdid-0.1.json",
   "title": "csdid/0.1",
   "x-license": "CC0-1.0",
   "description": "Records of Stata csdid (Rios-Avila, Sant'Anna and Callaway; csdid.ado 1.71, surveyed 2026-10-25), the Callaway-Sant'Anna estimator; see spec/profiles/csdid.md. Includes did/0.1, plus: meta.estimator.method \"callaway_santanna\"; specification.did.cohort (gvar) and a comparison of never_treated or not_yet_treated; specification.options method, agg and typebase; a default vcov of type influence_function or wild_bootstrap; and structures.did with cells (e(gtt), which csdid always stores). When agg() aggregates, e(b)/e(V) hold the aggregates and e(b_attgt)/e(V_attgt) the ATT(g,t): both go in parameters, with the ATT(g,t) vcov as a second, non-default vcov.",
   "x-extends": ["did/0.1"],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/mixed-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/mixed-0.1.json",
   "title": "mixed/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for linear and generalized linear mixed (multilevel) models: R lme4 (lmer, glmer) with lmerTest, glmmTMB; Stata mixed, melogit/mepoisson/meglm; Python statsmodels MixedLM; Julia MixedModels.jl (survey 2026-10-25, spec/profiles/mixed.md). Requires meta.estimator.method (reml, ml, laplace, agq, ...: the tools' defaults differ, so it is always recorded); specification.random_effects as specified; estimate and std_error on fixed-effect rows; a vc object (group, terms, type, the scale the estimate is on) on every variance-component row (component \"random\"); metrics.nobs; structures.random_effects with each grouping factor's levels; a default vcov of the fixed effects with type; and structures.numerics.converged. p-values are optional (lme4 reports none); when given, parameters[*].df and specification.options.df_method say how. log_lik and structures.numerics.singular are expected. GLMMs add distribution and link as in glm/0.1. Random-effect predictions (BLUPs) are per-level and go in attachments, as the core requires.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -46,7 +46,7 @@
                 "required": ["group", "terms"],
                 "properties": {
                   "group": {"description": "Grouping factor (Subject; school:class for nested).", "type": "string"},
-                  "terms": {"description": "Terms varying by group; \"(Intercept)\" for the random intercept.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "terms": {"description": "Terms varying by group; \"(Intercept)\" for the random intercept.", "$ref": "../estrec-0.1.json#/$defs/strings"},
                   "covariance": {
                     "type": "string",
                     "x-vocabulary": ["unstructured", "diagonal", "identity", "exchangeable", "ar1"],
@@ -74,7 +74,7 @@
         "parameters": {
           "items": {
             "properties": {
-              "df": {"description": "Per-row df for the test (Satterthwaite, Kenward-Roger).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"lmerTest": "summary()$coefficients df"}},
+              "df": {"description": "Per-row df for the test (Satterthwaite, Kenward-Roger).", "$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"lmerTest": "summary()$coefficients df"}},
               "vc": {"$ref": "#/$defs/vc_row"}
             },
             "if": {"required": ["component"], "properties": {"component": {"const": "random"}}},
@@ -124,17 +124,17 @@
               "type": "array",
               "minItems": 1,
               "items": {
-                "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+                "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
                 "required": ["kind", "group", "levels"],
                 "properties": {
                   "kind": {"const": "object"},
                   "group": {"type": "string"},
-                  "levels": {"description": "Groups in the estimation sample.", "$ref": "../estimation-0.1.json#/$defs/count", "x-tools": {"lme4, glmmTMB": "ngrps()", "Stata": "e(N_g) (a matrix, one column per level)", "statsmodels": "n_groups", "MixedModels.jl": "nlevs per term"}},
-                  "terms": {"$ref": "../estimation-0.1.json#/$defs/strings"},
+                  "levels": {"description": "Groups in the estimation sample.", "$ref": "../estrec-0.1.json#/$defs/count", "x-tools": {"lme4, glmmTMB": "ngrps()", "Stata": "e(N_g) (a matrix, one column per level)", "statsmodels": "n_groups", "MixedModels.jl": "nlevs per term"}},
+                  "terms": {"$ref": "../estrec-0.1.json#/$defs/strings"},
                   "covariance": {"type": "string"},
                   "size": {
                     "type": "object",
-                    "properties": {"min": {"$ref": "../estimation-0.1.json#/$defs/number"}, "mean": {"$ref": "../estimation-0.1.json#/$defs/number"}, "max": {"$ref": "../estimation-0.1.json#/$defs/number"}},
+                    "properties": {"min": {"$ref": "../estrec-0.1.json#/$defs/number"}, "mean": {"$ref": "../estrec-0.1.json#/$defs/number"}, "max": {"$ref": "../estrec-0.1.json#/$defs/number"}},
                     "x-tools": {"Stata": "e(g_min), e(g_avg), e(g_max) (matrices, one column per level)", "statsmodels": "summary group sizes"}
                   }
                 }
@@ -149,7 +149,7 @@
                   "x-tools": {"lme4": "optinfo$conv$opt == 0 and no optinfo$conv$lme4$messages other than the singular-fit one", "glmmTMB": "fit$convergence == 0 and sdr$pdHess", "Stata": "e(converged)", "statsmodels": "converged", "MixedModels.jl": "optsum.returnvalue (a success code)"}
                 },
                 "singular": {"description": "Boundary (singular) fit: a variance at zero or a correlation at +/-1.", "type": "boolean", "x-tools": {"lme4": "isSingular() (check.conv.singular message)", "glmmTMB": "no direct flag; check VarCorr", "MixedModels.jl": "issingular()"}},
-                "warnings": {"description": "Convergence messages as the tool wrote them.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"lme4": "optinfo$conv$lme4$messages, optinfo$warnings"}},
+                "warnings": {"description": "Convergence messages as the tool wrote them.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"lme4": "optinfo$conv$lme4$messages, optinfo$warnings"}},
                 "function_evaluations": {"type": ["integer", "null"], "x-tools": {"lme4": "optinfo$feval", "MixedModels.jl": "optsum.feval"}},
                 "iterations": {"x-tools": {"Stata": "e(ic)"}}
               }
@@ -174,7 +174,7 @@
       "required": ["group", "terms", "type"],
       "properties": {
         "group": {"type": "string"},
-        "terms": {"description": "One term for a variance or SD, two for a covariance or correlation.", "$ref": "../estimation-0.1.json#/$defs/strings", "minItems": 1, "maxItems": 2},
+        "terms": {"description": "One term for a variance or SD, two for a covariance or correlation.", "$ref": "../estrec-0.1.json#/$defs/strings", "minItems": 1, "maxItems": 2},
         "type": {"type": "string", "x-vocabulary": ["sd", "var", "cor", "cov", "log_sd", "atanh_cor"]}
       }
     }

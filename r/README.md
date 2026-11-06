@@ -7,7 +7,7 @@ multiple estimations (`c(y1, y2)`, `csw()`, `split`, `fsplit`, `subset`). MIT.
 
 ```r
 # install.packages("remotes")
-remotes::install_github("estimation-format/estimation", subdir = "r")
+remotes::install_github("estrec/estrec", subdir = "r")
 ```
 
 ```r
@@ -15,14 +15,14 @@ library(fixest)
 library(estrec)
 
 fit <- feols(y ~ x1 + x2 | firm + year, data, cluster = ~firm)
-write_estimation(fit, "fit.estimation.json")
+write_estimation(fit, "fit.estrec.json")
 
 # Several vcovs in one record: the first is the default and gives the standard errors
-write_estimation(fit, "fit.estimation.json", vcov = list(~firm, "hetero", ~firm + year))
+write_estimation(fit, "fit.estrec.json", vcov = list(~firm, "hetero", ~firm + year))
 
-# A multiple estimation writes one numbered file per model: fits-1.estimation.json, ...
+# A multiple estimation writes one numbered file per model: fits-1.estrec.json, ...
 fits <- feols(c(y1, y2) ~ csw(x1, x2) | firm, data, split = ~region)
-write_estimation(fits, "fits.estimation.json")
+write_estimation(fits, "fits.estrec.json")
 
 rec <- to_estimation(fit)   # the record as a list
 recs <- to_estimation(list(base = fit, full = fit2))   # a list of fits: a list of records
@@ -32,7 +32,7 @@ rec <- add_test(rec, wald(fit, keep = "^counter::-([2-9]|1[0-9]|20):"), label = 
 rec <- add_test(rec, marginaleffects::hypotheses(fit, "b1 + b2 * 0.25 = 0"))
 rec <- add_test(rec, car::linearHypothesis(fit, "x1 = x2"))
 rec <- to_estimation(fit, tests = list(wald(fit, keep = "^x")))   # or when writing the record
-write_estimation(rec, "fit.estimation.json")
+write_estimation(rec, "fit.estrec.json")
 ```
 
 Tests go in the record's `tests` list: fixest's joint Wald test of the coefficients and, for
@@ -60,12 +60,12 @@ or a batch of runs. The records are embedded whole and never changed; the locato
 collection.
 
 ```r
-write_collection(list(baseline = f1, full = f2), "table2.estimation-collection.json",
+write_collection(list(baseline = f1, full = f2), "table2.estrec-collection.json",
                  kind = "paper",
                  locators = list("Table 2, col. (1)", list(table = "2", column = "2")),
                  publication = list(citation = list(type = "article-journal", title = "...",
                                                     DOI = "10.1257/...")))
-write_collection(fits, "batch.estimation-collection.json", kind = "batch",
+write_collection(fits, "batch.estrec-collection.json", kind = "batch",
                  members = "jsonl")   # records in batch.members.jsonl, one per line
 ```
 
@@ -81,9 +81,9 @@ collection's members (embedded or in a members file). Records print a quick view
 as they take fitted models, whatever wrote the record (estrec, pyfixest, Stata, dfeols).
 
 ```r
-r <- read_estimation("fit.estimation.json")
+r <- read_estimation("fit.estrec.json")
 r                                        # estimates, metrics, FEs, vcov, messages
-tab <- read_collection("table2.estimation-collection.json")
+tab <- read_collection("table2.estrec-collection.json")
 modelsummary::modelsummary(tab, stars = TRUE, coef_rename = c(price_log = "log(price)"))
 generics::tidy(r, vcov = "iid")          # another vcov in the record: SEs, t, p, CIs recomputed
 generics::tidy(r, component = "first_stage")
@@ -100,14 +100,14 @@ McFadden pseudo R2 shows as "R2 Pseudo" (fixest puts it in the R2 rows). Records
 ### Table specs
 
 `render_table()` renders a table spec (`spec/table.md`), such as the
-[record viewer](https://estimation-format.github.io/estimation/viewer/) saves: columns by
+[record viewer](https://estrec.org/viewer/) saves: columns by
 record, each with its own vcov if wanted, rows relabelled, and statistics rows. It finds the
 records in the spec's sources or in `records`, and passes the table to modelsummary, so any of
 modelsummary's outputs work:
 
 ```r
-render_table("table2.estimation-table.json", output = "latex")
-render_table(spec, records = read_collection("table2.estimation-collection.json"))
+render_table("table2.estrec-table.json", output = "latex")
+render_table(spec, records = read_collection("table2.estrec-collection.json"))
 ```
 
 ## What a record holds
@@ -143,10 +143,10 @@ are recorded as `other` and the record carries a warning. Pass `data =` to fix t
 The Python reference tools validate, digest and redact records:
 
 ```bash
-pip install "estimation-format[jsonschema] @ git+https://github.com/estimation-format/estimation"
-estimation validate fit.estimation.json
-estimation redact fit.estimation.json -o shareable.estimation.json   # drops user, host, argv
-estimation digest fit.estimation.json                                  # checks the core digest
+pip install "estimation-format[jsonschema] @ git+https://github.com/estrec/estrec"
+estimation validate fit.estrec.json
+estimation redact fit.estrec.json -o shareable.estrec.json   # drops user, host, argv
+estimation digest fit.estrec.json                                  # checks the core digest
 ```
 
 **Core digest.** With the `openssl` package installed, every record carries
@@ -157,7 +157,7 @@ publication or a note in `history` doesn't. `digest = FALSE` leaves it out.
 **Software.** Each package's purl follows where it was installed from: `pkg:cran/...` for
 CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages installed by
 `remotes`/`pak` from GitHub, `pkg:generic/...` otherwise. A local install of estrec is
-`pkg:github/estimation-format/estimation#r` with `source: "local"`.
+`pkg:github/estrec/estrec#r` with `source: "local"`.
 
 ## Not yet
 

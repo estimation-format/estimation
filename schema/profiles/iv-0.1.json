@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/iv-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/iv-0.1.json",
   "title": "iv/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for instrumental-variables models: Stata ivregress, ivreg2, ivreghdfe; R fixest, ivreg, estimatr iv_robust, lfe; Python linearmodels, pyfixest; FixedEffectModels.jl (survey 2026-10-24 in docs/design/estimation-format.md). Requires inference/0.1 plus specification.endogenous and specification.instruments (excluded instruments), which every tool stores. A first-stage F test in `tests` is expected, not required: most tools compute first-stage statistics only on request. A FE IV record also claims linear-fe/0.1.",
   "x-extends": ["inference/0.1"],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -111,7 +111,7 @@
     },
     "first_stage": {
       "description": "First-stage summaries that aren't tests (R\u00b2s per endogenous regressor). The first-stage F and the identification, overidentification and endogeneity tests are in `tests`. Per-coefficient first-stage estimates go in parameters with component \"first_stage\" and response = the endogenous variable.",
-      "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+      "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
       "properties": {
         "kind": {"enum": ["object", "link"]},
         "per_endogenous": {
@@ -121,9 +121,9 @@
             "required": ["endogenous"],
             "properties": {
               "endogenous": {"type": "string"},
-              "r2": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(singleresults)", "linearmodels": "rsquared"}},
-              "partial_r2": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(singleresults)", "ivreg2/ivreghdfe": "e(first) pr2", "linearmodels": "partial.rsquared"}},
-              "shea_partial_r2": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(multiresults)", "ivreg2/ivreghdfe": "e(first) sheapr2", "linearmodels": "shea.rsquared"}}
+              "r2": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(singleresults)", "linearmodels": "rsquared"}},
+              "partial_r2": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(singleresults)", "ivreg2/ivreghdfe": "e(first) pr2", "linearmodels": "partial.rsquared"}},
+              "shea_partial_r2": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"ivregress": "r(multiresults)", "ivreg2/ivreghdfe": "e(first) sheapr2", "linearmodels": "shea.rsquared"}}
             }
           }
         }

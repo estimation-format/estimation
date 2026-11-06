@@ -47,7 +47,7 @@ R's `svyglm` tests with the design df; samplics uses normal tests.
 
 ## Example
 
-[`schema/examples/survey.estimation.json`](../../schema/examples/survey.estimation.json): a
+[`schema/examples/survey.estrec.json`](../../schema/examples/survey.estrec.json): a
 real samplics `SurveyGLM` on R survey's `apistrat` (stratified by school type, with fpc),
 `api00 ~ ell + meals + mobility`. The design checks out against R: samplics' mean of `api00`
 is 662.29 (SE 9.409), as R's `svymean` reports.

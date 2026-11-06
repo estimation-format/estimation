@@ -7,7 +7,7 @@
 \alias{is_estimation_record}
 \title{Convert a fitted model to an estimation record}
 \description{
-Returns the record as a list, in the \code{estimation} format (\code{estimation/0.1}):
+Returns the record as a list, in the \code{estimation} format (\code{estrec/0.1}):
 parameters, metrics, vcov with its small-sample correction, sample drops by reason, fixed
 effects, and provenance. A \code{fixest_multi} gives a list of records, one per model.
 

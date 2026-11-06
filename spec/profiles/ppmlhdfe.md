@@ -58,6 +58,6 @@ ppmlhdfe and fixest `fepois` standard errors differ while their estimates agree.
 
 ## Example
 
-[`schema/examples/ppmlhdfe.estimation.json`](../../schema/examples/ppmlhdfe.estimation.json):
+[`schema/examples/ppmlhdfe.estrec.json`](../../schema/examples/ppmlhdfe.estrec.json):
 `ppmlhdfe Y X1 X2, absorb(f1 f2) vce(cluster f1)`. A shape example: the values were computed
 with pyfixest `fepois` and ppmlhdfe's cluster adjustment, not by Stata.

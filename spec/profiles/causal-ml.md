@@ -69,7 +69,7 @@ aggregation.
 
 ## Example
 
-[`schema/examples/causal-ml.estimation.json`](../../schema/examples/causal-ml.estimation.json):
+[`schema/examples/causal-ml.estrec.json`](../../schema/examples/causal-ml.estrec.json):
 a real DoubleML partially linear model on simulated data with a known effect of 0.5 (estimate
 0.502, SE 0.032), random-forest nuisances, 5-fold cross-fitting repeated 3 times with median
 aggregation.

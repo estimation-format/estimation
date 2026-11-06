@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/conditional-logit-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/conditional-logit-0.1.json",
   "title": "conditional-logit/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for conditional (fixed-effects) logit: the likelihood conditional on the number of positive outcomes in each group, so the group effects drop out and are never estimated. Stata clogit and xtlogit, fe; R survival::clogit; Python statsmodels ConditionalLogit (survey 2026-10-25, spec/profiles/conditional-logit.md). Requires specification.groups; specification.options.likelihood (exact, or R's breslow/efron approximations) and drop_uninformative (Stata and statsmodels drop groups whose outcomes are all 0 or all 1, R keeps them, which changes nobs); estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; and a default vcov with type and ssc.convention. metrics.n_groups, log_lik and structures.groups are expected; convergence is vocabulary only, since statsmodels doesn't keep it and R only warns. Not for unconditional FE logit (fixest feglm, pyfixest feglm, bife), which estimates the group effects: those records claim glm/0.1.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -30,7 +30,7 @@
           "properties": {
             "groups": {
               "description": "The grouping (stratum, panel unit, choice set) the likelihood conditions on.",
-              "$ref": "../estimation-0.1.json#/$defs/strings",
+              "$ref": "../estrec-0.1.json#/$defs/strings",
               "minItems": 1,
               "x-tools": {"clogit": "group(), e(group)", "xtlogit, fe": "xtset panel variable, e(ivar)", "survival::clogit": "strata() term", "statsmodels": "groups"}
             },
@@ -104,16 +104,16 @@
             },
             "groups": {
               "description": "The conditioning groups: counts only.",
-              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
               "properties": {
                 "kind": {"const": "object"},
-                "n": {"$ref": "../estimation-0.1.json#/$defs/count"},
+                "n": {"$ref": "../estrec-0.1.json#/$defs/count"},
                 "size": {
                   "type": "object",
                   "properties": {
-                    "min": {"$ref": "../estimation-0.1.json#/$defs/number"},
-                    "mean": {"$ref": "../estimation-0.1.json#/$defs/number"},
-                    "max": {"$ref": "../estimation-0.1.json#/$defs/number"}
+                    "min": {"$ref": "../estrec-0.1.json#/$defs/number"},
+                    "mean": {"$ref": "../estrec-0.1.json#/$defs/number"},
+                    "max": {"$ref": "../estrec-0.1.json#/$defs/number"}
                   },
                   "x-tools": {"xtlogit, fe": "e(g_min), e(g_avg), e(g_max)", "statsmodels": "summary() group sizes"}
                 },

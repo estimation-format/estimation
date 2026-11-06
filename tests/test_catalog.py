@@ -19,7 +19,7 @@ TABLE = CATALOG["table"]
 ENTRIES = [CATALOG["core"], COLLECTION, TABLE, *CATALOG["profiles"]]
 PROFILES = {e["name"]: e for e in CATALOG["profiles"]}
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]*/\d+\.\d+$")
-ID_BASE = "https://estimation-format.github.io/estimation/schema/"
+ID_BASE = "https://estrec.org/schema/"
 
 
 def load(rel):
@@ -54,9 +54,9 @@ def test_entries_are_complete_and_unique():
 def test_every_schema_file_is_listed():
     listed = {e["file"] for e in ENTRIES}
     on_disk = {
-        "estimation-0.1.json",
-        "estimation-collection-0.1.json",
-        "estimation-table-0.1.json",
+        "estrec-0.1.json",
+        "estrec-collection-0.1.json",
+        "estrec-table-0.1.json",
         *(f"profiles/{p.name}" for p in (ROOT / "profiles").glob("*.json")),
     }
     assert on_disk == listed, "files in profiles/ and catalog.json entries must match"

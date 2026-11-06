@@ -80,7 +80,7 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
   })
 
   coll <- .est_compact(list(
-    schema = "estimation-collection/0.1",
+    schema = "estrec-collection/0.1",
     meta = .est_compact(list(id = .est_uuid(), created = .est_now(), kind = kind,
                              title = title, tags = if (!is.null(tags)) I(tags), notes = notes,
                              producer = estrec_info(),
@@ -108,7 +108,7 @@ write_collection <- function(x, path, kind = c("paper", "session", "replication"
   }
   paths <- path
   if (members == "jsonl") {
-    stem <- sub("(\\.estimation-collection)?\\.json$", "", basename(path))
+    stem <- sub("(\\.estrec-collection)?\\.json$", "", basename(path))
     file <- file.path(dirname(path), paste0(stem, ".members.jsonl"))
     lines <- vapply(recs, function(r) .est_json(r), "")
     con <- file(file, open = "wb")

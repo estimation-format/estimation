@@ -46,5 +46,5 @@ Writers record it as `lambda`.
 
 ## Example
 
-[`schema/examples/mi.estimation.json`](../../schema/examples/mi.estimation.json): a real
+[`schema/examples/mi.estrec.json`](../../schema/examples/mi.estrec.json): a real
 statsmodels MICE run on mice's `nhanes` data, `chl ~ age + bmi`, 20 imputations.

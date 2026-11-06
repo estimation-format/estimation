@@ -71,6 +71,6 @@ its rows, and readers report it as not identified, as the reporting guide asks.
 
 ## Example
 
-[`schema/examples/med2s.estimation.json`](../../schema/examples/med2s.estimation.json): a shape
+[`schema/examples/med2s.estrec.json`](../../schema/examples/med2s.estrec.json): a shape
 example with illustrative numbers (the "Store visits" row of the med2s reporting guide), not
 output from a real run.

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/multiple-testing-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/multiple-testing-0.1.json",
   "title": "multiple-testing/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for p-values adjusted for multiple hypotheses: R p.adjust, Python statsmodels multipletests, pyfixest bonferroni/rwolf/wyoung, Stata rwolf, wyoung and qqvalue (survey 2026-10-25, spec/profiles/multiple-testing.md). Requires specification.multiple_testing with the method, the error rate it controls and the number of tests in the family (plus reps and seed for resampling-based methods); and p_value_adjusted on the tested rows: parameters rows or tests entries. A family can span several models (outcomes): their tested rows sit in one record, told apart by response. The tools' defaults differ (p.adjust holm, multipletests holm-sidak), so the method is always recorded.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -43,8 +43,8 @@
         "parameters": {
           "items": {
             "properties": {
-              "p_value_adjusted": {"$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"p.adjust": "return value", "multipletests": "pvals_corrected", "pyfixest": "\"Bonferroni Pr(>|t|)\", \"RW Pr(>|t|)\", \"WY Pr(>|t|)\""}},
-              "q_value": {"description": "Storey q-value, when computed alongside.", "$ref": "../estimation-0.1.json#/$defs/number_or_null"},
+              "p_value_adjusted": {"$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"p.adjust": "return value", "multipletests": "pvals_corrected", "pyfixest": "\"Bonferroni Pr(>|t|)\", \"RW Pr(>|t|)\", \"WY Pr(>|t|)\""}},
+              "q_value": {"description": "Storey q-value, when computed alongside.", "$ref": "../estrec-0.1.json#/$defs/number_or_null"},
               "test_family": {"description": "Family id when a record holds several families.", "type": "string"}
             }
           }

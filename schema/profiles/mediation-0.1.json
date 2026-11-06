@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/mediation-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/mediation-0.1.json",
   "title": "mediation/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for mediation analyses, whether from regressions, two-stage (instrumental-variables) regressions or an SEM: R mediation (Imai, Keele, Tingley and Yamamoto; mediate, mediate_tsls), lavaan defined parameters (:=), PROCESS, Stata sem with estat teffects, StataNow mediate, Stata ivmediate; Python pingouin mediation_analysis and statsmodels Mediation (survey 2026-10-25, spec/profiles/mediation.md). Two-stage designs record their instruments and which variable they instrument. Requires specification.mediation with treatment, mediators and outcome, and the inference method (bootstrap, quasi-Bayesian simulation, delta/Sobel, Monte Carlo) with its replications and CI type; metrics.nobs; and at least one row whose mediation.effect is an indirect effect. Effect rows need estimate and either std_error or a confidence interval: R mediation reports no standard errors. No vcov is required, since bootstrap tools often report none. An SEM-based record also claims sem/0.1.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -44,17 +44,17 @@
       "type": "object",
       "required": ["treatment", "mediators", "outcome", "inference"],
       "properties": {
-        "treatment": {"description": "Treatment or focal predictor (X); a list when the model has several predictors of interest.", "anyOf": [{"type": "string"}, {"$ref": "../estimation-0.1.json#/$defs/strings"}], "x-tools": {"mediation": "treat", "pingouin": "x", "statsmodels": "exposure", "PROCESS": "x=", "indirect_boot": "inferred from the sem model: variables that are only predictors, minus controls()", "med2s": "treatment()"}},
-        "mediators": {"description": "Mediator(s) (M); several for parallel or serial models.", "$ref": "../estimation-0.1.json#/$defs/strings", "minItems": 1, "x-tools": {"mediation": "mediator", "pingouin": "m (str or list)", "statsmodels": "mediator", "PROCESS": "m="}},
+        "treatment": {"description": "Treatment or focal predictor (X); a list when the model has several predictors of interest.", "anyOf": [{"type": "string"}, {"$ref": "../estrec-0.1.json#/$defs/strings"}], "x-tools": {"mediation": "treat", "pingouin": "x", "statsmodels": "exposure", "PROCESS": "x=", "indirect_boot": "inferred from the sem model: variables that are only predictors, minus controls()", "med2s": "treatment()"}},
+        "mediators": {"description": "Mediator(s) (M); several for parallel or serial models.", "$ref": "../estrec-0.1.json#/$defs/strings", "minItems": 1, "x-tools": {"mediation": "mediator", "pingouin": "m (str or list)", "statsmodels": "mediator", "PROCESS": "m="}},
         "outcome": {"type": "string", "x-tools": {"pingouin": "y", "PROCESS": "y="}},
-        "covariates": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"pingouin": "covar", "PROCESS": "cov=", "mediation": "terms in both models"}},
-        "moderators": {"description": "Moderated mediation.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"PROCESS": "w=, z="}},
+        "covariates": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"pingouin": "covar", "PROCESS": "cov=", "mediation": "terms in both models"}},
+        "moderators": {"description": "Moderated mediation.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"PROCESS": "w=, z="}},
         "structure": {"type": "string", "x-vocabulary": ["simple", "parallel", "serial", "moderated"]},
         "process_model": {"description": "PROCESS model number (4 = simple mediation).", "type": ["integer", "null"]},
         "treat_value": {"x-tools": {"mediation": "treat.value (1)"}},
         "control_value": {"x-tools": {"mediation": "control.value (0)"}},
         "models": {"description": "How the mediator and outcome models were fit: [{response, estimator, formula}], or \"sem\". estimator ols, tsls, logit, ... (StataNow mediate: each model's family).", "type": ["array", "string"]},
-        "instruments": {"description": "Excluded instruments in a two-stage (IV) mediation design.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"mediate_tsls": "regressors of model.m that are not in model.y", "ivmediate": "instrument() (exactly one; e(inst))"}},
+        "instruments": {"description": "Excluded instruments in a two-stage (IV) mediation design.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"mediate_tsls": "regressors of model.m that are not in model.y", "ivmediate": "instrument() (exactly one; e(inst))"}},
         "instrumented": {"description": "Which variable the instruments stand in for.", "type": "string", "x-vocabulary": ["mediator", "treatment"], "x-tools": {"mediate_tsls": "mediator (the outcome model uses its first-stage fitted values)", "ivmediate": "treatment (e(treat)); the mediator is identified from the same instrument, conditional on the treatment (Dippel et al.)"}},
         "interaction": {"description": "Treatment-mediator interaction in the outcome model.", "type": "boolean", "x-tools": {"StataNow mediate": "e(interact) (included unless nointeraction)"}},
         "treatment_type": {"type": "string", "x-vocabulary": ["binary", "multivalued", "continuous"], "x-tools": {"StataNow mediate": "e(tvartype); continuous() lists the evaluation points, the first being the control"}},
@@ -91,7 +91,7 @@
         },
         "mediator": {"description": "Mediator this effect goes through (specific indirect effects).", "type": "string"},
         "treatment": {"description": "Predictor the effect starts from, when the model has several.", "type": "string"},
-        "path": {"description": "Serial paths: the variables in order.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+        "path": {"description": "Serial paths: the variables in order.", "$ref": "../estrec-0.1.json#/$defs/strings"},
         "moderator_value": {"description": "Conditional indirect effect at this moderator value.", "type": ["number", "string"]}
       }
     }

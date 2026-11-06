@@ -57,6 +57,6 @@ were estimated.
 
 ## Example
 
-[`schema/examples/gam.estimation.json`](../../schema/examples/gam.estimation.json): a real pyGAM
+[`schema/examples/gam.estrec.json`](../../schema/examples/gam.estrec.json): a real pyGAM
 fit of head acceleration on time in the `mcycle` data, one 20-spline smooth with λ chosen by a
 31-point GCV grid search (edf 11.0, deviance explained 0.80).

@@ -1,6 +1,6 @@
-# Table specs (estimation-table/0.1, spec/table.md): render a spec with modelsummary.
+# Table specs (estrec-table/0.1, spec/table.md): render a spec with modelsummary.
 
-# Render a table spec: a path to an *.estimation-table.json file or the spec as a list. The
+# Render a table spec: a path to an *.estrec-table.json file or the spec as a list. The
 # records come from the spec's sources (relative to its folder, or `base_dir`) and from
 # `records` (records, a list of them, or read_collection()'s result). Each column becomes a
 # modelsummary model from the record's tidy() (with the column's vcov), so the output formats
@@ -12,8 +12,8 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
     if (is.null(base_dir)) base_dir <- dirname(spec)
     spec <- jsonlite::fromJSON(spec, simplifyVector = FALSE)
   }
-  if (!identical(spec$schema, "estimation-table/0.1"))
-    stop("not an estimation-table/0.1 spec", call. = FALSE)
+  if (!identical(spec$schema, "estrec-table/0.1"))
+    stop("not an estrec-table/0.1 spec", call. = FALSE)
   idx <- .tab_index(spec, records, base_dir)
   cols <- spec$columns
   if (!length(cols)) stop("the spec has no columns", call. = FALSE)
@@ -250,7 +250,7 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
       recs <- if (dir.exists(p)) read_estimation(p)
               else {
                 doc <- jsonlite::fromJSON(p, simplifyVector = FALSE)
-                if (identical(doc$schema, "estimation-collection/0.1")) read_collection(p)
+                if (identical(doc$schema, "estrec-collection/0.1")) read_collection(p)
                 else list(read_estimation(p))
               }
       for (r in recs) add(r, s$id)

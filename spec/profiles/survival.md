@@ -101,8 +101,8 @@ Convergence: Stata stores `e(converged)`; `coxph` and lifelines only warn.
 
 Both real runs on the Rossi recidivism data (432 released prisoners, 114 arrests):
 
-- [`schema/examples/survival-cox-efron.estimation.json`](../../schema/examples/survival-cox-efron.estimation.json):
+- [`schema/examples/survival-cox-efron.estrec.json`](../../schema/examples/survival-cox-efron.estrec.json):
   lifelines `CoxPHFitter` (Efron), with concordance and a rank-transform PH test. Matches R's
   `coxph`.
-- [`schema/examples/survival-cox-breslow.estimation.json`](../../schema/examples/survival-cox-breslow.estimation.json):
+- [`schema/examples/survival-cox-breslow.estrec.json`](../../schema/examples/survival-cox-breslow.estrec.json):
   statsmodels `PHReg` with its default Breslow ties, for comparison (`fin` −0.3790 vs −0.3794).

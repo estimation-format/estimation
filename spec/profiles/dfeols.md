@@ -38,4 +38,4 @@ What only dfeols has:
 
 ## Example
 
-[`schema/examples/dfeols-linear-fe.estimation.json`](../../schema/examples/dfeols-linear-fe.estimation.json).
+[`schema/examples/dfeols-linear-fe.estrec.json`](../../schema/examples/dfeols-linear-fe.estrec.json).

@@ -3,14 +3,14 @@
 \alias{read_collection}
 \title{Read estimation records and collections}
 \description{
-\code{read_estimation} reads one record (\code{*.estimation.json}), or every record in a
-folder. \code{read_collection} reads an \code{estimation-collection/0.1} file and returns its
+\code{read_estimation} reads one record (\code{*.estrec.json}), or every record in a
+folder. \code{read_collection} reads an \code{estrec-collection/0.1} file and returns its
 member records, whether embedded or in a JSON Lines members file.
 
 Records are kept as written and get class \code{estimation_record}, which prints a summary and
 has \code{tidy} and \code{glance} methods (see \code{\link{tidy.estimation_record}}), so table
 packages such as \pkg{modelsummary} take them directly:
-\code{modelsummary::modelsummary(read_collection("table2.estimation-collection.json"))}.
+\code{modelsummary::modelsummary(read_collection("table2.estrec-collection.json"))}.
 }
 \usage{
 read_estimation(path)
@@ -30,10 +30,10 @@ read_collection(path)
 \seealso{\code{\link{write_estimation}}, \code{\link{write_collection}}}
 \examples{
 \dontrun{
-r <- read_estimation("fit.estimation.json")
+r <- read_estimation("fit.estrec.json")
 r                       # quick view
 generics::tidy(r, vcov = "iid")
-tab <- read_collection("table2.estimation-collection.json")
+tab <- read_collection("table2.estrec-collection.json")
 modelsummary::modelsummary(tab, stars = TRUE)
 }
 }

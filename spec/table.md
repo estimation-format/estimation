@@ -1,6 +1,6 @@
-# Table specs (`estimation-table/0.1`)
+# Table specs (`estrec-table/0.1`)
 
-Status: **0.1 draft.** A companion to the `estimation` format (`spec/estimation.md`),
+Status: **0.1 draft.** A companion to the `estimation` format (`spec/estrec.md`),
 versioned on its own. It doesn't change records or collections.
 
 A **table spec** says how to lay out a regression table from records: which records are the
@@ -9,15 +9,15 @@ and how numbers are shown. It holds **no results**. Every number comes from the 
 the table is rendered, so a spec can't drift from the results, and records from a re-run
 give a new table from the same spec.
 
-A spec is a JSON object (UTF-8), conventionally named `<name>.estimation-table.json`. The
-key words MUST, SHOULD and MAY are as in `spec/estimation.md` section 1.1. Schema:
-`schema/estimation-table-0.1.json`.
+A spec is a JSON object (UTF-8), conventionally named `<name>.estrec-table.json`. The
+key words MUST, SHOULD and MAY are as in `spec/estrec.md` section 1.1. Schema:
+`schema/estrec-table-0.1.json`.
 
 ```json
-{"schema": "estimation-table/0.1",
+{"schema": "estrec-table/0.1",
  "meta": {"id": "8c0e5d1a-...", "created": "2026-11-05T09:00:00Z"},
  "title": "Table 2: Fares and concentration",
- "sources": [{"id": "t2", "path": "table2.estimation-collection.json"}],
+ "sources": [{"id": "t2", "path": "table2.estrec-collection.json"}],
  "columns": [
    {"record": "2b7e6e56-...", "source": "t2", "header": "(1)"},
    {"record": "380a95f5-...", "source": "t2", "header": "(2)", "vcov": "iid"}],
@@ -42,7 +42,7 @@ key words MUST, SHOULD and MAY are as in `spec/estimation.md` section 1.1. Schem
 
 | Field | Status | Content |
 |---|---|---|
-| `schema` | required | `"estimation-table/0.1"` |
+| `schema` | required | `"estrec-table/0.1"` |
 | `meta` | required | `id` (a UUID), `created` (UTC timestamp); optional `producer` `{name, version}`, `tags`, `notes` |
 | `title` | optional | the table's caption |
 | `sources` | optional | where to find the records (2) |
@@ -67,7 +67,7 @@ some other way (loaded in a browser, passed to a function); sources are where to
 |---|---|---|
 | `record` | required | the record's `meta.id` |
 | `source` | optional | the `id` of the source that holds it |
-| `sha256` | optional | the record's RFC 8785 hash, as a collection member's (`spec/estimation.md` 11.3) |
+| `sha256` | optional | the record's RFC 8785 hash, as a collection member's (`spec/estrec.md` 11.3) |
 | `header` | optional | the column heading; default: the member label, else the record's title, else `(1)`, `(2)`, ... |
 | `vcov` | optional | another vcov in the record: its `type`, its cluster variables (`"firm"`, `"firm & year"`), or its position (0-based). Standard errors, tests and intervals are computed from it (8) |
 | `component` | optional | a `parameters[*].component` to show (`"first_stage"`); default the rows with none |

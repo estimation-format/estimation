@@ -107,7 +107,7 @@ split only when the rows left match the fit's).
 
 ## Examples
 
-- [`schema/examples/glm-logit.estimation.json`](../../schema/examples/glm-logit.estimation.json):
+- [`schema/examples/glm-logit.estrec.json`](../../schema/examples/glm-logit.estrec.json):
   a real statsmodels logit on the Spector-Mazzeo data (claims `inference/0.1` and `glm/0.1`).
-- [`schema/examples/ppmlhdfe.estimation.json`](../../schema/examples/ppmlhdfe.estimation.json):
+- [`schema/examples/ppmlhdfe.estrec.json`](../../schema/examples/ppmlhdfe.estrec.json):
   ppmlhdfe with two absorbed fixed effects (a shape example; see its `meta.notes`).

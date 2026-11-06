@@ -1,0 +1,1070 @@
+{
+ "schema": "estrec-collection/0.1",
+ "meta": {
+  "id": "c0110000-0000-4000-8000-000000000001",
+  "created": "2026-11-01T12:00:00Z",
+  "kind": "paper",
+  "title": "Table 2 and Table A1",
+  "notes": "Example collection. The records are real fixest fits on R's mtcars written by estrec; the paper is invented."
+ },
+ "publication": {
+  "citation": {
+   "type": "report",
+   "title": "An illustrative working paper on fuel economy",
+   "author": [
+    {
+     "family": "Example",
+     "given": "Ada"
+    }
+   ],
+   "issued": {
+    "date-parts": [
+     [
+      2026
+     ]
+    ]
+   },
+   "number": "WP-1",
+   "publisher": "Example Institute",
+   "DOI": "10.0000/example.wp1"
+  },
+  "status": "working-paper"
+ },
+ "members": [
+  {
+   "id": "2b7e6e56-b511-4f23-a5de-666356d56f36",
+   "created": "2026-11-01T15:46:18Z",
+   "label": "baseline",
+   "locator": {
+    "table": "2",
+    "column": "1",
+    "label": "Table 2, col. (1)"
+   },
+   "sha256": "cd867f320b92a2a26f5a6f0a08893a95449607ca18999ca44e7ea0aedaa93deb",
+   "record": {
+    "schema": "estrec/0.1",
+    "meta": {
+     "id": "2b7e6e56-b511-4f23-a5de-666356d56f36",
+     "created": "2026-11-01T15:46:18Z",
+     "status": "ok",
+     "estimator": {
+      "family": "linear",
+      "method": "ols"
+     },
+     "responses": [
+      "mpg"
+     ],
+     "profiles": [
+      "inference/0.1",
+      "linear-fe/0.1"
+     ],
+     "title": "mpg ~ wt | cyl",
+     "producer": {
+      "name": "estrec",
+      "version": "0.1.0.9000"
+     }
+    },
+    "specification": {
+     "formula": {
+      "text": "mpg ~ wt | cyl",
+      "syntax": "fixest"
+     },
+     "terms": [
+      "wt"
+     ],
+     "weights": null,
+     "fixed_effects": [
+      "cyl"
+     ],
+     "clusters": [],
+     "sample": {
+      "restriction": null,
+      "rows_input": 32,
+      "dropped": {
+       "missing": 0,
+       "singletons": 0
+      }
+     },
+     "options": {
+      "drop_singletons": true,
+      "fixef_rm": "perfect_fit",
+      "collinearity_tolerance": 1e-10,
+      "tolerance": 1e-06,
+      "max_iterations": 10000
+     },
+     "call": "feols(fml = mpg ~ wt | cyl, data = mtcars)"
+    },
+    "metrics": {
+     "nobs": 32,
+     "df_residual": 28,
+     "r2": 0.8374325252969226,
+     "adj_r2": 0.8200145815787357,
+     "sigma": 2.5569139299748054,
+     "rss": 183.0586476683777,
+     "tss": 1126.0471875,
+     "log_lik": -73.31116390673228,
+     "log_lik_null": -102.37775805799646,
+     "sq_corr_fitted": 0.8374325252969228,
+     "conf_level": 0.95,
+     "n_singletons": 0,
+     "r2_within": 0.39236184894288695,
+     "adj_r2_within": 0.37066048640513294,
+     "log_lik_fe_only": -81.2819754343077
+    },
+    "parameters": [
+     {
+      "term": "wt",
+      "canonical": {
+       "name": "wt",
+       "factors": [
+        {
+         "variable": "wt"
+        }
+       ]
+      },
+      "estimate": -3.2056132561928647,
+      "std_error": 0.7538956549564116,
+      "statistic": -4.252064904629547,
+      "p_value": 0.0002130434602684601,
+      "conf_low": -4.749898499973982,
+      "conf_high": -1.6613280124117478
+     }
+    ],
+    "structures": {
+     "vcov": [
+      {
+       "kind": "matrix",
+       "labels": [
+        "wt"
+       ],
+       "data": [
+        [
+         0.568358658562157
+        ]
+       ],
+       "type": "iid",
+       "tool_type": "IID",
+       "ssc": {
+        "convention": "fixest",
+        "formula": "K.adj: (n-1)/(n-K) (n/(n-K)... per vcov type); G.adj: G/(G-1)",
+        "factors": {
+         "K.adj": true,
+         "K.fixef": "full",
+         "G.adj": true,
+         "G.df": "min",
+         "t.df": "min",
+         "K.exact": false
+        },
+        "K_counts": {
+         "df.K": 4,
+         "K.fixef": "full"
+        }
+       },
+       "df_t": 28,
+       "default": true
+      }
+     ],
+     "fixed_effects": [
+      {
+       "kind": "object",
+       "name": "cyl",
+       "levels": 3
+      }
+     ],
+     "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "map",
+      "tolerance": 1e-06,
+      "max_iterations": 10000,
+      "iterations": 0,
+      "iterations_by_variable": [
+       0,
+       0
+      ],
+      "collinearity_tolerance": 1e-10,
+      "collinear_terms": [],
+      "collinearity_min_norm": 11.502963396103898
+     }
+    },
+    "tests": [
+     {
+      "id": "t1",
+      "category": "model",
+      "name": "wald",
+      "origin": "estimation",
+      "statistic": 18.08005595318228,
+      "distribution": "F",
+      "df1": 1,
+      "df2": 28,
+      "p_value": 0.0002130434602684601,
+      "vcov": "iid"
+     }
+    ],
+    "provenance": {
+     "software": [
+      {
+       "name": "fixest",
+       "version": "0.14.2",
+       "purl": "pkg:cran/fixest@0.14.2",
+       "role": "estimator",
+       "source": "CRAN"
+      },
+      {
+       "name": "R",
+       "version": "4.6.0",
+       "purl": "pkg:generic/r@4.6.0",
+       "role": "language"
+      },
+      {
+       "name": "estrec",
+       "version": "0.1.0.9000",
+       "purl": "pkg:cran/estrec@0.1.0.9000",
+       "role": "writer",
+       "source": "CRAN"
+      },
+      {
+       "name": "dreamerr",
+       "version": "1.5.0",
+       "purl": "pkg:cran/dreamerr@1.5.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Formula",
+       "version": "1.2.6",
+       "purl": "pkg:cran/Formula@1.2.6",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "lattice",
+       "version": "0.22.5",
+       "purl": "pkg:cran/lattice@0.22.5",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "nlme",
+       "version": "3.1.164",
+       "purl": "pkg:cran/nlme@3.1.164",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "numDeriv",
+       "version": "2016.8.1.1",
+       "purl": "pkg:cran/numDeriv@2016.8.1.1",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Rcpp",
+       "version": "1.1.2",
+       "purl": "pkg:cran/Rcpp@1.1.2",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "sandwich",
+       "version": "3.1.3",
+       "purl": "pkg:cran/sandwich@3.1.3",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "stringmagic",
+       "version": "1.3.0",
+       "purl": "pkg:cran/stringmagic@1.3.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "zoo",
+       "version": "1.9.1",
+       "purl": "pkg:cran/zoo@1.9.1",
+       "role": "dependency",
+       "source": "CRAN"
+      }
+     ],
+     "environment": {
+      "os": "Linux",
+      "kernel": "6.8.0-107-generic",
+      "machine": "x86_64",
+      "lapack": "3.12.0",
+      "blas": "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+      "threads": {
+       "fixest": 12
+      }
+     },
+     "data": [
+      {
+       "role": "estimation",
+       "rows": 32,
+       "columns": [
+        "mpg",
+        "cyl",
+        "disp",
+        "hp",
+        "drat",
+        "wt",
+        "qsec",
+        "vs",
+        "am",
+        "gear",
+        "carb"
+       ]
+      }
+     ]
+    },
+    "history": [
+     {
+      "when": "2026-11-01T15:46:18Z",
+      "by": {
+       "name": "estrec",
+       "version": "0.1.0.9000"
+      },
+      "action": "created",
+      "sections": [
+       "meta",
+       "specification",
+       "metrics",
+       "parameters",
+       "structures",
+       "tests",
+       "provenance"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "2b71fb1a-ca69-4372-a22d-566f9dece227",
+   "created": "2026-11-01T15:46:18Z",
+   "label": "horsepower",
+   "locator": {
+    "table": "2",
+    "column": "2",
+    "label": "Table 2, col. (2)"
+   },
+   "sha256": "2b8f200277ffab4f86698f66d12d571f99c080adac53ab06c0a4525ad839d0a1",
+   "record": {
+    "schema": "estrec/0.1",
+    "meta": {
+     "id": "2b71fb1a-ca69-4372-a22d-566f9dece227",
+     "created": "2026-11-01T15:46:18Z",
+     "status": "ok",
+     "estimator": {
+      "family": "linear",
+      "method": "ols"
+     },
+     "responses": [
+      "mpg"
+     ],
+     "profiles": [
+      "inference/0.1",
+      "linear-fe/0.1"
+     ],
+     "title": "mpg ~ wt + hp | cyl",
+     "producer": {
+      "name": "estrec",
+      "version": "0.1.0.9000"
+     }
+    },
+    "specification": {
+     "formula": {
+      "text": "mpg ~ wt + hp | cyl",
+      "syntax": "fixest"
+     },
+     "terms": [
+      "wt",
+      "hp"
+     ],
+     "weights": null,
+     "fixed_effects": [
+      "cyl"
+     ],
+     "clusters": [],
+     "sample": {
+      "restriction": null,
+      "rows_input": 32,
+      "dropped": {
+       "missing": 0,
+       "singletons": 0
+      }
+     },
+     "options": {
+      "drop_singletons": true,
+      "fixef_rm": "perfect_fit",
+      "collinearity_tolerance": 1e-10,
+      "tolerance": 1e-06,
+      "max_iterations": 10000
+     },
+     "call": "feols(fml = mpg ~ wt + hp | cyl, data = mtcars, vcov = \"hetero\")"
+    },
+    "metrics": {
+     "nobs": 32,
+     "df_residual": 27,
+     "r2": 0.8572194524621977,
+     "adj_r2": 0.8360667787528936,
+     "sigma": 2.4402309695225073,
+     "rss": 160.7776339846524,
+     "tss": 1126.0471875,
+     "log_lik": -71.23461469672048,
+     "log_lik_null": -102.37775805799646,
+     "sq_corr_fitted": 0.8572194524621976,
+     "conf_level": 0.95,
+     "n_singletons": 0,
+     "r2_within": 0.4663206273502498,
+     "adj_r2_within": 0.42678882196878687,
+     "log_lik_fe_only": -81.2819754343077
+    },
+    "parameters": [
+     {
+      "term": "wt",
+      "canonical": {
+       "name": "wt",
+       "factors": [
+        {
+         "variable": "wt"
+        }
+       ]
+      },
+      "estimate": -3.181404046679616,
+      "std_error": 0.6931257693262385,
+      "statistic": -4.589937623834328,
+      "p_value": 9.167186760026271e-05,
+      "conf_low": -4.603580651942067,
+      "conf_high": -1.7592274414171651
+     },
+     {
+      "term": "hp",
+      "canonical": {
+       "name": "hp",
+       "factors": [
+        {
+         "variable": "hp"
+        }
+       ]
+      },
+      "estimate": -0.02311980915445467,
+      "std_error": 0.009979034665558259,
+      "statistic": -2.316838244309403,
+      "p_value": 0.02833867432660055,
+      "conf_low": -0.04359509700626174,
+      "conf_high": -0.0026445213026475983
+     }
+    ],
+    "structures": {
+     "vcov": [
+      {
+       "kind": "matrix",
+       "labels": [
+        "wt",
+        "hp"
+       ],
+       "data": [
+        [
+         0.48042333210408994,
+         0.0029489387343846663
+        ],
+        [
+         0.0029489387343846663,
+         9.958113285641345e-05
+        ]
+       ],
+       "type": "HC1",
+       "tool_type": "Heteroskedasticity-robust",
+       "ssc": {
+        "convention": "fixest",
+        "formula": "K.adj: (n-1)/(n-K) (n/(n-K)... per vcov type); G.adj: G/(G-1)",
+        "factors": {
+         "K.adj": true,
+         "K.fixef": "full",
+         "G.adj": true,
+         "G.df": "min",
+         "t.df": "min",
+         "K.exact": false
+        },
+        "K_counts": {
+         "df.K": 5,
+         "K.fixef": "full"
+        }
+       },
+       "df_t": 27,
+       "default": true
+      }
+     ],
+     "fixed_effects": [
+      {
+       "kind": "object",
+       "name": "cyl",
+       "levels": 3
+      }
+     ],
+     "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "map",
+      "tolerance": 1e-06,
+      "max_iterations": 10000,
+      "iterations": 0,
+      "iterations_by_variable": [
+       0,
+       0,
+       0
+      ],
+      "collinearity_tolerance": 1e-10,
+      "collinear_terms": [],
+      "collinearity_min_norm": 11.502963396103898
+     }
+    },
+    "tests": [
+     {
+      "id": "t1",
+      "category": "model",
+      "name": "wald",
+      "origin": "estimation",
+      "statistic": 10.612925605024378,
+      "distribution": "F",
+      "df1": 2,
+      "df2": 27,
+      "p_value": 0.00039731241929733425,
+      "vcov": "HC1"
+     }
+    ],
+    "provenance": {
+     "software": [
+      {
+       "name": "fixest",
+       "version": "0.14.2",
+       "purl": "pkg:cran/fixest@0.14.2",
+       "role": "estimator",
+       "source": "CRAN"
+      },
+      {
+       "name": "R",
+       "version": "4.6.0",
+       "purl": "pkg:generic/r@4.6.0",
+       "role": "language"
+      },
+      {
+       "name": "estrec",
+       "version": "0.1.0.9000",
+       "purl": "pkg:cran/estrec@0.1.0.9000",
+       "role": "writer",
+       "source": "CRAN"
+      },
+      {
+       "name": "dreamerr",
+       "version": "1.5.0",
+       "purl": "pkg:cran/dreamerr@1.5.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Formula",
+       "version": "1.2.6",
+       "purl": "pkg:cran/Formula@1.2.6",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "jsonlite",
+       "version": "2.0.0",
+       "purl": "pkg:cran/jsonlite@2.0.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "lattice",
+       "version": "0.22.5",
+       "purl": "pkg:cran/lattice@0.22.5",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "nlme",
+       "version": "3.1.164",
+       "purl": "pkg:cran/nlme@3.1.164",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "numDeriv",
+       "version": "2016.8.1.1",
+       "purl": "pkg:cran/numDeriv@2016.8.1.1",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Rcpp",
+       "version": "1.1.2",
+       "purl": "pkg:cran/Rcpp@1.1.2",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "sandwich",
+       "version": "3.1.3",
+       "purl": "pkg:cran/sandwich@3.1.3",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "stringmagic",
+       "version": "1.3.0",
+       "purl": "pkg:cran/stringmagic@1.3.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "zoo",
+       "version": "1.9.1",
+       "purl": "pkg:cran/zoo@1.9.1",
+       "role": "dependency",
+       "source": "CRAN"
+      }
+     ],
+     "environment": {
+      "os": "Linux",
+      "kernel": "6.8.0-107-generic",
+      "machine": "x86_64",
+      "lapack": "3.12.0",
+      "blas": "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+      "threads": {
+       "fixest": 12
+      }
+     },
+     "data": [
+      {
+       "role": "estimation",
+       "rows": 32,
+       "columns": [
+        "mpg",
+        "cyl",
+        "disp",
+        "hp",
+        "drat",
+        "wt",
+        "qsec",
+        "vs",
+        "am",
+        "gear",
+        "carb"
+       ]
+      }
+     ]
+    },
+    "history": [
+     {
+      "when": "2026-11-01T15:46:18Z",
+      "by": {
+       "name": "estrec",
+       "version": "0.1.0.9000"
+      },
+      "action": "created",
+      "sections": [
+       "meta",
+       "specification",
+       "metrics",
+       "parameters",
+       "structures",
+       "tests",
+       "provenance"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "380a95f5-b77e-4f3b-9c02-43e15c2b5eed",
+   "created": "2026-11-01T15:46:18Z",
+   "label": "full",
+   "locators": [
+    {
+     "table": "2",
+     "column": "3",
+     "label": "Table 2, col. (3)"
+    },
+    {
+     "table": "A1",
+     "column": "1",
+     "label": "Table A1, col. (1)"
+    }
+   ],
+   "sha256": "218b98558109327d9b46ee9b3d17a5581176d36d4d2da43a99deba9b08811ee9",
+   "record": {
+    "schema": "estrec/0.1",
+    "meta": {
+     "id": "380a95f5-b77e-4f3b-9c02-43e15c2b5eed",
+     "created": "2026-11-01T15:46:18Z",
+     "status": "ok",
+     "estimator": {
+      "family": "linear",
+      "method": "ols"
+     },
+     "responses": [
+      "mpg"
+     ],
+     "profiles": [
+      "inference/0.1",
+      "linear-fe/0.1"
+     ],
+     "title": "mpg ~ wt + hp + qsec | cyl",
+     "producer": {
+      "name": "estrec",
+      "version": "0.1.0.9000"
+     }
+    },
+    "specification": {
+     "formula": {
+      "text": "mpg ~ wt + hp + qsec | cyl",
+      "syntax": "fixest"
+     },
+     "terms": [
+      "wt",
+      "hp",
+      "qsec"
+     ],
+     "weights": null,
+     "fixed_effects": [
+      "cyl"
+     ],
+     "clusters": [],
+     "sample": {
+      "restriction": null,
+      "rows_input": 32,
+      "dropped": {
+       "missing": 0,
+       "singletons": 0
+      }
+     },
+     "options": {
+      "drop_singletons": true,
+      "fixef_rm": "perfect_fit",
+      "collinearity_tolerance": 1e-10,
+      "tolerance": 1e-06,
+      "max_iterations": 10000
+     },
+     "call": "feols(fml = mpg ~ wt + hp + qsec | cyl, data = mtcars, vcov = \"hetero\")"
+    },
+    "metrics": {
+     "nobs": 32,
+     "df_residual": 26,
+     "r2": 0.8574231842586815,
+     "adj_r2": 0.8300045658468894,
+     "sigma": 2.4849409710387143,
+     "rss": 160.5482223682175,
+     "tss": 1126.0471875,
+     "log_lik": -71.21176819113087,
+     "log_lik_null": -102.37775805799646,
+     "sq_corr_fitted": 0.8574231842586815,
+     "conf_level": 0.95,
+     "n_singletons": 0,
+     "r2_within": 0.4670821278432179,
+     "adj_r2_within": 0.40559160413282,
+     "log_lik_fe_only": -81.2819754343077
+    },
+    "parameters": [
+     {
+      "term": "wt",
+      "canonical": {
+       "name": "wt",
+       "factors": [
+        {
+         "variable": "wt"
+        }
+       ]
+      },
+      "estimate": -3.309578141155569,
+      "std_error": 1.063890903147974,
+      "statistic": -3.1108247390430486,
+      "p_value": 0.004489685639273784,
+      "conf_low": -5.496437212080583,
+      "conf_high": -1.1227190702305556
+     },
+     {
+      "term": "hp",
+      "canonical": {
+       "name": "hp",
+       "factors": [
+        {
+         "variable": "hp"
+        }
+       ]
+      },
+      "estimate": -0.02125869187717063,
+      "std_error": 0.011631238710282227,
+      "statistic": -1.8277238054084093,
+      "p_value": 0.07908978124545811,
+      "conf_low": -0.04516704545403831,
+      "conf_high": 0.0026496616996970444
+     },
+     {
+      "term": "qsec",
+      "canonical": {
+       "name": "qsec",
+       "factors": [
+        {
+         "variable": "qsec"
+        }
+       ]
+      },
+      "estimate": 0.09301880593651202,
+      "std_error": 0.3953959392603358,
+      "statistic": 0.23525483370042088,
+      "p_value": 0.8158540370902486,
+      "conf_low": -0.7197291871329573,
+      "conf_high": 0.9057667990059813
+     }
+    ],
+    "structures": {
+     "vcov": [
+      {
+       "kind": "matrix",
+       "labels": [
+        "wt",
+        "hp",
+        "qsec"
+       ],
+       "data": [
+        [
+         1.1318638538010115,
+         -0.0026058367675704307,
+         -0.3332386840181247
+        ],
+        [
+         -0.0026058367675704307,
+         0.00013528571393556777,
+         0.002431754235770498
+        ],
+        [
+         -0.3332386840181247,
+         0.002431754235770498,
+         0.15633794878356316
+        ]
+       ],
+       "type": "HC1",
+       "tool_type": "Heteroskedasticity-robust",
+       "ssc": {
+        "convention": "fixest",
+        "formula": "K.adj: (n-1)/(n-K) (n/(n-K)... per vcov type); G.adj: G/(G-1)",
+        "factors": {
+         "K.adj": true,
+         "K.fixef": "full",
+         "G.adj": true,
+         "G.df": "min",
+         "t.df": "min",
+         "K.exact": false
+        },
+        "K_counts": {
+         "df.K": 6,
+         "K.fixef": "full"
+        }
+       },
+       "df_t": 26,
+       "default": true
+      }
+     ],
+     "fixed_effects": [
+      {
+       "kind": "object",
+       "name": "cyl",
+       "levels": 3
+      }
+     ],
+     "numerics": {
+      "kind": "object",
+      "iterative": true,
+      "algorithm": "map",
+      "tolerance": 1e-06,
+      "max_iterations": 10000,
+      "iterations": 0,
+      "iterations_by_variable": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "collinearity_tolerance": 1e-10,
+      "collinear_terms": [],
+      "collinearity_min_norm": 11.502963396103898
+     }
+    },
+    "tests": [
+     {
+      "id": "t1",
+      "category": "model",
+      "name": "wald",
+      "origin": "estimation",
+      "statistic": 7.728118719817886,
+      "distribution": "F",
+      "df1": 3,
+      "df2": 26,
+      "p_value": 0.0007511299119967363,
+      "vcov": "HC1"
+     }
+    ],
+    "provenance": {
+     "software": [
+      {
+       "name": "fixest",
+       "version": "0.14.2",
+       "purl": "pkg:cran/fixest@0.14.2",
+       "role": "estimator",
+       "source": "CRAN"
+      },
+      {
+       "name": "R",
+       "version": "4.6.0",
+       "purl": "pkg:generic/r@4.6.0",
+       "role": "language"
+      },
+      {
+       "name": "estrec",
+       "version": "0.1.0.9000",
+       "purl": "pkg:cran/estrec@0.1.0.9000",
+       "role": "writer",
+       "source": "CRAN"
+      },
+      {
+       "name": "dreamerr",
+       "version": "1.5.0",
+       "purl": "pkg:cran/dreamerr@1.5.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Formula",
+       "version": "1.2.6",
+       "purl": "pkg:cran/Formula@1.2.6",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "jsonlite",
+       "version": "2.0.0",
+       "purl": "pkg:cran/jsonlite@2.0.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "lattice",
+       "version": "0.22.5",
+       "purl": "pkg:cran/lattice@0.22.5",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "nlme",
+       "version": "3.1.164",
+       "purl": "pkg:cran/nlme@3.1.164",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "numDeriv",
+       "version": "2016.8.1.1",
+       "purl": "pkg:cran/numDeriv@2016.8.1.1",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "Rcpp",
+       "version": "1.1.2",
+       "purl": "pkg:cran/Rcpp@1.1.2",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "sandwich",
+       "version": "3.1.3",
+       "purl": "pkg:cran/sandwich@3.1.3",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "stringmagic",
+       "version": "1.3.0",
+       "purl": "pkg:cran/stringmagic@1.3.0",
+       "role": "dependency",
+       "source": "CRAN"
+      },
+      {
+       "name": "zoo",
+       "version": "1.9.1",
+       "purl": "pkg:cran/zoo@1.9.1",
+       "role": "dependency",
+       "source": "CRAN"
+      }
+     ],
+     "environment": {
+      "os": "Linux",
+      "kernel": "6.8.0-107-generic",
+      "machine": "x86_64",
+      "lapack": "3.12.0",
+      "blas": "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+      "threads": {
+       "fixest": 12
+      }
+     },
+     "data": [
+      {
+       "role": "estimation",
+       "rows": 32,
+       "columns": [
+        "mpg",
+        "cyl",
+        "disp",
+        "hp",
+        "drat",
+        "wt",
+        "qsec",
+        "vs",
+        "am",
+        "gear",
+        "carb"
+       ]
+      }
+     ]
+    },
+    "history": [
+     {
+      "when": "2026-11-01T15:46:18Z",
+      "by": {
+       "name": "estrec",
+       "version": "0.1.0.9000"
+      },
+      "action": "created",
+      "sections": [
+       "meta",
+       "specification",
+       "metrics",
+       "parameters",
+       "structures",
+       "tests",
+       "provenance"
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "history": [
+  {
+   "when": "2026-11-01T15:47:02.705248Z",
+   "by": {
+    "name": "estimation-format",
+    "version": "0.1.0.dev0"
+   },
+   "action": "created",
+   "sections": [
+    "meta",
+    "publication",
+    "members",
+    "history"
+   ]
+  }
+ ]
+}

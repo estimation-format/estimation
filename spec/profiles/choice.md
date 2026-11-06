@@ -115,7 +115,7 @@ mlogit's McFadden R² uses the second. Record `{value, definition}` when it isn'
 On the yogurt scanner panel (Jain, Vilcassim and Chintagunta 1994; 2,412 choices among four
 brands by 100 households), both real xlogit runs:
 
-- [`schema/examples/choice-mnl.estimation.json`](../../schema/examples/choice-mnl.estimation.json):
+- [`schema/examples/choice-mnl.estrec.json`](../../schema/examples/choice-mnl.estrec.json):
   MNL with price, feature and brand constants. Matches logitr's published estimates.
-- [`schema/examples/choice-mixed-logit.estimation.json`](../../schema/examples/choice-mixed-logit.estimation.json):
+- [`schema/examples/choice-mixed-logit.estrec.json`](../../schema/examples/choice-mixed-logit.estrec.json):
   the feature coefficient normal across households, 500 Halton draws per household.

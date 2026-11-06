@@ -61,6 +61,6 @@ writers record `event_time` on the original scale, not the shifted level.
 
 ## Example
 
-[`schema/examples/did2s.estimation.json`](../../schema/examples/did2s.estimation.json): pyfixest
+[`schema/examples/did2s.estrec.json`](../../schema/examples/did2s.estrec.json): pyfixest
 0.60.0 on `df_het` (46,500 rows, 1,500 units, 40 state clusters), event times −5…5 with
 binned endpoints.

@@ -13,7 +13,7 @@ EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
 
 def rec(i, **metrics):
     return {
-        "schema": "estimation/0.1",
+        "schema": "estrec/0.1",
         "meta": {
             "id": f"6f1c0000-0000-4000-8000-{i:012d}",
             "created": "2026-11-05T08:00:00Z",
@@ -74,10 +74,10 @@ def test_fmt():
 
 def test_paths_folder_collection_and_cli(tmp_path, capsys):
     for i in (1, 2):
-        ef.write(rec(i), tmp_path / f"m{i}.estimation.json")
+        ef.write(rec(i), tmp_path / f"m{i}.estrec.json")
     assert [n for n, _, _ in sh.load_for_show([tmp_path])] == ["m1", "m2"]
     coll = ef.new_collection({"base": rec(1), "fe": rec(2)}, kind="batch", locators=["col. 1", "col. 2"])
-    cp = tmp_path / "c.estimation-collection.json"
+    cp = tmp_path / "c.estrec-collection.json"
     ef.write_collection(coll, cp, members="jsonl")
     items = sh.load_for_show([cp])
     assert [n for n, _, _ in items] == ["base", "fe"] and items[0][2]["label"] == "base"
@@ -85,16 +85,16 @@ def test_paths_folder_collection_and_cli(tmp_path, capsys):
     assert capsys.readouterr().out.splitlines()[0].split() == ["base", "fe"]
     assert sh.main([str(cp), "--detail"]) == 0
     assert "member: fe  (col. 2)" in capsys.readouterr().out
-    assert sh.main([str(tmp_path / "missing.estimation.json")]) == 1
+    assert sh.main([str(tmp_path / "missing.estrec.json")]) == 1
 
 
-@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estimation.json")), ids=lambda p: p.name)
+@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estrec.json")), ids=lambda p: p.name)
 def test_examples_render(path):
     assert sh.show([path])
     assert sh.show([path], table=True)
 
 
-@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estimation-collection.json")), ids=lambda p: p.name)
+@pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estrec-collection.json")), ids=lambda p: p.name)
 def test_example_collections_render(path):
     assert sh.show([path])
 

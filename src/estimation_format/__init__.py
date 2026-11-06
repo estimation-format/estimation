@@ -5,10 +5,10 @@ and collections of records.
 
     import estimation_format as ef
     rec = ef.new_record(parameters, estimator={"family": "linear", "method": "ols"})
-    ef.write(rec, "model.estimation.json")
-    issues = ef.validate(ef.read("model.estimation.json"))
+    ef.write(rec, "model.estrec.json")
+    issues = ef.validate(ef.read("model.estrec.json"))
 
-The specification is spec/estimation.md in https://github.com/estimation-format/estimation.
+The specification is spec/estrec.md in https://github.com/estrec/estrec.
 """
 
 __version__ = "0.1.0.dev0"

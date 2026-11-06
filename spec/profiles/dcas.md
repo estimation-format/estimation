@@ -73,7 +73,7 @@ about, so this is a recommendation only.
 
 ## Example
 
-[`schema/examples/dcas.estimation.json`](../../schema/examples/dcas.estimation.json): an
+[`schema/examples/dcas.estrec.json`](../../schema/examples/dcas.estrec.json): an
 illustrative paper and data set (not a real study), written with
 `prepare(record, purpose="dcas/0.1")` from a fuller record, so level-5 fields (a dependency,
 the lock's path, the environment, the user and host, the data's location) were left out.

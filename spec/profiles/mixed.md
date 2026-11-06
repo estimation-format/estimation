@@ -90,6 +90,6 @@ warning, so `converged` can be true while `singular` is true.
 
 ## Example
 
-[`schema/examples/mixed.estimation.json`](../../schema/examples/mixed.estimation.json): a real
+[`schema/examples/mixed.estrec.json`](../../schema/examples/mixed.estrec.json): a real
 statsmodels REML fit of `Reaction ~ Days` with a random intercept and slope by `Subject` on
 lme4's `sleepstudy` data. It matches `lmer(Reaction ~ Days + (Days | Subject), sleepstudy)`.

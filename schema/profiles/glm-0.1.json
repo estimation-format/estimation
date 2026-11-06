@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/glm-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/glm-0.1.json",
   "title": "glm/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for generalized linear models (logit, probit, Poisson, ...), with or without absorbed fixed effects: Stata logit, probit, poisson, glm, ppmlhdfe; R glm, fixest feglm/fepois; Python statsmodels GLM/Logit/Poisson, pyfixest feglm/fepois (survey 2026-10-25, spec/profiles/glm.md). Requires meta.estimator distribution and link; estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; a default vcov with type and ssc.convention; and structures.numerics.converged, which every surveyed tool stores. metrics.log_lik and deviance are expected. Does not build on inference/0.1, because Stata's ML commands and ppmlhdfe post no e(df_r) (z tests); records that also have a residual df (R glm, fixest, statsmodels) claim inference/0.1 too. A GLM with absorbed fixed effects records them in structures.fixed_effects with linear-fe's names.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -52,7 +52,7 @@
               "properties": {
                 "separation": {
                   "description": "Methods used to find and drop separated observations, in order; [] when none.",
-                  "$ref": "../estimation-0.1.json#/$defs/strings",
+                  "$ref": "../estrec-0.1.json#/$defs/strings",
                   "x-vocabulary": ["fe", "simplex", "relu", "mu", "perfect_fit"],
                   "x-tools": {"ppmlhdfe": "e(separation) (\"ir\" is relu)", "pyfixest": "separation_check ([\"fe\"]; \"ir\")", "fixest": "fixef.rm (\"perfect_fit\" drops FE levels with only 0 outcomes)"}
                 },

@@ -54,13 +54,13 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   # A paper: labels from names, locators as strings and lists, the citation
   pub <- list(citation = list(type = "report", title = "An illustrative working paper",
                               DOI = "10.0000/example"))
-  p <- file.path(out, "paper.estimation-collection.json")
+  p <- file.path(out, "paper.estrec-collection.json")
   write_collection(list(base = f1, full = f2), p, kind = "paper", publication = pub,
                    locators = list("Table 2, col. 1", list(table = "2", column = "2")),
                    title = "Table 2")
   validate(p)
   coll <- read(p)
-  stopifnot(coll$schema == "estimation-collection/0.1", coll$meta$kind == "paper",
+  stopifnot(coll$schema == "estrec-collection/0.1", coll$meta$kind == "paper",
             length(coll$members) == 2, coll$members[[1]]$label == "base",
             coll$members[[1]]$locator$label == "Table 2, col. 1",
             coll$members[[2]]$locator$column == "2",
@@ -75,7 +75,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   }
 
   # A record appearing twice is one member with several locators
-  q <- file.path(out, "twice.estimation-collection.json")
+  q <- file.path(out, "twice.estrec-collection.json")
   write_collection(list(f1), q, kind = "paper", publication = pub,
                    locators = list(c("Table 2, col. 1", "Table A1, col. 1")))
   validate(q)
@@ -84,7 +84,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
                      "try-error"))
 
   # A batch in a members file: one record per line, listed in attachments
-  b <- file.path(out, "batch.estimation-collection.json")
+  b <- file.path(out, "batch.estrec-collection.json")
   paths <- write_collection(fm, b, kind = "batch", members = "jsonl")
   stopifnot(length(paths) == 2, basename(paths[2]) == "batch.members.jsonl")
   validate(b)
@@ -102,7 +102,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   ev <- list(list(when = "2026-11-01T12:00:00Z", type = "data_loaded", detail = list(rows = 32L)),
              list(when = "2026-11-01T12:00:01Z", type = "fit", member = rs[[1]]$meta$id),
              list(when = "2026-11-01T12:00:02Z", type = "fit", member = rs[[2]]$meta$id))
-  s <- file.path(out, "session.estimation-collection.json")
+  s <- file.path(out, "session.estrec-collection.json")
   write_collection(rs, s, kind = "session", events = ev,
                    session = list(id = "s-1", status = "closed"))
   validate(s)
@@ -129,11 +129,11 @@ if (requireNamespace("fixest", quietly = TRUE)) {
 }
 
 # Without fixest: records given directly
-r <- list(schema = "estimation/0.1",
+r <- list(schema = "estrec/0.1",
           meta = list(id = "6f1c0000-0000-4000-8000-0000000000aa", created = "2026-11-01T00:00:00Z",
                       status = "ok"),
           parameters = list(list(term = "x", estimate = 0.1, std_error = 1 / 3)))
-o <- file.path(out, "other.estimation-collection.json")
+o <- file.path(out, "other.estrec-collection.json")
 write_collection(list(only = r), o, kind = "other", hash = FALSE)
 validate(o)
 stopifnot(read(o)$members[[1]]$label == "only")

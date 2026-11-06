@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/meta-analysis-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/meta-analysis-0.1.json",
   "title": "meta-analysis/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for meta-analyses and meta-regressions of study-level effect sizes: R metafor (rma) and meta (metagen, metabin, ...); Python statsmodels combine_effects; Stata meta (survey 2026-10-25, spec/profiles/meta-analysis.md). Requires specification.meta_analysis with the effect measure and the number of studies, and, for random-effects models, the between-study variance estimator and the interval method (z, Hartung-Knapp, t), whose defaults differ across tools; pooled rows with estimate, std_error and a `meta_analysis` object naming the model; metrics.k and the heterogeneity statistics Q (with df) and, for random-effects models, tau2. I2 is recorded as a proportion. Study inputs and weights go in structures.studies; small-study tests and trim-and-fill are vocabulary.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -59,7 +59,7 @@
           "properties": {
             "studies": {
               "description": "Study-level inputs and weights: a table structure with columns such as study, yi, vi, weight_common, weight_random (or an attachment when large).",
-              "allOf": [{"$ref": "../estimation-0.1.json#/$defs/structure"}],
+              "allOf": [{"$ref": "../estrec-0.1.json#/$defs/structure"}],
               "properties": {"kind": {"enum": ["table", "link"]}}
             },
             "small_study": {
@@ -126,7 +126,7 @@
         "pooling": {"description": "Weights for the common-effect estimate.", "type": "string", "x-vocabulary": ["inverse_variance", "mantel_haenszel", "peto"], "x-tools": {"meta": "method (\"MH\" for metabin; \"Inverse\")", "metafor": "rma.mh, rma.peto", "Stata": "common(mhaenszel), common(invvariance)"}},
         "continuity_correction": {"description": "Added to cells of 2x2 tables with zeros.", "type": ["number", "string", "null"], "x-tools": {"metafor": "escalc add, to", "meta": "incr", "Stata": "zerocells()"}},
         "k": {"type": "integer"},
-        "moderators": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"metafor": "mods", "meta": "metareg()", "Stata": "meta regress"}},
+        "moderators": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"metafor": "mods", "meta": "metareg()", "Stata": "meta regress"}},
         "study_label": {"type": ["string", "null"]},
         "level": {"type": ["number", "null"]}
       }
@@ -137,8 +137,8 @@
       "required": ["model"],
       "properties": {
         "model": {"type": "string", "x-vocabulary": ["common", "random", "moderator"]},
-        "pi_low": {"description": "Prediction interval (random-effects rows).", "$ref": "../estimation-0.1.json#/$defs/number_or_null", "x-tools": {"metafor": "predict(): pi.lb", "meta": "lower.predict", "Stata": "predinterval"}},
-        "pi_high": {"$ref": "../estimation-0.1.json#/$defs/number_or_null"}
+        "pi_low": {"description": "Prediction interval (random-effects rows).", "$ref": "../estrec-0.1.json#/$defs/number_or_null", "x-tools": {"metafor": "predict(): pi.lb", "meta": "lower.predict", "Stata": "predinterval"}},
+        "pi_high": {"$ref": "../estrec-0.1.json#/$defs/number_or_null"}
       }
     }
   }

@@ -2,23 +2,23 @@
 # (registered on the 'generics' package when it is loaded) so table packages such as
 # modelsummary take records as they take fitted models.
 
-# Read a record (`*.estimation.json`), or every record in a folder (a named list, by file stem).
+# Read a record (`*.estrec.json`), or every record in a folder (a named list, by file stem).
 # The record is kept as written; numbers that JSON can't hold stay as "NaN"/"Inf"/"-Inf" strings
 # and are decoded by the views.
 read_estimation <- function(path) {
   if (length(path) != 1L) stop("`path` is one file or folder", call. = FALSE)
   if (dir.exists(path)) {
-    files <- sort(list.files(path, pattern = "\\.estimation\\.json$", full.names = TRUE))
-    if (!length(files)) stop("no *.estimation.json files in ", path, call. = FALSE)
+    files <- sort(list.files(path, pattern = "\\.estrec\\.json$", full.names = TRUE))
+    if (!length(files)) stop("no *.estrec.json files in ", path, call. = FALSE)
     out <- lapply(files, read_estimation)
-    names(out) <- sub("\\.estimation\\.json$", "", basename(files))
+    names(out) <- sub("\\.estrec\\.json$", "", basename(files))
     return(out)
   }
   doc <- jsonlite::fromJSON(path, simplifyVector = FALSE)
-  if (identical(doc$schema, "estimation-collection/0.1"))
+  if (identical(doc$schema, "estrec-collection/0.1"))
     stop(path, " is a collection: read it with read_collection()", call. = FALSE)
   if (!is_estimation_record(doc))
-    stop(path, " is not an estimation/0.1 record (schema: ",
+    stop(path, " is not an estrec/0.1 record (schema: ",
          if (is.null(doc$schema)) "absent" else doc$schema, ")", call. = FALSE)
   .est_as_record(doc, path = normalizePath(path))
 }
@@ -29,8 +29,8 @@ read_estimation <- function(path) {
 # file are found by meta.id.
 read_collection <- function(path) {
   doc <- jsonlite::fromJSON(path, simplifyVector = FALSE)
-  if (!identical(doc$schema, "estimation-collection/0.1"))
-    stop(path, " is not an estimation-collection/0.1 file", call. = FALSE)
+  if (!identical(doc$schema, "estrec-collection/0.1"))
+    stop(path, " is not an estrec-collection/0.1 file", call. = FALSE)
   dir <- dirname(normalizePath(path))
   files <- list()
   members_file <- function(aid) {

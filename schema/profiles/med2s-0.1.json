@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/med2s-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/med2s-0.1.json",
   "title": "med2s/0.1",
   "x-license": "CC0-1.0",
   "description": "Records of med2s (Matherly; Stata package 4.1.1, 2026-09-22): natural direct and indirect effects in staggered-adoption difference-in-differences, on the two-stage DiD first stage (Gardner 2021; see spec/profiles/med2s.md). Includes mediation/0.1, plus: meta.estimator.method \"med2s\"; specification.did as in did/0.1 (unit, time, treatment, comparison \"untreated\", anticipation); specification.clusters (the assignment level); specification.options adjust, adjgap, adjk, version, sigcrit; inference by cluster bootstrap with percentile intervals (med2s_ci); a `med2s` object on each med2s quantity row naming the quantity and its adjustment; and an extensions.med2s block (this file defines it) with the signal test and flag, the treated and placebo moments, the placebo rows and their composition, and, when run, the med2s_diag diagnostics and the med2s_sens breakdown analysis. A bare med2s run (no med2s_ci) has no inference for the adjusted quantities and does not meet mediation/0.1.",
   "x-extends": ["mediation/0.1"],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -38,16 +38,16 @@
             "options": {
               "required": ["adjust", "adjgap", "adjk", "version", "sigcrit"],
               "properties": {
-                "absorb": {"description": "First-stage fixed effects, unit first, time second.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+                "absorb": {"description": "First-stage fixed effects, unit first, time second.", "$ref": "../estrec-0.1.json#/$defs/strings"},
                 "adjust": {"description": "b-path adjustment.", "enum": ["placebo", "none"], "x-tools": {"med2s": "adjust() (placebo)"}},
                 "adjgap": {"description": "Periods between the placebo window and adoption.", "type": "integer", "x-tools": {"med2s": "adjgap() (1)"}},
                 "adjk": {"description": "Length of the placebo window.", "type": "integer", "x-tools": {"med2s": "adjk() (3)"}},
                 "version": {"enum": ["dev", "levels", "both"], "x-tools": {"med2s": "version() (dev)"}},
                 "sigcrit": {"description": "One-sided cutoff for t_d; null when off.", "type": ["number", "null"], "x-tools": {"med2s": "sigcrit() (1.645)"}},
                 "minsignal": {"type": "number", "x-tools": {"med2s": "minsignal() (0, off)"}},
-                "covars": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "covars()"}},
-                "covarsm": {"$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "covarsm() (covars())"}},
-                "x": {"description": "Covariates in the a- and b-path regressions.", "$ref": "../estimation-0.1.json#/$defs/strings", "x-tools": {"med2s": "x()"}},
+                "covars": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"med2s": "covars()"}},
+                "covarsm": {"$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"med2s": "covarsm() (covars())"}},
+                "x": {"description": "Covariates in the a- and b-path regressions.", "$ref": "../estrec-0.1.json#/$defs/strings", "x-tools": {"med2s": "x()"}},
                 "lean": {"type": "boolean"}
               }
             }

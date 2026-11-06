@@ -45,7 +45,7 @@ def test_identifying_js_is_current():
 
 
 def identified_record():
-    rec = ef.read(EXAMPLES / "lm-minimal.estimation.json")
+    rec = ef.read(EXAMPLES / "lm-minimal.estrec.json")
     rec["provenance"] = {
         "agent": {"user": "ted", "host": "valiant"},
         "environment": {"os": "Linux", "host": "valiant"},
@@ -93,7 +93,7 @@ def test_web_page():
         pytest.skip("node not installed")
     t = et.build_table(specs()[0], base_dir=EXAMPLES)
     recs = {}
-    coll = ef.read_collection(EXAMPLES / "paper.estimation-collection.json")
+    coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
     recs = [r for _, _, r in ef.iter_members(coll)]
     script = (
         "const E=require(process.argv[1]+'/estimation-table.js');const x=JSON.parse(require('fs').readFileSync(0,'utf8'));"
@@ -101,7 +101,7 @@ def test_web_page():
     )
     page = run_node(script, {"t": t, "recs": recs})
     assert page.startswith("<!doctype html>") and page.count('class="col"') == 3
-    m = re.search(r'<script type="application/json" id="estimation-records">(.*?)</script>', page, re.DOTALL)
+    m = re.search(r'<script type="application/json" id="estrec-records">(.*?)</script>', page, re.DOTALL)
     data = json.loads(m.group(1))
     assert data["columns"] == t["column_records"]
     assert {r["meta"]["id"] for r in data["records"]} == set(t["column_records"])
@@ -120,15 +120,15 @@ def test_column_records_match(node_result):
 
 
 FILES = {
-    "paper.estimation-collection.json": "paper",
-    "session.estimation-collection.json": "session",
-    "replication.estimation-collection.json": "replication",
+    "paper.estrec-collection.json": "paper",
+    "session.estrec-collection.json": "session",
+    "replication.estrec-collection.json": "replication",
     "replication.members.jsonl": None,
 }
 
 
 def specs():
-    base = et.read_table(EXAMPLES / "paper.estimation-table.json")
+    base = et.read_table(EXAMPLES / "paper.estrec-table.json")
     out = [base]
     for unc in ("statistic", "p_value", "conf_int", None):
         s = copy.deepcopy(base)
@@ -151,13 +151,13 @@ def specs():
         s["uncertainty"] = unc
         s["format"] = f
         out.append(s)
-    coll = ef.read_collection(EXAMPLES / "session.estimation-collection.json")
+    coll = ef.read_collection(EXAMPLES / "session.estrec-collection.json")
     s = et.new_table(coll, stats=["nobs", "r2", "r2_within", {"vcov": "type"}, {"vcov": "n_clusters"}])
     s["columns"].append(dict(s["columns"][0], header="iid", vcov="iid"))
     s["columns"].append(dict(s["columns"][1], header="pos", vcov=1))
     for c in s["columns"]:
         c["source"] = "session"
-    s["sources"] = [{"id": "session", "path": "session.estimation-collection.json"}]
+    s["sources"] = [{"id": "session", "path": "session.estrec-collection.json"}]
     out.append(s)
     s = copy.deepcopy(s)
     s["keep"] = ["^x1$"]
@@ -239,7 +239,7 @@ def test_hashes_match_python(node_result):
     _req, out = node_result
     recs = {}
     for name in ("paper", "session"):
-        coll = ef.read_collection(EXAMPLES / f"{name}.estimation-collection.json")
+        coll = ef.read_collection(EXAMPLES / f"{name}.estrec-collection.json")
         recs.update({r["meta"]["id"]: r for _, _, r in ef.iter_members(coll)})
     for rid, h in out["hashes"]:
         if rid in recs:

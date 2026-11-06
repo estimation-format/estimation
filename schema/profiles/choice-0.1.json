@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/choice-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/choice-0.1.json",
   "title": "choice/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for discrete-choice models: multinomial/conditional logit with alternative attributes, mixed (random-parameters) logit, nested and latent-class logit, in preference or WTP space. R mlogit, logitr, apollo; Python xlogit, Biogeme; Stata cmclogit, cmmixlogit, mixlogit (survey 2026-10-25, spec/profiles/choice.md). Requires meta.estimator.method; specification.choice with the choice-situation and alternative identifiers; estimate and std_error on every row that isn't dropped; metrics.n_cases (choice situations: the tools' nobs count different things) and log_lik; a default vcov with type (Hessian, BFGS approximation, robust, ...); and structures.numerics.converged. A simulated model (mixed logit, GMNL) also requires specification.choice.random_parameters and simulation (number and type of draws), and a row giving each random parameter's spread.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
@@ -162,7 +162,7 @@
       "properties": {
         "role": {"type": "string", "x-vocabulary": ["coefficient", "asc", "mean", "sd", "chol", "spread", "nest", "scale", "class_share", "wtp"]},
         "term": {"description": "Attribute the row belongs to (for mean, sd, chol, wtp).", "type": "string"},
-        "terms": {"description": "Two attributes for an off-diagonal Cholesky element.", "$ref": "../estimation-0.1.json#/$defs/strings"},
+        "terms": {"description": "Two attributes for an off-diagonal Cholesky element.", "$ref": "../estrec-0.1.json#/$defs/strings"},
         "alternative": {"description": "Alternative for an ASC or alternative-specific coefficient.", "type": ["string", "number"]},
         "class": {"description": "Latent class.", "type": ["integer", "string"]},
         "nest": {"type": "string"},

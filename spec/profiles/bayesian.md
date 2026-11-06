@@ -63,7 +63,7 @@ Model comparison: `metrics.elpd_loo` (`{value, se, p_loo, n_bad_pareto_k}`), `wa
 
 ## Example
 
-[`schema/examples/bayesian.estimation.json`](../../schema/examples/bayesian.estimation.json): a
+[`schema/examples/bayesian.estrec.json`](../../schema/examples/bayesian.estrec.json): a
 real PyMC logistic regression on the Spector-Mazzeo data (the same data as the `glm/0.1` logit
 example), NUTS with 4 chains of 1000 draws, summarized by ArviZ with its default 89%
 equal-tailed intervals; no divergences, all R-hat 1.00.

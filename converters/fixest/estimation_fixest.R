@@ -7,7 +7,7 @@
 #   source("estimation_fixest.R")
 #   fit <- feols(y ~ x1 + x2 | firm + year, data, cluster = ~firm)
 #   rec <- estimation_record(fit)               # disclosure level 4 (the default)
-#   estimation_write(rec, "fit.estimation.json")
+#   estimation_write(rec, "fit.estrec.json")
 #
 # `level` (1-5, spec 4.9) is the most the record discloses: 1 estimates, SEs, p-values,
 # intervals, N and df; 2 the other metrics, the vcov without its clusters, the model's
@@ -242,7 +242,7 @@ estimation_record <- function(fit, data = NULL, call = TRUE, identifying = TRUE,
     meta$messages <- list(list(level = "info", code = "singletons", source = "fixest",
                                message = sprintf("%d singleton rows dropped", n_singletons)))
 
-  rec <- list(schema = "estimation/0.1", meta = meta, metrics = metrics, parameters = parameters)
+  rec <- list(schema = "estrec/0.1", meta = meta, metrics = metrics, parameters = parameters)
   if (level >= 3) rec$specification <- spec
   if (level >= 2) rec$structures <- structures
   if (level >= 4) rec$provenance <- provenance

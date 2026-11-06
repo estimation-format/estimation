@@ -1,0 +1,198 @@
+{
+ "meta": {
+  "id": "6f1c0000-0000-4000-8000-0000000000ae",
+  "created": "2026-11-05T12:00:00Z",
+  "status": "ok",
+  "estimator": {
+   "family": "linear",
+   "method": "ols"
+  },
+  "responses": [
+   "log_wage"
+  ],
+  "profiles": [
+   "inference/0.1",
+   "dcas/0.1"
+  ],
+  "title": "Illustrative DCAS record",
+  "notes": "Shape example for dcas/0.1; the paper, data and numbers are illustrative, not a real study.",
+  "disclosure": {
+   "level": 4
+  },
+  "core_digest": {
+   "algorithm": "sha256",
+   "canonicalization": "RFC8785",
+   "value": "77073d1b4bcf43f28d847f8bb1963943be46e95e9592d1d62a49c75c450da937"
+  }
+ },
+ "specification": {
+  "call": "feols(log_wage ~ training | worker + year, data = panel, cluster = ~firm)",
+  "program": {
+   "path": "code/03_main_tables.R",
+   "line": 42,
+   "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "formula": {
+   "text": "log_wage ~ training | worker + year",
+   "syntax": "fixest"
+  },
+  "fixed_effects": [
+   "worker",
+   "year"
+  ],
+  "clusters": [
+   "firm"
+  ]
+ },
+ "metrics": {
+  "nobs": 250000,
+  "df_residual": 1199,
+  "conf_level": 0.95,
+  "r2": 0.81
+ },
+ "parameters": [
+  {
+   "term": "training",
+   "estimate": 0.042,
+   "std_error": 0.011,
+   "statistic": 3.82,
+   "p_value": 0.00014,
+   "conf_low": 0.0204,
+   "conf_high": 0.0636
+  }
+ ],
+ "structures": {
+  "vcov": [
+   {
+    "kind": "matrix",
+    "labels": [
+     "training"
+    ],
+    "data": [
+     [
+      0.000121
+     ]
+    ],
+    "type": "CRV1",
+    "cluster": [
+     "firm"
+    ],
+    "n_clusters": {
+     "firm": 1200
+    },
+    "ssc": {
+     "convention": "fixest"
+    },
+    "df_t": 1199,
+    "default": true
+   }
+  ]
+ },
+ "provenance": {
+  "software": [
+   {
+    "name": "R",
+    "version": "4.5.1",
+    "purl": "pkg:generic/r@4.5.1",
+    "role": "language",
+    "lock": {
+     "format": "renv.lock",
+     "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+   },
+   {
+    "name": "fixest",
+    "version": "0.14.2",
+    "purl": "pkg:cran/fixest@0.14.2",
+    "role": "estimator"
+   },
+   {
+    "name": "estrec",
+    "version": "0.1.0",
+    "role": "writer"
+   }
+  ],
+  "data": [
+   {
+    "role": "input",
+    "name": "Illustrative linked employer-employee panel",
+    "version": "v2",
+    "checksum": {
+     "algorithm": "sha256",
+     "value": "3333333333333333333333333333333333333333333333333333333333333333",
+     "of": "file"
+    },
+    "publication": {
+     "citation": {
+      "type": "dataset",
+      "title": "Illustrative linked employer-employee panel",
+      "author": [
+       {
+        "literal": "Illustrative Statistical Agency"
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         2025
+        ]
+       ]
+      },
+      "version": "v2"
+     }
+    }
+   }
+  ]
+ },
+ "publication": {
+  "citation": {
+   "type": "article-journal",
+   "title": "An illustrative paper",
+   "author": [
+    {
+     "family": "Author",
+     "given": "Example"
+    }
+   ],
+   "issued": {
+    "date-parts": [
+     [
+      2026
+     ]
+    ]
+   },
+   "container-title": "Illustrative journal"
+  },
+  "locator": {
+   "table": "2",
+   "column": "3",
+   "label": "Table 2, column (3)"
+  },
+  "status": "accepted",
+  "replication_package": {
+   "doi": "10.0000/illustrative",
+   "url": "https://example.org/replication"
+  }
+ },
+ "schema": "estrec/0.1",
+ "history": [
+  {
+   "when": "2026-11-05T12:00:00Z",
+   "by": {
+    "name": "estimation-format",
+    "version": "0.1.0.dev0"
+   },
+   "action": "created",
+   "level": 4,
+   "sections": [
+    "meta",
+    "parameters",
+    "metrics",
+    "specification",
+    "provenance",
+    "structures",
+    "publication"
+   ]
+  }
+ ]
+}

@@ -1,4 +1,4 @@
-# Publishes schema/ at https://estimation-format.github.io/estimation/schema/, the schemas'
+# Publishes schema/ at https://estrec.org/schema/, the schemas'
 # $id base, and the record viewer (viewer/) at .../estimation/viewer/.
 # Needs Settings > Pages > Source: "GitHub Actions".
 name: Pages
@@ -39,7 +39,7 @@ jobs:
           <p>JSON Schemas for the <code>estimation</code> format:
           <a href="schema/catalog.json">catalog.json</a>.
           View records and build tables in your browser: <a href="viewer/">the record viewer</a>.
-          Specification and source: <a href="https://github.com/estimation-format/estimation">github.com/estimation-format/estimation</a>.</p>
+          Specification and source: <a href="https://github.com/estrec/estrec">github.com/estrec/estrec</a>.</p>
           EOF
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

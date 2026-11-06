@@ -13,7 +13,7 @@ d$y[3] <- NA; d$x2[10] <- Inf; d$id[5] <- 999L          # a missing value, an In
 validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estimation"))
 out <- tempfile("estrec"); dir.create(out)
 check <- function(rec, name) {
-  path <- write_estimation(rec, file.path(out, paste0(name, ".estimation.json")))
+  path <- write_estimation(rec, file.path(out, paste0(name, ".estrec.json")))
   if (nzchar(validator)) {
     res <- system2(validator, c("validate", path), stdout = TRUE, stderr = TRUE)
     status <- attr(res, "status")
@@ -56,8 +56,8 @@ stopifnot(identical(r$meta$profiles, I("inference/0.1")), is.null(dropped(r)$sin
 m <- feols(c(y, y2) ~ csw(x2, x) | id, d, split = ~g, subset = ~yr > 2)
 rs <- to_estimation(m)
 stopifnot(length(rs) == length(m))
-paths <- write_estimation(m, file.path(out, "multi.estimation.json"))
-stopifnot(length(paths) == length(m), all(file.exists(paths)), grepl("multi-8\\.estimation\\.json$", paths[8]))
+paths <- write_estimation(m, file.path(out, "multi.estrec.json"))
+stopifnot(length(paths) == length(m), all(file.exists(paths)), grepl("multi-8\\.estrec\\.json$", paths[8]))
 for (i in seq_along(rs)) {
   ri <- rs[[i]]; mi <- m[[i]]
   check(ri, paste0("multi", i))
@@ -201,7 +201,7 @@ stopifnot(is.null(to_estimation(f, digest = FALSE)$meta$core_digest))
 # provenance.software: purls follow where each package came from
 sw <- to_estimation(f)$provenance$software
 stopifnot(sw[[1]]$purl == sprintf("pkg:cran/fixest@%s", packageVersion("fixest")),
-          startsWith(sw[[3]]$purl, "pkg:github/estimation-format/estimation"),
+          startsWith(sw[[3]]$purl, "pkg:github/estrec/estrec"),
           sw[[3]]$name == "estrec")
 
 # Writing a record leaves the caller's random numbers alone

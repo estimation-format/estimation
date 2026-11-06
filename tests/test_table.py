@@ -11,8 +11,8 @@ from estimation_format import records as est
 from estimation_format import table as et
 
 EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
-SPEC = EXAMPLES / "paper.estimation-table.json"
-SESSION = EXAMPLES / "session.estimation-collection.json"
+SPEC = EXAMPLES / "paper.estrec-table.json"
+SESSION = EXAMPLES / "session.estrec-collection.json"
 
 
 def spec():
@@ -92,7 +92,7 @@ def test_pinned_hash_matches():
     s = spec()
     recs = {
         r["meta"]["id"]: r
-        for _, _, r in ef.iter_members(ef.read_collection(EXAMPLES / "paper.estimation-collection.json"))
+        for _, _, r in ef.iter_members(ef.read_collection(EXAMPLES / "paper.estrec-collection.json"))
     }
     for c in s["columns"]:
         c["sha256"] = ef.member_sha256(recs[c["record"]])
@@ -159,13 +159,11 @@ def test_column_vcov_and_clusters():
 
 
 def test_new_table_and_round_trip(tmp_path):
-    coll = ef.read_collection(EXAMPLES / "paper.estimation-collection.json")
-    s = et.new_table(
-        coll, title="T", pin=True, sources=[{"id": "p", "path": "paper.estimation-collection.json"}]
-    )
+    coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
+    s = et.new_table(coll, title="T", pin=True, sources=[{"id": "p", "path": "paper.estrec-collection.json"}])
     assert [c["header"] for c in s["columns"]] == ["baseline", "horsepower", "full"]
     assert all(len(c["sha256"]) == 64 for c in s["columns"])
-    path = et.write_table(s, tmp_path / "t.estimation-table.json")
+    path = et.write_table(s, tmp_path / "t.estrec-table.json")
     assert et.read_table(path) == json.loads(json.dumps(s))
     assert et.render_table(s, "text", base_dir=EXAMPLES).startswith("T\n")
     if pytest.importorskip("jsonschema"):
@@ -204,7 +202,7 @@ def test_cli(tmp_path, capsys):
     assert et.main([str(SPEC), "-f", "latex", "-o", str(out)]) == 0 and r"\toprule" in out.read_text()
     bad = copy.deepcopy(spec())
     bad["columns"][0]["record"] = "missing"
-    p = tmp_path / "bad.estimation-table.json"
+    p = tmp_path / "bad.estrec-table.json"
     p.write_text(json.dumps(bad))
     assert et.main([str(p)]) == 1
 
@@ -220,7 +218,7 @@ def test_estimation_cli_subcommands(capsys):
 
     assert main(["table", str(SPEC), "-f", "markdown"]) == 0
     assert "| Weight (1000 lbs) |" in capsys.readouterr().out
-    assert main(["show", str(EXAMPLES / "paper.estimation-collection.json")]) == 0
+    assert main(["show", str(EXAMPLES / "paper.estrec-collection.json")]) == 0
     assert capsys.readouterr().out.split("\n")[0].split() == ["baseline", "horsepower", "full"]
     assert main(["validate", str(SPEC)]) == 0
     assert "valid (0 errors)" in capsys.readouterr().out

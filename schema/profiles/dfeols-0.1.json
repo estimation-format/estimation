@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/dfeols-0.1.json",
+  "$id": "https://estrec.org/schema/profiles/dfeols-0.1.json",
   "title": "dfeols/0.1",
   "x-license": "CC0-1.0",
   "description": "Profile for dfeols records: linear-fe/0.1 plus an extensions.dfeols block, which this file also defines (its schema is \"dfeols/0.1\").",
   "x-extends": ["linear-fe/0.1"],
   "x-deviations": [],
   "allOf": [
-    {"$ref": "../estimation-0.1.json"},
+    {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
   ],
   "$defs": {
