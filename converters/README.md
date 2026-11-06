@@ -50,7 +50,7 @@ command line. Choose another level with `ef.write(rec, path, level=1)` (pyfixest
 `estimation_record(fit, level = 1)` (fixest) or `estimation_write using ..., level(1)` (Stata).
 Level 1 holds only the estimates, standard errors, p-values, intervals, N and df. The pyfixest
 converter also takes `program=` (the program in the replication package) and `data_info=`
-(the data's name, version, checksum and citation), which the `aea/0.1` purpose profile asks
+(the data's name, version, checksum and citation), which the `dcas/0.1` purpose profile asks
 for.
 
 Each converter handles one OLS fit with absorbed fixed effects (or none). Not handled: IV,

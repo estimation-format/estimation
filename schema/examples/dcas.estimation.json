@@ -12,17 +12,17 @@
   ],
   "profiles": [
    "inference/0.1",
-   "aea/0.1"
+   "dcas/0.1"
   ],
-  "title": "Illustrative AEA record",
-  "notes": "Shape example for aea/0.1; the paper, data and numbers are illustrative, not a real study.",
+  "title": "Illustrative DCAS record",
+  "notes": "Shape example for dcas/0.1; the paper, data and numbers are illustrative, not a real study.",
   "disclosure": {
    "level": 4
   },
   "core_digest": {
    "algorithm": "sha256",
    "canonicalization": "RFC8785",
-   "value": "1158009f2696fb89412e6be5d4dc79dde06c148fb4f5723c5691ac8f1ccb2c19"
+   "value": "77073d1b4bcf43f28d847f8bb1963943be46e95e9592d1d62a49c75c450da937"
   }
  },
  "specification": {

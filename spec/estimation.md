@@ -735,7 +735,7 @@ profile: `name`, `file`, `kind` (`standard`, `tool` or `purpose`), `status` (`dr
 | [`causal-ml/0.1`](profiles/causal-ml.md) | standard | `meta.estimator.method`; `specification.causal` (treatment, outcome, estimand), `learners`, `cross_fitting` (folds, repeats, seed); a row with a `causal` estimand, `estimate`, `std_error`; `nobs` |
 | [`gam/0.1`](profiles/gam.md) | standard | `specification.smooths` (basis, k); `options.smoothing_method`; `edf` on smooth rows; `estimate`, `std_error` on parametric rows; `nobs` |
 | [`bayesian/0.1`](profiles/bayesian.md) | standard | `meta.estimator.method`; every prior; chains, draws, warmup and seed for MCMC; a `posterior` object (point, sd, interval with probability and kind) on each row; `nobs` |
-| [`aea/0.1`](profiles/aea.md) | purpose | disclosure level 4; `publication.locator` with `label` and a table, figure, page or section; `estimate` with `std_error` or an interval; `meta.core_digest`; language and estimator with `version`; each data input by `name`; a set seed for resampling, Bayesian and causal-ML records; `specification.program`, data citations and checksums expected |
+| [`dcas/0.1`](profiles/dcas.md) | purpose | disclosure level 4; `publication.locator` with `label` and a table, figure, page or section; `estimate` with `std_error` or an interval; `meta.core_digest`; language and estimator with `version`; each data input by `name`; a set seed for resampling, Bayesian and causal-ML records; `specification.program`, data citations and checksums expected |
 
 Planned as needed: `glm` (deviance, log-likelihood, family and link), `mixed` (variance
 components), `ml` (scikit-learn, tidymodels, xgboost).

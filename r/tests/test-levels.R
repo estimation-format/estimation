@@ -91,24 +91,24 @@ iv3 <- to_estimation(iv, level = 3)
 check(iv3, "iv3")
 stopifnot("iv/0.1" %in% profiles(iv3))
 
-# A purpose: aea/0.1 sets level 4 and is claimed; with the locator and data name it validates
+# A purpose: dcas/0.1 sets level 4 and is claimed; with the locator and data name it validates
 pub <- list(locator = list(table = "2", column = "1", label = "Table 2, column (1)"),
             citation = list(type = "article-journal", title = "An illustrative paper"),
             status = "submitted", replication_package = list(doi = "10.0000/x"))
 prog <- file.path(out, "main.R"); writeLines("feols(y ~ x | id + yr, d)", prog)
-ra <- to_estimation(f, purpose = "aea/0.1", publication = pub,
+ra <- to_estimation(f, purpose = "dcas/0.1", publication = pub,
                     program = list(path = "main.R", line = 1),
                     data_info = list(name = "Illustrative panel", checksum = list(
                       algorithm = "sha256", value = strrep("ab", 32), of = "file"),
                       publication = list(citation = list(type = "dataset", title = "Illustrative panel"))))
-check(ra, "aea")
-stopifnot(ra$meta$disclosure$level == 4L, "aea/0.1" %in% profiles(ra),
+check(ra, "dcas")
+stopifnot(ra$meta$disclosure$level == 4L, "dcas/0.1" %in% profiles(ra),
           ra$specification$program$path == "main.R", ra$specification$program$line == 1L)
 old <- setwd(out)
 rp <- to_estimation(f, level = 5, program = "main.R")
 setwd(old)
 stopifnot(is.null(rp$specification$program$sha256) || nchar(rp$specification$program$sha256) == 64L)
-stopifnot(inherits(tryCatch(to_estimation(f, purpose = "aea/0.1", level = 3), error = function(e) e), "error"),
+stopifnot(inherits(tryCatch(to_estimation(f, purpose = "dcas/0.1", level = 3), error = function(e) e), "error"),
           inherits(tryCatch(to_estimation(f, purpose = "nope/0.1"), error = function(e) e), "error"),
           inherits(tryCatch(to_estimation(f, level = 6), error = function(e) e), "error"))
 

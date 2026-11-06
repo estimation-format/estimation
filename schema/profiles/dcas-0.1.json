@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://estimation-format.github.io/estimation/schema/profiles/aea-0.1.json",
-  "title": "aea/0.1",
+  "$id": "https://estimation-format.github.io/estimation/schema/profiles/dcas-0.1.json",
+  "title": "dcas/0.1",
   "x-license": "CC0-1.0",
   "x-min-level": 4,
-  "description": "Purpose profile for results in a replication package for an AEA journal, under the AEA Data and Code Availability Policy (revised February 2026, rules numbered by the DCAS) and the Social Science Data Editors' README template. Requires: where the result appears in the paper (a locator with its printed label and a table, figure, page or section); estimates with standard errors or intervals; the core digest; the language and estimator with versions; each data input by name; a seed that was set, for resampling, Bayesian and causal-ML records. Expects: the command and the program that ran it, data citations and checksums, the paper's citation and status, the replication package. Covers only what concerns one result; the README, deposit and rights statements belong to the package. Spec: spec/profiles/aea.md.",
+  "description": "Purpose profile for results in a replication package for a journal that follows the Data and Code Availability Standard (DCAS 1.0, 2022; endorsed by the AEA journals, Econometrica, the Economic Journal, the JPE, the JEEA, the Review of Economic Studies and others) and the Social Science Data Editors' README template it refers to. Requires: where the result appears in the paper (a locator with its printed label and a table, figure, page or section); estimates with standard errors or intervals; the core digest; the language and estimator with versions; each data input by name; a seed that was set, for resampling, Bayesian and causal-ML records. Expects: the command and the program that ran it, data citations and checksums, the paper's citation and status, the replication package. Covers only what concerns one result; the README, deposit and rights statements belong to the package. Spec: spec/profiles/dcas.md.",
   "allOf": [
     {"$ref": "../estimation-0.1.json"},
     {"$ref": "#/$defs/rules"}

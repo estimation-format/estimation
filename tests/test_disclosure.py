@@ -316,28 +316,28 @@ def test_validator_flags_a_purpose_above_the_declared_level(purpose_schemas):
     assert found and "needs disclosure level 3" in found[0].message
 
 
-# ---------------------------------------------------------------- aea/0.1
+# ---------------------------------------------------------------- dcas/0.1
 
 
-def aea_record():
-    return est.read(est.PACKAGED_SCHEMAS / "examples" / "aea.estimation.json", nonfinite="string")
+def dcas_record():
+    return est.read(est.PACKAGED_SCHEMAS / "examples" / "dcas.estimation.json", nonfinite="string")
 
 
-def aea_errors(rec):
+def dcas_errors(rec):
     est.add_digest(rec)
-    return {i.path for i in errors(est.validate(rec)) if "[aea/0.1]" in i.message}
+    return {i.path for i in errors(est.validate(rec)) if "[dcas/0.1]" in i.message}
 
 
-def test_aea_is_a_level_4_purpose():
+def test_dcas_is_a_level_4_purpose():
     sc = est.load_schemas()
-    assert est.is_purpose("aea/0.1", sc) and est.min_level("aea/0.1", sc) == 4
+    assert est.is_purpose("dcas/0.1", sc) and est.min_level("dcas/0.1", sc) == 4
     with pytest.raises(est.EstimationError, match="below the 4"):
-        est.prepare(aea_record(), level=3, purpose="aea/0.1")
+        est.prepare(dcas_record(), level=3, purpose="dcas/0.1")
 
 
-def test_aea_example_meets_it_without_warnings():
+def test_dcas_example_meets_it_without_warnings():
     pytest.importorskip("jsonschema")
-    issues = est.validate(aea_record())
+    issues = est.validate(dcas_record())
     assert errors(issues) == [] and warns(issues) == []
 
 
@@ -353,16 +353,16 @@ def test_aea_example_meets_it_without_warnings():
         (lambda r: [r["parameters"][0].pop(k) for k in ("std_error", "conf_low")], "parameters[0]"),
     ],
 )
-def test_aea_requirements(edit, path):
+def test_dcas_requirements(edit, path):
     pytest.importorskip("jsonschema")
-    rec = aea_record()
+    rec = dcas_record()
     edit(rec)
-    assert path in aea_errors(rec)
+    assert path in dcas_errors(rec)
 
 
-def test_aea_expects_the_program_and_data_citation():
+def test_dcas_expects_the_program_and_data_citation():
     pytest.importorskip("jsonschema")
-    rec = aea_record()
+    rec = dcas_record()
     del rec["specification"]["program"]
     del rec["provenance"]["data"][0]["publication"]
     est.add_digest(rec)
@@ -370,14 +370,14 @@ def test_aea_expects_the_program_and_data_citation():
     assert found == {"specification.program", "provenance.data[0].publication"}
 
 
-def test_aea_needs_a_seed_for_resampling():
+def test_dcas_needs_a_seed_for_resampling():
     pytest.importorskip("jsonschema")
-    rec = aea_record()
+    rec = dcas_record()
     rec["meta"]["profiles"].append("resampling/0.1")
     rec["specification"]["resampling"] = {"method": "wild_cluster", "reps": 999, "seed": None}
-    assert "specification.resampling.seed" in aea_errors(rec)
+    assert "specification.resampling.seed" in dcas_errors(rec)
     rec["specification"]["resampling"]["seed"] = 20261105
-    assert not {p for p in aea_errors(rec) if "seed" in p}
+    assert not {p for p in dcas_errors(rec) if "seed" in p}
 
 
 def test_estrec_levels_file_matches_the_schema():
@@ -393,7 +393,7 @@ def test_cli_levels_and_reduce(tmp_path, capsys):
     assert est.main(["levels"]) == 0
     table = json.loads(capsys.readouterr().out)
     assert (
-        table["purposes"] == {"aea/0.1": 4}
+        table["purposes"] == {"dcas/0.1": 4}
         and {"path": "specification", "level": 3, "if": []} in table["marks"]
     )
     src, dst = tmp_path / "a.estimation.json", tmp_path / "b.estimation.json"

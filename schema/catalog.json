@@ -256,13 +256,13 @@
       "examples": ["examples/bayesian.estimation.json"]
     },
     {
-      "name": "aea/0.1",
-      "file": "profiles/aea-0.1.json",
+      "name": "dcas/0.1",
+      "file": "profiles/dcas-0.1.json",
       "kind": "purpose",
       "status": "draft",
       "maintainer": "jemather",
-      "description": "Results in a replication package for an AEA journal (AEA Data and Code Availability Policy, Feb 2026; SSDE README template), at disclosure level 4: the exhibit and its label, estimates with SEs or intervals, the core digest, language and estimator versions, data inputs by name, a set seed for resampling, Bayesian and causal-ML records; the program, data citations and checksums expected.",
-      "examples": ["examples/aea.estimation.json"]
+      "description": "Results in a replication package for a journal that follows the Data and Code Availability Standard (DCAS 1.0; the AEA journals, Econometrica, EJ, JPE, JEEA, REStud and others; SSDE README template), at disclosure level 4: the exhibit and its label, estimates with SEs or intervals, the core digest, language and estimator versions, data inputs by name, a set seed for resampling, Bayesian and causal-ML records; the program, data citations and checksums expected.",
+      "examples": ["examples/dcas.estimation.json"]
     }
   ]
 }

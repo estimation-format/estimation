@@ -98,10 +98,12 @@
   and lists that removing fields leaves empty are removed too.
 - Purpose profiles: a third catalog `kind`, `purpose`, for what a destination needs, with
   `x-min-level`; a floor where the level is a ceiling.
-- Profiles: `aea/0.1`, the first purpose profile (`spec/profiles/aea.md`; proposal
-  `docs/proposals/aea-profile.md`): results in a replication package for an AEA journal, from
-  the AEA Data and Code Availability Policy (Feb 2026) and the SSDE README template, at level
-  4. Example `aea.estimation.json`.
+- Profiles: `dcas/0.1`, the first purpose profile (`spec/profiles/dcas.md`; proposal
+  `docs/proposals/aea-profile.md`): results in a replication package for a journal that
+  follows the Data and Code Availability Standard (DCAS 1.0: the AEA journals, Econometrica,
+  the Economic Journal, the JPE, the JEEA, the Review of Economic Studies and others), from the
+  standard and the SSDE README template, at level 4. Example `dcas.estimation.json`. Drafted
+  as `aea/0.1` and renamed before release.
 - Core: `specification.program` (`{path, line, sha256}`), the program in the replication
   package that ran the command, not identifying. A software `lock` is level 4 without its
   `path` (5). A field's level is never below its parent's.

@@ -51,7 +51,7 @@ names and counts), tests. 3: the specification, fixed-effect and cluster counts.
 default): R, fixest and estrec with their versions, data names, numerics. 5: every loaded
 package, the environment, the command line, user and host. Profiles the level makes the
 record fail are not claimed, with a \code{profile_not_claimed} message (and a warning).}
-\item{purpose}{purpose profiles the record is for, e.g. \code{"aea/0.1"} (AEA journals). Each
+\item{purpose}{purpose profiles the record is for, e.g. \code{"dcas/0.1"} (journals following the Data and Code Availability Standard). Each
 is claimed, and \code{level} defaults to the lowest one they allow; a lower \code{level} is an
 error. Whether the record meets them is for the validator: \code{estimation validate}.}
 \item{data_info}{a list describing the data input (\code{provenance.data}): \code{name}

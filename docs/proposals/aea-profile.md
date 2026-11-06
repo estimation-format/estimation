@@ -1,8 +1,12 @@
 # Proposal: a purpose profile for AEA journals
 
-Status: **adopted** as `aea/0.1` (Ted, 2026-11-05: the recommendations below, all five).
-Schema `schema/profiles/aea-0.1.json`, page `spec/profiles/aea.md`, example
-`schema/examples/aea.estimation.json`; the core gains `specification.program`, and a software
+Status: **adopted** as `aea/0.1` (Ted, 2026-11-05: the recommendations below, all five);
+**renamed `dcas/0.1`** (Ted, 2026-11-06), since 19 journals endorse the DCAS: the AEA's, the
+Royal Economic Society's, the Review of Economic Studies, the Canadian Journal of Economics,
+Economic Inquiry and others (https://datacodestandard.org/journals/). The rules are
+unchanged; the page now cites the DCAS 1.0 and the template (1.2.rc1) directly. Schema
+`schema/profiles/dcas-0.1.json`, page `spec/profiles/dcas.md`, example
+`schema/examples/dcas.estimation.json`; the core gains `specification.program`, and a software
 `lock` is level 4 without its `path`. The lock is a recommendation in the page, not an
 expected field: the validator can't single out the language component to warn about. The
 first purpose profile (spec 9.1): what a record needs so that the AEA Data Editor, or an
