@@ -8,7 +8,7 @@ improving the table tool. Decisions are Ted's unless marked as a proposal.
 | Piece | Where | Notes |
 |---|---|---|
 | Table spec | `spec/table.md`, `schema/estimation-table-0.1.json`, `schema/examples/paper.estimation-table.json` | Own document type, versioned apart from the record format (adopted; `docs/proposals/table-spec.md`). Holds layout only, never numbers |
-| Python | `src/estimation_format/views.py` (`tidy`, `glance`, `parameters_table`), `table.py` (`new_table`, `validate_table`, `build_table`, `render`, `render_table`, `to_great_table`), `show.py` | Renderers: text, markdown, latex, html, csv; great_tables optional |
+| Python | `src/estimation_format/views.py` (`tidy`, `glance`, `parameters_table`), `table.py` (`new_table`, `validate_table`, `build_table`, `render`, `render_table`, `to_great_table`), `show.py` | Renderers: text, markdown, latex, html, csv, word; great_tables optional |
 | CLI | `estimation show`, `estimation table`, `estimation validate` (detects table specs) | In `records.py` `main()` |
 | R (estrec) | `r/R/read.R` (`read_estimation`, `read_collection`, `tidy`/`glance` methods), `r/R/table.R` (`render_table` through modelsummary) | `S3method(generics::tidy, ...)` registered lazily |
 | Viewer | `viewer/index.html`, `viewer/estimation-table.js` (UMD: `window.EstTable` / node), generated `examples.js`, `identifying.js` (`python viewer/make_examples.py`) | Static page; Pages deploys it at `/estimation/viewer/` |
@@ -21,7 +21,10 @@ test, literal); lines under each estimate (names or templates such as `[{p_value
 decimals, rounded 0.000 or bounded <0.001); live preview whose column heads summarise on
 hover and open the record on click; export LaTeX, Markdown, HTML, CSV, text, **Web page**
 (self-contained HTML with the records embedded, identifying fields left out by default) and
-the table spec (optionally pinning record versions by sha256).
+the table spec (optionally pinning record versions by sha256), and **Word**: Copy puts the
+table on the clipboard as inline-styled HTML (three rules, centred numbers, 10 pt, no font
+family) plus the text rendering as plain text, for pasting into Word, Google Docs,
+LibreOffice or Excel; Save file gives an .html file Word opens.
 
 Decisions so far:
 
@@ -29,6 +32,8 @@ Decisions so far:
   There's no cross-renderer rounding rule.
 - `uncertainty` can be a list (one row per line); `format.p_digits` sets p-value decimals;
   `format.p_style` is `fixed` or `less_than`.
+- Star cuts (Ted, 2026-11-06): `* .1, ** .05, *** .01` everywhere a default is needed
+  (`new_table`, the viewer, `estimation show`); the spec has no default (absent = no stars).
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).
 
@@ -39,8 +44,9 @@ Decisions so far:
 - After a schema or example change, run `python viewer/make_examples.py`. A test fails if
   the generated files are stale.
 - valiant has no browser. The UI was checked with a node DOM stand-in, so Ted reviews it via
-  a private artifact preview (latest: https://claude.ai/artifact/FZJU8TRYRWEFpY64nnyy1Z,
-  v4; web-export example https://claude.ai/artifact/LmYbDiLtDB59NqohaPR3LN). Downloads
+  a private artifact preview (latest: https://claude.ai/artifact/En9fanz81wP5ueYEBHkFYB,
+  v5 with the Word export, an inlined copy of `viewer/`; v4 was
+  https://claude.ai/artifact/FZJU8TRYRWEFpY64nnyy1Z; web-export example https://claude.ai/artifact/LmYbDiLtDB59NqohaPR3LN). Downloads
   don't work inside artifacts; they do on a normal host.
 - R: `R CMD check` must stay clean. Use ASCII only in R code (`²` escapes). Ted
   installs packages.
@@ -49,9 +55,13 @@ Decisions so far:
 
 ## Backlog (proposals; ask Ted before changing behaviour)
 
-1. **Star cuts.** `estimation show` uses modelsummary's cuts (+ .1, * .05, ** .01,
-   *** .001). Table specs default to * .1, ** .05, *** .01. Should they be made the same?
-   This is still an open question.
+1. ~~Star cuts~~: settled (above). Follow-up: make `show_table` a thin wrapper over
+   `new_table` + `build_table` + `render(..., "text")` so it can't drift (changes `show`'s
+   layout; after the rename).
+   **Word export** (Ted asked for Word copy-paste; first version built, d7b97b1): check the
+   paste in real Word (Windows and Mac) and Google Docs; then perhaps a real .docx file (no
+   library in the browser: a small zip writer) and estrec `render_table(output = "word")`
+   via modelsummary's docx output.
 2. **Web-page export outside the viewer.** Add `render(..., "webpage")` in Python and
    `render_table(output = "webpage")` in estrec, reusing the viewer's template.
 3. **Ted's first review in a real browser** once Pages serves the viewer. Collect his
