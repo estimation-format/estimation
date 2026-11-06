@@ -137,7 +137,7 @@ def test_auto_switches_to_a_members_file_above_the_limit(tmp_path, monkeypatch):
 
 
 def test_reading_a_record_is_refused():
-    with pytest.raises(est.EstimationError, match="not an estimation-collection"):
+    with pytest.raises(est.EstimationError, match="not an estrec-collection"):
         ef.loads_collection(json.dumps(est.to_json(record(1))))
 
 

@@ -845,7 +845,7 @@ def to_great_table(table: dict):
 
 
 def add_arguments(p) -> None:
-    """The `table` options, for the `estimation` CLI and `python -m estrec.table`."""
+    """The `table` options, for the `estrec` CLI and `python -m estrec.table`."""
     p.add_argument("spec", help="an *.estrec-table.json file")
     p.add_argument("--format", "-f", default="text", choices=sorted(RENDERERS))
     p.add_argument("--check", action="store_true", help="validate only; exit 1 on errors")

@@ -1,4 +1,4 @@
-"""The `estimation` record library: canonical JSON, digest, writer/reader, spilling,
+"""The estrec record library: canonical JSON, digest, writer/reader, spilling,
 validator and redactor."""
 
 import json

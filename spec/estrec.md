@@ -1,4 +1,4 @@
-# The `estimation` format, version 0.1
+# estrec, the estimation record format, version 0.1
 
 **Status: draft for comment.** Version 0.1 may still change in incompatible ways. Comments
 are welcome as issues at https://github.com/estrec/estrec. The first stable
@@ -10,7 +10,7 @@ disagree, that is a bug: please report it.
 
 ## 1. Introduction
 
-An `estimation` record is a JSON file that describes **one estimation run**: what was
+An estrec ("estimation record") is a JSON file that describes **one estimation run**: what was
 estimated, what came out, and how and where it ran. It works for any software and any kind
 of model: base R `lm`, fixest, reghdfe, statsmodels, pyfixest, a random forest.
 
@@ -43,7 +43,7 @@ item of a list and `*` every key of an object.
 
 | Term | Meaning |
 |---|---|
-| record | one `estimation` JSON document, describing one run |
+| record | one estrec JSON document, describing one run |
 | run | one estimation call at one time |
 | producer | the software that estimated the model |
 | writer | the code that writes the record: the producer itself, or a converter (e.g. one that reads Stata's `e()`) |
@@ -52,7 +52,7 @@ item of a list and `*` every key of an object.
 | profile | a named, versioned set of extra rules for a kind of record (section 9) |
 | extension | a block under `extensions`, owned by the tool that wrote it (section 7) |
 | catalog | the registered list of the core schema and the profiles (section 9.3) |
-| collection | an `estimation-collection` document: a set of records with what is true of the set, such as a paper's results or a session's timeline (section 11) |
+| collection | an `estrec-collection` document: a set of records with what is true of the set, such as a paper's results or a session's timeline (section 11) |
 | member | one record in a collection, with the collection's label and locator for it |
 
 ## 2. Encoding
@@ -529,7 +529,7 @@ custom or untested estimator, a new release, a replication. It has two parts.
 |---|---|
 | `code` | `{software, language, code}`, e.g. `reghdfe y x, absorb(fe) vce(cluster c)` |
 | `description` | prose: how the reference was produced |
-| `record` | another `estimation` record, by path, sha256 and id, or embedded whole |
+| `record` | another estrec record, by path, sha256 and id, or embedded whole |
 | `published` | `{publication, values}`: numbers from a paper, with a `publication` block (5) |
 
 The list of styles is open: a writer MAY use a new style (`notebook`, `container`, ...), and

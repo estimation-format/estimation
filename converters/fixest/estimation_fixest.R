@@ -1,4 +1,4 @@
-# fixest `feols` fit -> `estimation` record (linear-fe/0.1).
+# fixest `feols` fit -> estrec record (linear-fe/0.1).
 #
 # A worked converter: it reads a fitted fixest model and returns the record as a list,
 # written to JSON with jsonlite. Written against fixest 0.14.2 and jsonlite 2.0.0.

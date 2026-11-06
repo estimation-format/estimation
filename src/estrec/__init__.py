@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estrec contributors
-"""Reference tools for the `estimation` format: write, read, validate and redact records
+"""Reference tools for estrec: write, read, validate and redact records
 and collections of records.
 
     import estrec as ef

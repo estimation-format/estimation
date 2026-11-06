@@ -1,5 +1,5 @@
 # Base-R tests (no testthat). Records are also checked with the reference validator when the
-# `estimation` CLI is on PATH or ESTREC_VALIDATOR names it.
+# `estrec` CLI is on PATH or ESTREC_VALIDATOR names it.
 if (!requireNamespace("fixest", quietly = TRUE)) quit(save = "no")
 suppressMessages(library(fixest))
 library(estrec)
@@ -10,7 +10,7 @@ d$z <- rnorm(n); d$z2 <- rnorm(n); d$x <- d$z + d$z2 + rnorm(n); d$x2 <- rnorm(n
 d$y <- d$x + d$x2 + rnorm(n); d$y2 <- d$y + rnorm(n); d$w <- runif(n)
 d$y[3] <- NA; d$x2[10] <- Inf; d$id[5] <- 999L          # a missing value, an Inf, a singleton
 
-validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estimation"))
+validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estrec"))
 out <- tempfile("estrec"); dir.create(out)
 check <- function(rec, name) {
   path <- write_estimation(rec, file.path(out, paste0(name, ".estrec.json")))

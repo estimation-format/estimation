@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Renamed to estrec** ("estimation record"; Ted 2026-11-06), a clean break with no aliases
+  while 0.1 is a draft: type strings `estrec/0.1`, `estrec-collection/0.1`,
+  `estrec-table/0.1` (schema files `schema/estrec-0.1.json` etc.); file suffixes
+  `.estrec.json`, `.estrec-collection.json`, `.estrec-table.json`; `$id`s under
+  `https://estrec.org/schema/`; the spec is `spec/estrec.md`; the Python package, import and
+  command are all `estrec` (was `estimation-format`, `estimation_format`, `estimation`);
+  environment variables `ESTREC_SCHEMA_PATH`, `ESTREC_REDACT_SALT`; the viewer's script is
+  `viewer/estrec-table.js`; the repository moves to github.com/estrec/estrec. Profile names
+  and function names (`to_estimation()`, `write_estimation()`, `read_estimation()`,
+  `as_estimation_test()`, the converters) are unchanged. Entries below use the old names.
+
 - Table specs, `estimation-table/0.1` (`spec/table.md`, `schema/estimation-table-0.1.json`,
   catalog entry `table`; proposal `docs/proposals/table-spec.md`, Ted 2026-11-05): a saved
   layout for a regression table from records, with no results in it. Columns name records by

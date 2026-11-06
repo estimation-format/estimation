@@ -1,6 +1,6 @@
 *! version 0.2.0  estimation_write: reghdfe e() -> estimation record (linear-fe/0.1)
 *
-* A worked converter: run it right after reghdfe to write the fit as an `estimation`
+* A worked converter: run it right after reghdfe to write the fit as an estrec
 * record (JSON). Written against reghdfe 6.13.1 / ftools 2.50.0 on Stata 18.
 *
 *   reghdfe y x1 x2, absorb(firm year) vce(cluster firm)

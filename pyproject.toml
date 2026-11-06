@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "estrec"
 dynamic = ["version"]
-description = "Reference validator, writer and redactor for the estimation format: one JSON record per statistical estimation run"
+description = "Reference validator, writer and redactor for estrec, the estimation record format: one JSON record per statistical estimation run"
 readme = "README.md"
 license = "MIT AND CC0-1.0"  # CC0: the schemas, catalog and example records in schema/
 license-files = ["LICENSE", "schema/LICENSE"]

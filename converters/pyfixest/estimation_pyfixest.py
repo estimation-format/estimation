@@ -1,4 +1,4 @@
-"""pyfixest `Feols` fit -> `estimation` record (linear-fe/0.1).
+"""pyfixest `Feols` fit -> estrec record (linear-fe/0.1).
 
 A worked converter: it reads a fitted pyfixest model and returns the record as a dict,
 using only what pyfixest stores (plus the input data, for the sample counts). Written
@@ -197,7 +197,7 @@ def to_record(
     program: str | dict | None = None,
     data_info: dict | None = None,
 ) -> dict:
-    """The `estimation` record for one pyfixest `Feols` fit.
+    """The estrec record for one pyfixest `Feols` fit.
 
     `data` is the frame the model was fitted on (for the missing/singleton counts). `call`
     is the command as written, if you have it. `identifying=False` leaves out the user and

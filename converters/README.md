@@ -1,6 +1,6 @@
 # Converters
 
-Worked examples that turn a fitted model into an `estimation` record claiming
+Worked examples that turn a fitted model into an estrec record claiming
 `linear-fe/0.1`, using only what each tool stores. They show the profile's mappings on real
 output, and they are a starting point for a tool's authors to write records natively. MIT, like
 the rest of the code here: copy and adapt freely.

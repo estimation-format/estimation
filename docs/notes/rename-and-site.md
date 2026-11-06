@@ -1,8 +1,17 @@
 # Rename to estrec, and the website: notes
 
 Handoff notes from the Record viewer chat (f69fc03f, 2026-11-06) for the chat that runs the
-rename and sets up the site. **Nothing here is decided yet**, except that Ted leans toward
-renaming.
+rename and sets up the site.
+
+**Status (estrec site chat c6ff6b19, 2026-11-06):** Ted accepted the rename table below as
+proposed, with function names kept (`to_estimation()` etc.) and the viewer script renamed
+`estrec-table.js`; old-name dfeols records are test output and are ignored. Done in this repo:
+1ff3f06 (format strings, suffixes, schema files, `$id`s), 217a5f3 (Python package and CLI),
+3127d53 (viewer script), then the prose (spec, README, CHANGELOG). Both PyPI names were free;
+Ted created the `estrec` GitHub org and bought `estrec.org` and `estimation-record.org`.
+Site answers: one Cloudflare Worker with static assets (no Pages project), R2 bucket
+`estrecfiles`, unlisted only, expiry one year after last access, licence CC0 1.0 by default
+or CC BY 4.0 / CC BY-SA 4.0.
 
 ## Ted's starting point
 

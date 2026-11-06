@@ -1,13 +1,14 @@
-# estimation
+# estrec
 
-**A file format for one statistical estimation run**: what was estimated, what came out, and
-how and where it ran, as a small JSON record that any software can write and read.
+**estrec** ("estimation record") is **a file format for one statistical estimation run**:
+what was estimated, what came out, and how and where it ran, as a small JSON record that any
+software can write and read.
 
 > **Status: 0.1 draft for comment.** The format may still change. Please open an issue with
 > anything that would stop your tool from writing or reading these records.
 
 Why: results from two tools, or two runs, often differ, and finding out why usually means
-rerunning both. An `estimation` record keeps what you need to explain the difference: the
+rerunning both. An estrec record keeps what you need to explain the difference: the
 resolved options, the sample and singleton counts, the small-sample correction behind the
 standard errors, convergence, the software and environment, and the data's checksum.
 

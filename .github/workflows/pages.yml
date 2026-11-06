@@ -35,7 +35,7 @@ jobs:
           cat > _site/index.html <<'EOF'
           <!doctype html>
           <meta charset="utf-8">
-          <title>estimation format schemas</title>
+          <title>estrec schemas</title>
           <p>JSON Schemas for the <code>estimation</code> format:
           <a href="schema/catalog.json">catalog.json</a>.
           View records and build tables in your browser: <a href="viewer/">the record viewer</a>.

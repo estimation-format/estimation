@@ -288,7 +288,7 @@ def show(
 
 
 def add_arguments(p) -> None:
-    """The `show` options, for the `estimation` CLI and `python -m estrec.show`."""
+    """The `show` options, for the `estrec` CLI and `python -m estrec.show`."""
     p.add_argument("paths", nargs="+", help="records, folders of records, or collections")
     p.add_argument("--vcov", help='another vcov in the record: a type ("iid", "HC1") or cluster variables')
     p.add_argument("--digits", type=int, help="digits (default 4 in the detail view, 3 in the table)")

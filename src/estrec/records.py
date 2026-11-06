@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estrec contributors
-"""Read, write, validate and redact `estimation` records (spec/estrec.md).
+"""Read, write, validate and redact estrec records (spec/estrec.md).
 
 One record describes one estimation run as a JSON object. This module uses only
 the standard library. It accepts numpy arrays and scalars without importing numpy,
@@ -88,7 +88,7 @@ DEFAULT_IDENTIFYING = (
 
 
 class EstimationError(ValueError):
-    """A record that can't be written or read as `estimation`."""
+    """A record that can't be written or read as an estrec record."""
 
 
 @dataclass(frozen=True)
@@ -976,7 +976,7 @@ class Schemas:
         self.catalog = catalog
         self.core = core
         self.profiles = profiles
-        self.collection = collection  # estimation-collection schema (spec 11), if catalogued
+        self.collection = collection  # estrec-collection schema (spec 11), if catalogued
         self.local = frozenset(local)  # names from local folders, not the catalog
         self._checks: dict[str | None, Callable[[dict], list[Issue]]] = {}
 

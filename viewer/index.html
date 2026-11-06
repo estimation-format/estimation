@@ -810,7 +810,7 @@ async function specForExport() {
     const it = state.items.find((x) => (x.record.meta || {}).id === c.record && (!c.source || x.source === c.source));
     if (it) { if (!files.includes(it.file)) files.push(it.file); c.source = it.source; }
   }
-  if (files.length) s.sources = files.map((f) => ({ id: f.replace(/\.(estimation-collection|estimation)?\.json$/, ""), path: f }));
+  if (files.length) s.sources = files.map((f) => ({ id: f.replace(/\.(estrec-collection|estrec)?\.json$/, ""), path: f }));
   else delete s.sources;
   if (s.sources) for (const c of s.columns) if (c.source && !s.sources.some((x) => x.id === c.source)) delete c.source;
   return s;

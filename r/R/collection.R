@@ -1,4 +1,4 @@
-# Collections (spec section 11): a set of records written as one estimation-collection file,
+# Collections (spec section 11): a set of records written as one estrec-collection file,
 # and to_estimation() for a plain list of fits.
 
 # A list of fits (or records) -> a flat list of records. A fixest_multi contributes one record

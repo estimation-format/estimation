@@ -1,5 +1,5 @@
 # Disclosure levels (spec 4.9) and purposes. Base R, no testthat. Every record is also checked
-# with the reference validator when the `estimation` CLI is on PATH or ESTREC_VALIDATOR names
+# with the reference validator when the `estrec` CLI is on PATH or ESTREC_VALIDATOR names
 # it: that is what confirms estrec's profile claims at each level.
 if (!requireNamespace("fixest", quietly = TRUE)) quit(save = "no")
 suppressMessages(library(fixest))
@@ -9,7 +9,7 @@ set.seed(2); n <- 300
 d <- data.frame(id = sample(30, n, TRUE), yr = sample(6, n, TRUE))
 d$x <- rnorm(n); d$y <- d$x + rnorm(n); d$cnt <- rpois(n, exp(0.2 * d$x))
 
-validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estimation"))
+validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estrec"))
 out <- tempfile("estrec-levels"); dir.create(out)
 check <- function(rec, name) {
   path <- write_estimation(rec, file.path(out, paste0(name, ".estrec.json")))

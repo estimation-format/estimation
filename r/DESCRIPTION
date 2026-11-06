@@ -1,10 +1,10 @@
 Package: estrec
 Type: Package
-Title: Write Estimation Results as 'estimation' Records
+Title: Write Estimation Results as 'estrec' Records
 Version: 0.1.0.9000
 Authors@R: person("Ted", "Matherly", role = c("aut", "cre"),
     email = "jemather@gmail.com")
-Description: Writes fitted models as records in the 'estimation' format, a JSON
+Description: Writes fitted models as records in the 'estrec' format, a JSON
     file for one statistical estimation run: what was estimated, what came out,
     and how and where it ran. Version 0.1 writes 'fixest' fits: 'feols' (OLS and IV)
     and 'feglm'/'fepois' (GLMs), including multiple estimations, 'split' and

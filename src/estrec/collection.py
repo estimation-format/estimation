@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Ted Matherly and the estrec contributors
-"""Read, write, validate and redact `estimation-collection` documents (spec section 11).
+"""Read, write, validate and redact `estrec-collection` documents (spec section 11).
 
 A collection is a set of records plus what is true of the set: a paper's results
 (`members` with locators) or a session's or replication's timeline (`events`). It is an
@@ -85,7 +85,7 @@ COLLECTION_IDENTIFYING = (
 
 
 def is_collection(doc: Any) -> bool:
-    """True if `doc` claims to be an `estimation-collection` (any version)."""
+    """True if `doc` claims to be an `estrec-collection` (any version)."""
     return isinstance(doc, dict) and str(doc.get("schema", "")).startswith("estrec-collection/")
 
 
@@ -588,7 +588,7 @@ def _to_members_file(coll: dict, path: Path) -> dict:
 def loads_collection(text: str | bytes, *, nonfinite: str = "float") -> dict:
     coll = json.loads(text, parse_constant=_reject_constant)
     if not is_collection(coll):
-        raise EstimationError("not an estimation-collection (schema must be 'estrec-collection/<version>')")
+        raise EstimationError("not an estrec-collection (schema must be 'estrec-collection/<version>')")
     if nonfinite == "float":
         return _decode_members(coll)
     if nonfinite != "string":

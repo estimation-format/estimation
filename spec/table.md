@@ -1,6 +1,6 @@
 # Table specs (`estrec-table/0.1`)
 
-Status: **0.1 draft.** A companion to the `estimation` format (`spec/estrec.md`),
+Status: **0.1 draft.** A companion to the estrec format (`spec/estrec.md`),
 versioned on its own. It doesn't change records or collections.
 
 A **table spec** says how to lay out a regression table from records: which records are the

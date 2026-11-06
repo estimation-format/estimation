@@ -7,11 +7,11 @@ improving the table tool. Decisions are Ted's unless marked as a proposal.
 
 | Piece | Where | Notes |
 |---|---|---|
-| Table spec | `spec/table.md`, `schema/estimation-table-0.1.json`, `schema/examples/paper.estimation-table.json` | Own document type, versioned apart from the record format (adopted; `docs/proposals/table-spec.md`). Holds layout only, never numbers |
-| Python | `src/estimation_format/views.py` (`tidy`, `glance`, `parameters_table`), `table.py` (`new_table`, `validate_table`, `build_table`, `render`, `render_table`, `to_great_table`), `show.py` | Renderers: text, markdown, latex, html, csv, word; great_tables optional |
-| CLI | `estimation show`, `estimation table`, `estimation validate` (detects table specs) | In `records.py` `main()` |
+| Table spec | `spec/table.md`, `schema/estrec-table-0.1.json`, `schema/examples/paper.estrec-table.json` | Own document type, versioned apart from the record format (adopted; `docs/proposals/table-spec.md`). Holds layout only, never numbers |
+| Python | `src/estrec/views.py` (`tidy`, `glance`, `parameters_table`), `table.py` (`new_table`, `validate_table`, `build_table`, `render`, `render_table`, `to_great_table`), `show.py` | Renderers: text, markdown, latex, html, csv, word; great_tables optional |
+| CLI | `estrec show`, `estrec table`, `estrec validate` (detects table specs) | In `records.py` `main()` |
 | R (estrec) | `r/R/read.R` (`read_estimation`, `read_collection`, `tidy`/`glance` methods), `r/R/table.R` (`render_table` through modelsummary) | `S3method(generics::tidy, ...)` registered lazily |
-| Viewer | `viewer/index.html`, `viewer/estimation-table.js` (UMD: `window.EstTable` / node), generated `examples.js`, `identifying.js` (`python viewer/make_examples.py`) | Static page; Pages deploys it at `/estimation/viewer/` |
+| Viewer | `viewer/index.html`, `viewer/estrec-table.js` (UMD: `window.EstTable` / node), generated `examples.js`, `identifying.js` (`python viewer/make_examples.py`) | Static page; Pages deploys it at `/estimation/viewer/` |
 | Tests | `tests/test_table.py`, `test_views.py`, `test_show.py`, `test_viewer.py` (+ `viewer_check.js`, node 24); `r/tests/testthat/test-table.R`, `test-read.R` | JS and Python must build identical tables; R matches cell for cell on the example |
 
 Viewer features: drag-and-drop of files and folders; record detail tab; **New table**,
@@ -33,14 +33,14 @@ Decisions so far:
 - `uncertainty` can be a list (one row per line); `format.p_digits` sets p-value decimals;
   `format.p_style` is `fixed` or `less_than`.
 - Star cuts (Ted, 2026-11-06): `* .1, ** .05, *** .01` everywhere a default is needed
-  (`new_table`, the viewer, `estimation show`); the spec has no default (absent = no stars).
+  (`new_table`, the viewer, `estrec show`); the spec has no default (absent = no stars).
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).
 
 ## How to work on it
 
 - Keep JS and Python in step. Any change to building or rendering goes in both
-  `table.py` and `estimation-table.js`. `tests/test_viewer.py` compares them in node.
+  `table.py` and `estrec-table.js`. `tests/test_viewer.py` compares them in node.
 - After a schema or example change, run `python viewer/make_examples.py`. A test fails if
   the generated files are stale.
 - valiant has no browser. The UI was checked with a node DOM stand-in, so Ted reviews it via

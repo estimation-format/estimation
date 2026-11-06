@@ -1,4 +1,4 @@
-"""The `estimation` JSON Schemas in schema/: the specification's examples validate, the profiles
+"""The estrec JSON Schemas in schema/: the specification's examples validate, the profiles
 enforce the decided required sets, and the `x-identifying` marks match what the library
 redacts."""
 

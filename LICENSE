@@ -20,6 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-The files in schema/ (the estimation format's schemas, catalog and example
+The files in schema/ (the estrec format's schemas, catalog and example
 records) are not under this license: they are dedicated to the public domain
 under CC0 1.0 Universal (schema/LICENSE).

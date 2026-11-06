@@ -1,6 +1,6 @@
 # estrec (R)
 
-Writes fitted models as `estimation` records: one JSON file per model, holding what was
+Writes fitted models as estrec records: one JSON file per model, holding what was
 estimated, what came out, and how and where it ran. Version 0.1 writes **fixest** fits:
 `feols` (OLS and IV) and `feglm`/`fepois` (GLMs), with or without fixed effects, including
 multiple estimations (`c(y1, y2)`, `csw()`, `split`, `fsplit`, `subset`). MIT.
@@ -54,7 +54,7 @@ as_estimation_test.my_test <- function(x, ...)
 
 ## Collections
 
-`write_collection()` writes several records as one `estimation-collection` file (spec section
+`write_collection()` writes several records as one `estrec-collection` file (spec section
 11): a paper's results with where each appears, a session or replication with its timeline,
 or a batch of runs. The records are embedded whole and never changed; the locators stay in the
 collection.
@@ -165,6 +165,6 @@ CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages insta
 - The `car`, `lmtest` and `marginaleffects` methods are written to those packages' documented
   output but not yet checked against them (they aren't installed where estrec was built).
 - Tests: `tests/test-fixest.R`, `tests/test-collection.R`, `tests/test-read.R` and `tests/test-table.R` (base R). They validate every
-  record and collection when the `estimation` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
+  record and collection when the `estrec` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
   with `ESTREC_PYTHON` (a Python with `estrec`), the collection test also checks that
   estrec's canonical JSON equals the reference implementation's.

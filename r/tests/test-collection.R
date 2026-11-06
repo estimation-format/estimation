@@ -1,5 +1,5 @@
 # Base-R tests of collections (no testthat). Collections are also checked with the reference
-# validator when the `estimation` CLI is on PATH or ESTREC_VALIDATOR names it, and the
+# validator when the `estrec` CLI is on PATH or ESTREC_VALIDATOR names it, and the
 # canonical JSON is compared with the Python reference when ESTREC_PYTHON names a Python
 # with estrec installed.
 library(estrec)
@@ -21,7 +21,7 @@ j <- estrec:::.est_jcs(jsonlite::fromJSON(
 stopifnot(identical(j, enc2utf8(paste0('{"a":{},"b":1,"s":"a\\"b\\\\c\\nd\\u0001","é":[],',
                                        '"\U0001F600":2,"דּ":3}'))))
 
-validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estimation"))
+validator <- Sys.getenv("ESTREC_VALIDATOR", Sys.which("estrec"))
 python <- Sys.getenv("ESTREC_PYTHON")
 out <- tempfile("estrec-coll"); dir.create(out)
 validate <- function(path) {
@@ -120,7 +120,7 @@ if (requireNamespace("fixest", quietly = TRUE)) {
                     stdout = TRUE)
       coll <- read(path)
       rr <- if (!is.null(coll$members[[1]]$record)) lapply(coll$members, `[[`, "record")
-            else lapply(readLines(sub("estimation-collection.json$", "members.jsonl", path),
+            else lapply(readLines(sub("estrec-collection.json$", "members.jsonl", path),
                                   encoding = "UTF-8"),
                         jsonlite::fromJSON, simplifyVector = FALSE)
       stopifnot(identical(enc2utf8(py), vapply(rr, canon, "")))
