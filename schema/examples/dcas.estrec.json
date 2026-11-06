@@ -179,7 +179,7 @@
   {
    "when": "2026-11-05T12:00:00Z",
    "by": {
-    "name": "estimation-format",
+    "name": "estrec",
     "version": "0.1.0.dev0"
    },
    "action": "created",

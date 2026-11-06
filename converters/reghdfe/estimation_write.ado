@@ -19,7 +19,7 @@
 *                       the environment, the data file's path, user and host
 *
 * The record has no core digest (meta.core_digest is optional): computing it needs RFC 8785
-* canonical JSON. Add it with the reference validator: `estimation digest --write FILE`.
+* canonical JSON. Add it with the reference validator: `estrec digest --write FILE`.
 * Timestamps come from the operating system's UTC clock (Stata has none); the record id is
 * drawn from Mata's generator with the user's RNG state saved and restored.
 

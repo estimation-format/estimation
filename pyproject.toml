@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "estimation-format"
+name = "estrec"
 dynamic = ["version"]
 description = "Reference validator, writer and redactor for the estimation format: one JSON record per statistical estimation run"
 readme = "README.md"
@@ -39,7 +39,7 @@ parquet = ["pyarrow>=12"]
 test = ["pytest>=7", "jsonschema>=4.18", "pyarrow>=12", "numpy>=1.25"]
 
 [project.scripts]
-estimation = "estimation_format.records:main"
+estrec = "estrec.records:main"
 
 [project.urls]
 Homepage = "https://github.com/estrec/estrec"
@@ -49,18 +49,18 @@ Issues = "https://github.com/estrec/estrec/issues"
 
 [tool.setuptools]
 # schema/ at the top of the repository is the one copy; the wheel carries it as
-# estimation_format/schema, where records.PACKAGED_SCHEMAS finds it
-packages = ["estimation_format", "estimation_format.schema"]
+# estrec/schema, where records.PACKAGED_SCHEMAS finds it
+packages = ["estrec", "estrec.schema"]
 
 [tool.setuptools.package-dir]
 "" = "src"
-"estimation_format.schema" = "schema"
+"estrec.schema" = "schema"
 
 [tool.setuptools.package-data]
-"estimation_format.schema" = ["*.json", "LICENSE", "profiles/*.json", "examples/*.json", "examples/*.jsonl"]
+"estrec.schema" = ["*.json", "LICENSE", "profiles/*.json", "examples/*.json", "examples/*.jsonl"]
 
 [tool.setuptools.dynamic]
-version = { attr = "estimation_format.__version__" }
+version = { attr = "estrec.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-import estimation_format as ef
-from estimation_format import collection as col
-from estimation_format import records as est
+import estrec as ef
+from estrec import collection as col
+from estrec import records as est
 
 EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
 SCHEMAS = ["auto", None]  # with the JSON Schemas (when jsonschema is installed) and without

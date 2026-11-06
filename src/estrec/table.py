@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
 """Table specs (`estrec-table/0.1`, spec/table.md): build, read, write, validate and
 render regression tables from records.
 
-    import estimation_format.table as et
+    import estrec.table as et
     spec = et.new_table(ef.read_collection("table2.estrec-collection.json"),
                         stats=["nobs", "r2_within", {"vcov": "type"}])
     et.write_table(spec, "table2.estrec-table.json")
@@ -263,7 +263,7 @@ def _now() -> str:
 def _producer() -> dict:
     from . import __version__
 
-    return {"name": "estimation-format", "version": __version__}
+    return {"name": "estrec", "version": __version__}
 
 
 def read_table(path: str | os.PathLike) -> dict:
@@ -845,7 +845,7 @@ def to_great_table(table: dict):
 
 
 def add_arguments(p) -> None:
-    """The `table` options, for the `estimation` CLI and `python -m estimation_format.table`."""
+    """The `table` options, for the `estimation` CLI and `python -m estrec.table`."""
     p.add_argument("spec", help="an *.estrec-table.json file")
     p.add_argument("--format", "-f", default="text", choices=sorted(RENDERERS))
     p.add_argument("--check", action="store_true", help="validate only; exit 1 on errors")
@@ -859,7 +859,7 @@ def run(a) -> int:
     try:
         spec = read_table(path)
     except (OSError, ValueError) as e:
-        print(f"estimation table: {e}", file=sys.stderr)
+        print(f"estrec table: {e}", file=sys.stderr)
         return 1
     if a.check:
         issues = validate_table(spec, base_dir=path.parent)
@@ -869,7 +869,7 @@ def run(a) -> int:
     try:
         t = build_table(spec, base_dir=path.parent)
     except ValueError as e:
-        print(f"estimation table: {e}", file=sys.stderr)
+        print(f"estrec table: {e}", file=sys.stderr)
         return 1
     for w in t["warnings"]:
         print(w, file=sys.stderr)
@@ -884,7 +884,7 @@ def run(a) -> int:
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
-    p = argparse.ArgumentParser(prog="estimation table", description="Render or check a table spec.")
+    p = argparse.ArgumentParser(prog="estrec table", description="Render or check a table spec.")
     add_arguments(p)
     return run(p.parse_args(argv))
 

@@ -44,7 +44,7 @@ from the formula at level 3 or more.}
 \item{publication}{optional \code{publication} section: where the result appears in a paper.}
 \item{call}{include the call as written.}
 \item{identifying}{include the user, host and command line, at level 5 (removable later with
-\code{estimation redact}).}
+\code{estrec redact}).}
 \item{level}{disclosure level, 1 to 5 (spec 4.9): the most the record discloses. 1: estimates,
 standard errors, p-values, intervals, N, df. 2: the other metrics, the vcovs (without cluster
 names and counts), tests. 3: the specification, fixed-effect and cluster counts. 4 (the
@@ -53,7 +53,7 @@ package, the environment, the command line, user and host. Profiles the level ma
 record fail are not claimed, with a \code{profile_not_claimed} message (and a warning).}
 \item{purpose}{purpose profiles the record is for, e.g. \code{"dcas/0.1"} (journals following the Data and Code Availability Standard). Each
 is claimed, and \code{level} defaults to the lowest one they allow; a lower \code{level} is an
-error. Whether the record meets them is for the validator: \code{estimation validate}.}
+error. Whether the record meets them is for the validator: \code{estrec validate}.}
 \item{data_info}{a list describing the data input (\code{provenance.data}): \code{name}
 (by default the \code{data} argument as written in the call), \code{version},
 \code{source}, \code{checksum}, \code{publication} (a data citation), \code{location}.}

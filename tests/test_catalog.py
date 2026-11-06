@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from estimation_format import read_collection, validate_collection
-from estimation_format import records as est
-from estimation_format import table as et
+from estrec import read_collection, validate_collection
+from estrec import records as est
+from estrec import table as et
 
 ROOT = est.PACKAGED_SCHEMAS
 CATALOG = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
@@ -128,5 +128,5 @@ def test_package_includes_the_schemas():
     text = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
     for pattern in ("*.json", "LICENSE", "profiles/*.json", "examples/*.json", "examples/*.jsonl"):
         assert f'"{pattern}"' in text
-    assert '"estimation_format.schema" = "schema"' in text  # schema/ is mapped into the package
+    assert '"estrec.schema" = "schema"' in text  # schema/ is mapped into the package
     assert '"schema/LICENSE"' in text  # license-files

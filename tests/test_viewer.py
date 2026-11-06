@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-import estimation_format as ef
-from estimation_format import records as est
-from estimation_format import table as et
-from estimation_format import views
+import estrec as ef
+from estrec import records as est
+from estrec import table as et
+from estrec import views
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "schema" / "examples"

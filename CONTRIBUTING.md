@@ -49,7 +49,7 @@ Tool profiles are encouraged to stay close to a standard one:
 valid, names and files match, examples validate, every departure from a base is declared, and
 published files are unchanged. A published version never changes; a fix is a new version
 (`/0.2`). To try a profile before submitting it, put it in a folder and point
-`ESTREC_SCHEMA_PATH` (or `estimation validate --schema-path DIR`) at it; a local profile
+`ESTREC_SCHEMA_PATH` (or `estrec validate --schema-path DIR`) at it; a local profile
 can't replace one in the catalog.
 
 ## Changing the core or a standard profile

@@ -840,7 +840,7 @@
   {
    "when": "2026-11-01T15:47:02.710445Z",
    "by": {
-    "name": "estimation-format",
+    "name": "estrec",
     "version": "0.1.0.dev0"
    },
    "action": "created",

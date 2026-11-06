@@ -54,7 +54,7 @@ jobs:
       - run: pytest -q
 
   wheel:
-    # The wheel must carry schema/ as estimation_format/schema and both licenses
+    # The wheel must carry schema/ as estrec/schema and both licenses
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -69,16 +69,16 @@ jobs:
           import glob, json, zipfile
           whl = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
           names = set(whl.namelist())
-          catalog = json.loads(whl.read("estimation_format/schema/catalog.json"))
+          catalog = json.loads(whl.read("estrec/schema/catalog.json"))
           files = [catalog["core"]["file"], *(p["file"] for p in catalog["profiles"])]
           files += [x for e in [catalog["core"], *catalog["profiles"]] for x in e["examples"]]
-          missing = [f for f in files if f"estimation_format/schema/{f}" not in names]
+          missing = [f for f in files if f"estrec/schema/{f}" not in names]
           assert not missing, f"missing from the wheel: {missing}"
-          assert "estimation_format/schema/LICENSE" in names
+          assert "estrec/schema/LICENSE" in names
           assert any(n.endswith("licenses/LICENSE") for n in names)
           print(len(files), "schema files in the wheel")
           EOF
       - name: The installed package finds its schemas
         run: |
           pip install dist/*.whl 'jsonschema>=4.18'
-          cd /tmp && estimation validate "$(python -c 'import estimation_format as ef; print(ef.PACKAGED_SCHEMAS)')"/examples/*.json
+          cd /tmp && estrec validate "$(python -c 'import estrec as ef; print(ef.PACKAGED_SCHEMAS)')"/examples/*.json

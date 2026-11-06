@@ -5,9 +5,9 @@ import math
 
 import pytest
 
-import estimation_format as ef
-from estimation_format import records as est
-from estimation_format import views
+import estrec as ef
+from estrec import records as est
+from estrec import views
 
 EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
 

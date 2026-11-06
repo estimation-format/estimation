@@ -35,7 +35,7 @@ def identifying() -> list[str]:
     import sys
 
     sys.path.insert(0, str(ROOT / "src"))
-    from estimation_format import records as est
+    from estrec import records as est
 
     sc = est.load_schemas()
     docs = sc.documents()

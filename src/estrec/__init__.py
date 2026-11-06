@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
 """Reference tools for the `estimation` format: write, read, validate and redact records
 and collections of records.
 
-    import estimation_format as ef
+    import estrec as ef
     rec = ef.new_record(parameters, estimator={"family": "linear", "method": "ols"})
     ef.write(rec, "model.estrec.json")
     issues = ef.validate(ef.read("model.estrec.json"))

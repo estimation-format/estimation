@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
-"""`estimation show`: a quick look at records in the terminal. One record gets a detail view
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
+"""`estrec show`: a quick look at records in the terminal. One record gets a detail view
 (estimates, metrics, fixed effects, vcov, tests, messages); several records, a folder or a
 collection get a side-by-side regression table (estimates over standard errors, then N,
 R-squareds, the standard errors' type and fixed-effect rows)."""
@@ -277,7 +277,7 @@ def show(
     table: bool | None = None,
     component: Any = None,
 ) -> str:
-    """The text `estimation show` prints: a detail view of a single record, else (or with
+    """The text `estrec show` prints: a detail view of a single record, else (or with
     `table=True`) a side-by-side table."""
     items = load_for_show(paths)
     if table is None:
@@ -288,7 +288,7 @@ def show(
 
 
 def add_arguments(p) -> None:
-    """The `show` options, for the `estimation` CLI and `python -m estimation_format.show`."""
+    """The `show` options, for the `estimation` CLI and `python -m estrec.show`."""
     p.add_argument("paths", nargs="+", help="records, folders of records, or collections")
     p.add_argument("--vcov", help='another vcov in the record: a type ("iid", "HC1") or cluster variables')
     p.add_argument("--digits", type=int, help="digits (default 4 in the detail view, 3 in the table)")
@@ -303,7 +303,7 @@ def run(args) -> int:
         vcov = int(args.vcov) if args.vcov is not None and args.vcov.isdigit() else args.vcov
         print(show(args.paths, vcov=vcov, digits=args.digits, table=args.table, component=args.component))
     except (OSError, ValueError) as e:
-        print(f"estimation show: {e}", file=__import__("sys").stderr)
+        print(f"estrec show: {e}", file=__import__("sys").stderr)
         return 1
     return 0
 
@@ -311,7 +311,7 @@ def run(args) -> int:
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
-    p = argparse.ArgumentParser(prog="estimation show", description=__doc__.split("\n\n")[0])
+    p = argparse.ArgumentParser(prog="estrec show", description=__doc__.split("\n\n")[0])
     add_arguments(p)
     return run(p.parse_args(argv))
 

@@ -1,5 +1,5 @@
 # Disclosure levels (spec 4.9): the most a record discloses, 1 to 5, chosen by the person who
-# shares it. The marks come from inst/levels.json, which `estimation levels` writes from the
+# shares it. The marks come from inst/levels.json, which `estrec levels` writes from the
 # core schema (the Python tests keep the two equal), so estrec and the validator agree.
 
 .est_default_level <- 4L

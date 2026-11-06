@@ -26,7 +26,7 @@ standard errors, convergence, the software and environment, and the data's check
 | [`spec/estrec.md`](spec/estrec.md) | the specification | CC0 1.0 |
 | [`spec/profiles/`](spec/profiles/) | the profiles, with field mappings across Stata, R, Python and Julia tools | CC0 1.0 |
 | [`schema/`](schema/) | JSON Schemas (2020-12) for the core, the profiles and collections; the catalog; example records and collections | CC0 1.0 |
-| [`src/estimation_format/`](src/estimation_format/) | `estimation-format`, the reference validator, writer and redactor (Python) | MIT |
+| [`src/estrec/`](src/estrec/) | `estrec`, the reference validator, writer and redactor (Python) | MIT |
 | [`r/`](r/) | `estrec`, an R package that writes records from fitted models (fixest `feols` so far) | MIT |
 
 Schemas are served at `https://estrec.org/schema/`.
@@ -50,14 +50,14 @@ Schemas are served at `https://estrec.org/schema/`.
 ## The validator
 
 ```bash
-pip install 'estimation-format[jsonschema]'      # not yet on PyPI; for now: pip install .
-estimation validate model.estrec.json
-estimation redact model.estrec.json -o shareable.estrec.json
-estimation digest model.estrec.json
+pip install 'estrec[jsonschema]'      # not yet on PyPI; for now: pip install .
+estrec validate model.estrec.json
+estrec redact model.estrec.json -o shareable.estrec.json
+estrec digest model.estrec.json
 ```
 
 ```python
-import estimation_format as ef
+import estrec as ef
 
 rec = ef.new_record(
     rows,
@@ -102,14 +102,14 @@ A quick look in the terminal: one record gives a detail view, several records, a
 a collection a side-by-side table (estimates over SEs, N, R2s, SE type, FE rows):
 
 ```bash
-estimation show table2.estrec-collection.json
-estimation show fit.estrec.json --vcov iid
+estrec show table2.estrec-collection.json
+estrec show fit.estrec.json --vcov iid
 ```
 
 **In the browser:** the [record viewer](https://estrec.org/viewer/)
 opens records, folders and collections without uploading them, and builds tables you can copy
 as LaTeX, Markdown, HTML or CSV, or save as a table spec (`spec/table.md`) to render again with
-`estimation table table2.estrec-table.json -f latex`.
+`estrec table table2.estrec-table.json -f latex`.
 
 ## Contributing
 

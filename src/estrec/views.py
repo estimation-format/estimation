@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
 """Views of records for tables: `tidy` (parameters as rows), `glance` (one row of metrics)
 and `parameters_table` (the flat parameters table across a collection's members, spec 11).
 

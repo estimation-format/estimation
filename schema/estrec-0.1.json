@@ -3,7 +3,7 @@
   "$id": "https://estrec.org/schema/estrec-0.1.json",
   "title": "estrec/0.1",
   "x-license": "CC0-1.0",
-  "description": "One estimation run: what was estimated, what came out, and how and where it ran. Specification: docs/design/estimation-format.md. Absent key = not recorded by this producer; null = applies but wasn't computed. Non-finite numbers are the strings \"NaN\", \"Inf\", \"-Inf\". Times are UTC, ISO 8601. Fields marked \"x-identifying\": true identify people, hosts, paths or jobs; none is required and a redactor removes or hashes them. \"x-expected\" lists keys a validator warns about when absent; \"x-vocabulary\" lists recommended values of an open string field. \"x-level\" is the disclosure level (1-5) of a field and everything under it that has no mark of its own; \"x-level-if\" raises or lowers it for list items that match (spec 4.9).",
+  "description": "One estimation run: what was estimated, what came out, and how and where it ran. Specification: spec/estrec.md. Absent key = not recorded by this producer; null = applies but wasn't computed. Non-finite numbers are the strings \"NaN\", \"Inf\", \"-Inf\". Times are UTC, ISO 8601. Fields marked \"x-identifying\": true identify people, hosts, paths or jobs; none is required and a redactor removes or hashes them. \"x-expected\" lists keys a validator warns about when absent; \"x-vocabulary\" lists recommended values of an open string field. \"x-level\" is the disclosure level (1-5) of a field and everything under it that has no mark of its own; \"x-level-if\" raises or lowers it for list items that match (spec 4.9).",
   "type": "object",
   "required": ["schema", "meta", "parameters"],
   "x-expected": ["metrics", "specification", "provenance"],
@@ -127,7 +127,7 @@
     },
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "redacted": {
-      "description": "A value replaced by `estimation redact --hash`: HMAC-SHA256 with the redactor's salt, so values hashed with the same salt still compare equal. The history entry's `salt_id` names the salt.",
+      "description": "A value replaced by `estrec redact --hash`: HMAC-SHA256 with the redactor's salt, so values hashed with the same salt still compare equal. The history entry's `salt_id` names the salt.",
       "type": "string",
       "pattern": "^hmac-sha256:[0-9a-f]{64}$"
     },

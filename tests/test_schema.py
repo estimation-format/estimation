@@ -322,7 +322,7 @@ def test_iv_and_dfeols_require():
 
 def test_identifying_marks_match_library():
     """The core's marks are the library's stand-in list."""
-    from estimation_format import records as est
+    from estrec import records as est
 
     marked = set(est.identifying_paths(load(CORE)))
     assert marked == set(est.DEFAULT_IDENTIFYING)

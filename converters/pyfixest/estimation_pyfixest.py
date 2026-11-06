@@ -11,7 +11,7 @@ change between versions.
     fit = pf.feols("y ~ x1 + x2 | firm + year", data, vcov={"CRV1": "firm"})
     rec = to_record(fit, data)
 
-    import estimation_format as ef        # optional: adds the core digest, spills, checks
+    import estrec as ef        # optional: adds the core digest, spills, checks
     ef.write(rec, "fit.estrec.json")  # disclosure level 4 by default; level=1..5, purpose=
 
 `to_record` returns everything the converter knows; `ef.write` (or `ef.prepare`) cuts it to a
@@ -201,7 +201,7 @@ def to_record(
 
     `data` is the frame the model was fitted on (for the missing/singleton counts). `call`
     is the command as written, if you have it. `identifying=False` leaves out the user and
-    host (they can also be removed later with `estimation redact`). `program` is the program
+    host (they can also be removed later with `estrec redact`). `program` is the program
     in the replication package that ran the fit (`specification.program`): a path relative
     to the package root, or `{path, line, sha256}`. `data_info` describes the data input
     (`name`, `version`, `checksum`, `publication` with a data citation, ...).

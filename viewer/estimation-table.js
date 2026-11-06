@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+// Copyright (c) 2026 Ted Matherly and the estrec contributors
 //
 // Views of estimation records and table specs (spec/table.md) for the browser viewer and for
-// node. The same rules as the Python reference (estimation_format.views and .table): tidy,
+// node. The same rules as the Python reference (estrec.views and .table): tidy,
 // glance, another vcov in the record, and building and rendering a table spec.
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
 """Read, write, validate and redact `estimation-collection` documents (spec section 11).
 
 A collection is a set of records plus what is true of the set: a paper's results

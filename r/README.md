@@ -143,10 +143,10 @@ are recorded as `other` and the record carries a warning. Pass `data =` to fix t
 The Python reference tools validate, digest and redact records:
 
 ```bash
-pip install "estimation-format[jsonschema] @ git+https://github.com/estrec/estrec"
-estimation validate fit.estrec.json
-estimation redact fit.estrec.json -o shareable.estrec.json   # drops user, host, argv
-estimation digest fit.estrec.json                                  # checks the core digest
+pip install "estrec[jsonschema] @ git+https://github.com/estrec/estrec"
+estrec validate fit.estrec.json
+estrec redact fit.estrec.json -o shareable.estrec.json   # drops user, host, argv
+estrec digest fit.estrec.json                                  # checks the core digest
 ```
 
 **Core digest.** With the `openssl` package installed, every record carries
@@ -166,5 +166,5 @@ CRAN, `pkg:github/<owner>/<repo>@<commit>` (with `#<subdir>`) for packages insta
   output but not yet checked against them (they aren't installed where estrec was built).
 - Tests: `tests/test-fixest.R`, `tests/test-collection.R`, `tests/test-read.R` and `tests/test-table.R` (base R). They validate every
   record and collection when the `estimation` CLI is on `PATH` or `ESTREC_VALIDATOR` names it;
-  with `ESTREC_PYTHON` (a Python with `estimation_format`), the collection test also checks that
+  with `ESTREC_PYTHON` (a Python with `estrec`), the collection test also checks that
   estrec's canonical JSON equals the reference implementation's.

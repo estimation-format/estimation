@@ -8,7 +8,7 @@ import warnings
 import pytest
 from test_estimation import fe_record, lm_record
 
-from estimation_format import records as est
+from estrec import records as est
 
 
 def errors(issues):
@@ -120,7 +120,7 @@ def test_default_level_4_lists_only_language_estimator_and_writer():
     assert [s["name"] for s in prov["software"]] == ["R", "stats", "estrec"]
     assert set(prov) == {"software", "data"} and "location" not in prov["data"][0]
     assert prov["data"][0]["checksum"]["value"] == "ab" * 32
-    assert rec["history"][-1]["by"]["name"] == "estimation-format"  # the writer, traceable
+    assert rec["history"][-1]["by"]["name"] == "estrec"  # the writer, traceable
     issues = est.validate(rec)
     assert errors(issues) == [] and warns(issues) == []
 
@@ -129,7 +129,7 @@ def test_level_5_keeps_everything():
     r = lm_record()
     rec = est.prepare(r, level=5)
     assert rec["provenance"] == r["provenance"]
-    assert rec["history"][-1]["by"]["name"] == "estimation-format"
+    assert rec["history"][-1]["by"]["name"] == "estrec"
     assert errors(est.validate(rec)) == []
 
 
@@ -382,7 +382,7 @@ def test_dcas_needs_a_seed_for_resampling():
 
 def test_estrec_levels_file_matches_the_schema():
     """estrec reads its level marks from r/inst/levels.json; regenerate it with
-    `estimation levels > r/inst/levels.json` after changing a mark."""
+    `estrec levels > r/inst/levels.json` after changing a mark."""
     shipped = est.PACKAGED_SCHEMAS.parent / "r" / "inst" / "levels.json"
     if not shipped.is_file():
         pytest.skip("not a source checkout")

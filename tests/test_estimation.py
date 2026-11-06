@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import pytest
 
-from estimation_format import records as est
+from estrec import records as est
 
 
 def lm_record():

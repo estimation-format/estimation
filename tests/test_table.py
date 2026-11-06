@@ -6,9 +6,9 @@ import json
 
 import pytest
 
-import estimation_format as ef
-from estimation_format import records as est
-from estimation_format import table as et
+import estrec as ef
+from estrec import records as est
+from estrec import table as et
 
 EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
 SPEC = EXAMPLES / "paper.estrec-table.json"
@@ -214,7 +214,7 @@ def test_great_tables():
 
 
 def test_estimation_cli_subcommands(capsys):
-    from estimation_format.records import main
+    from estrec.records import main
 
     assert main(["table", str(SPEC), "-f", "markdown"]) == 0
     assert "| Weight (1000 lbs) |" in capsys.readouterr().out

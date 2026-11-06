@@ -1,7 +1,7 @@
 # Base-R tests of collections (no testthat). Collections are also checked with the reference
 # validator when the `estimation` CLI is on PATH or ESTREC_VALIDATOR names it, and the
 # canonical JSON is compared with the Python reference when ESTREC_PYTHON names a Python
-# with estimation_format installed.
+# with estrec installed.
 library(estrec)
 canon <- estrec:::.est_canonical_json
 esn <- estrec:::.est_es_number
@@ -111,8 +111,8 @@ if (requireNamespace("fixest", quietly = TRUE)) {
   # The canonical JSON equals the Python reference's on the same records
   if (nzchar(python)) {
     for (path in c(p, b)) {
-      code <- paste0("import json,sys; from estimation_format import read_collection, iter_members; ",
-                     "from estimation_format.records import canonical_json, to_json; ",
+      code <- paste0("import json,sys; from estrec import read_collection, iter_members; ",
+                     "from estrec.records import canonical_json, to_json; ",
                      "c = read_collection(sys.argv[1], nonfinite='string'); ",
                      "[sys.stdout.buffer.write(canonical_json(to_json(r)) + b'\\n') ",
                      "for _, _, r in iter_members(c, sys.argv[2])]")

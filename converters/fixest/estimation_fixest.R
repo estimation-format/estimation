@@ -14,10 +14,10 @@
 # messages; 3 the specification, clusters and FE counts; 4 R, fixest and this converter with
 # their versions, the data's size, numerics; 5 every loaded package, the environment, the
 # user, host and command line. The rule is written out below for the fields this converter
-# writes; a writer for many fields would read the marks from `estimation levels` instead.
+# writes; a writer for many fields would read the marks from `estrec levels` instead.
 #
 # The record has no core digest (meta.core_digest is optional): computing it needs RFC 8785
-# canonical JSON. Add it with the reference validator: `estimation digest --write FILE`.
+# canonical JSON. Add it with the reference validator: `estrec digest --write FILE`.
 #
 # fixest keeps one set of dropped rows (`obs_selection$obsRemoved`: missing values and
 # singletons together) and reports the singleton count only in a message. The converter

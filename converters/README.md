@@ -21,7 +21,7 @@ singletons, R², the t-test df, coefficients and standard errors.
 ```python
 import pyfixest as pf
 from estimation_pyfixest import to_record
-import estimation_format as ef
+import estrec as ef
 
 fit = pf.feols("y ~ x1 + x2 | firm + year", data, vcov={"CRV1": "firm"})
 ef.write(to_record(fit, data), "fit.estrec.json")  # write adds the core digest
@@ -41,7 +41,7 @@ estimation_write using "fit.estrec.json", replace
 ```
 
 The R and Stata writers leave out the core digest (optional in the format), because it needs
-RFC 8785 canonical JSON. `estimation digest --write fit.estrec.json` adds it.
+RFC 8785 canonical JSON. `estrec digest --write fit.estrec.json` adds it.
 
 **Disclosure levels** (spec 4.9): each converter writes at level 4 by default: the
 estimates, metrics, vcov, specification, the estimator, language and converter with their

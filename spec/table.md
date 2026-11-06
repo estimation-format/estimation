@@ -115,7 +115,7 @@ p-values, in lines and in test rows (6), take `format.p_digits` decimals (defaul
 with `*`, p < 0.05 with `**`, p < 0.01 with `***`. `format.star_symbols` MAY give other
 symbols, one per threshold. `null` or absent means no stars; the spec has no default, so a
 spec that wants stars lists them. Tools that create specs SHOULD offer `[0.1, 0.05, 0.01]`
-as their default (the reference tools, the viewer and `estimation show` use it). Renderers
+as their default (the reference tools, the viewer and `estrec show` use it). Renderers
 add a note saying what the stars and the lines under the estimates are.
 
 ## 6. Statistics rows

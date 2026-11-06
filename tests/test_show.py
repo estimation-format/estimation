@@ -1,12 +1,12 @@
-"""`estimation show`: the detail view, the side-by-side table, and loading paths."""
+"""`estrec show`: the detail view, the side-by-side table, and loading paths."""
 
 import math
 
 import pytest
 
-import estimation_format as ef
-from estimation_format import records as est
-from estimation_format import show as sh
+import estrec as ef
+from estrec import records as est
+from estrec import show as sh
 
 EXAMPLES = est.PACKAGED_SCHEMAS / "examples"
 
@@ -100,7 +100,7 @@ def test_example_collections_render(path):
 
 
 def test_show_uses_the_table_star_cuts():
-    from estimation_format.table import DEFAULT_STARS
+    from estrec.table import DEFAULT_STARS
 
     assert sh.STARS == DEFAULT_STARS == [0.1, 0.05, 0.01]
     assert [sh._stars(p) for p in (0.2, 0.07, 0.03, 0.005, None)] == ["", "*", "**", "***", ""]

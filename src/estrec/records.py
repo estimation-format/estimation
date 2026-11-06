@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Ted Matherly and the estimation-format contributors
+# Copyright (c) 2026 Ted Matherly and the estrec contributors
 """Read, write, validate and redact `estimation` records (spec/estrec.md).
 
 One record describes one estimation run as a JSON object. This module uses only
@@ -13,15 +13,15 @@ otherwise), and validates against the JSON Schemas when jsonschema is installed.
     redact(record)            remove or HMAC the identifying fields
     core_digest(record)       sha256 over the RFC 8785 canonical form of the result sections
 
-The JSON Schemas ship in the package (estimation_format/schema/: catalog.json, the core,
+The JSON Schemas ship in the package (estrec/schema/: catalog.json, the core,
 the profiles), and draft profiles can be added from local folders
 ($ESTREC_SCHEMA_PATH). `validate` checks the core schema plus each profile the record
 claims, and compares the record with the profiles those build on; `redact` takes the
 fields marked `x-identifying` in the core and each claimed profile. Without the
-`jsonschema` package (`pip install 'estimation-format[jsonschema]'`), `validate` falls back
+`jsonschema` package (`pip install 'estrec[jsonschema]'`), `validate` falls back
 to built-in checks and says so.
 
-Command line: `estimation {validate,redact,digest} ...` (also `python -m estimation_format`);
+Command line: `estimation {validate,redact,digest} ...` (also `python -m estrec`);
 each command also takes collections (collection.py).
 """
 
@@ -108,7 +108,7 @@ def _now() -> str:
 def _producer() -> dict:
     from . import __version__
 
-    return {"name": "estimation-format", "version": __version__}
+    return {"name": "estrec", "version": __version__}
 
 
 # ---------------------------------------------------------------- encoding
@@ -951,7 +951,7 @@ PROFILES: dict[str, Callable[[dict], list[Issue]]] = {
 
 
 def _packaged_schemas() -> Path:
-    """estimation_format/schema/ in an installed package; the repository's schema/ when
+    """estrec/schema/ in an installed package; the repository's schema/ when
     run from a source checkout (the wheel maps one onto the other)."""
     here = Path(__file__).with_name("schema")
     checkout = Path(__file__).resolve().parents[2] / "schema"
@@ -1079,9 +1079,7 @@ def jsonschema_check(
     try:
         import jsonschema
     except ImportError as e:  # pragma: no cover - depends on the environment
-        raise ImportError(
-            "JSON Schema validation needs jsonschema: pip install 'estimation-format[jsonschema]'"
-        ) from e
+        raise ImportError("JSON Schema validation needs jsonschema: pip install 'estrec[jsonschema]'") from e
     root: dict = schema if isinstance(schema, dict) else json.loads(Path(schema).read_text(encoding="utf-8"))
     docs = [d for d in [root, *documents] if "$id" in d]
     cls = jsonschema.validators.validator_for(root, default=jsonschema.Draft202012Validator)
@@ -1799,7 +1797,7 @@ def _apply_level(rec: dict, level: int, schemas: Schemas | None) -> tuple[list[s
                     "level": "info",
                     "code": "profile_not_claimed",
                     "message": f"{p} isn't claimed: disclosure level {level} leaves out what it requires",
-                    "source": "estimation-format",
+                    "source": "estrec",
                 }
                 for p in dropped
             )
@@ -1870,7 +1868,7 @@ def reduce(
 
 def levels_table(schemas: Schemas | None = None) -> dict:
     """The core's level marks and each purpose profile's minimum level, as plain JSON, for
-    writers in other languages (`estimation levels`; estrec ships it as inst/levels.json)."""
+    writers in other languages (`estrec levels`; estrec ships it as inst/levels.json)."""
     schemas = schemas or load_schemas()
     marks = level_marks(schemas.core, schemas.documents()) if schemas else DEFAULT_LEVEL_MARKS
     return {
@@ -1942,12 +1940,12 @@ def _cli_schemas(ap: argparse.ArgumentParser, folders: list[str], off: bool) -> 
             ap.error(f"--schema-path {f}: not a folder")
     schemas = load_schemas(folders)
     if schemas is None:
-        ap.error("the packaged schemas are missing from this estimation-format installation")
+        ap.error("the packaged schemas are missing from this estrec installation")
     return schemas
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="estimation", description="estimation record tools")
+    ap = argparse.ArgumentParser(prog="estrec", description="estimation record tools")
     sub = ap.add_subparsers(dest="cmd", required=True)
     v = sub.add_parser("validate", help="check records and collections; exit 1 on errors")
     v.add_argument("files", nargs="+")

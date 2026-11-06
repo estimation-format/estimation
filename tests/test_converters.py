@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-import estimation_format as ef
+import estrec as ef
 
 ROOT = Path(__file__).resolve().parents[1]
 CONVERTERS = ROOT / "converters"
