@@ -715,17 +715,78 @@ def _render_text(t: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+# Word: inline styles only (Word drops classes and style sheets when pasting), borders as a
+# journal table's three rules, numbers centred, no font family (the document's is kept).
+_WORD_RULE = "solid windowtext"
+_WORD_CELL = "padding:0 5.4pt;border:none;white-space:nowrap"
+
+
+def _word_cell(text: str, *, left: bool, top: str = "", bottom: str = "", pad_top: bool = False) -> str:
+    style = _WORD_CELL + (";text-align:left" if left else ";text-align:center")
+    if top:
+        style += f";border-top:{top} {_WORD_RULE}"
+    if bottom:
+        style += f";border-bottom:{bottom} {_WORD_RULE}"
+    if pad_top:
+        style += ";padding-top:3pt"
+    return f'<td style="{style}">{html.escape(text)}</td>'
+
+
+def _render_word(t: dict) -> str:
+    """A whole HTML document that Word, Google Docs, LibreOffice and Excel paste or open as a
+    formatted table (the viewer's Copy for Word puts it on the clipboard)."""
+    h = html.escape
+    title = t["title"] or "Estimation table"
+    out = [
+        "<!doctype html>",
+        '<html><head><meta charset="utf-8">',
+        f"<title>{h(title)}</title></head><body>",
+    ]
+    if t["title"]:
+        out.append(f'<p style="margin:0 0 6pt 0"><b>{h(t["title"])}</b></p>')
+    out.append('<table style="border-collapse:collapse;border:none;font-size:10pt">')
+    out.append(
+        "<tr>"
+        + "".join(
+            _word_cell(x, left=i == 0, top="1.5pt", bottom=".75pt") for i, x in enumerate([""] + t["header"])
+        )
+        + "</tr>"
+    )
+    prev = None
+    last = len(t["rows"]) - 1
+    for k, r in enumerate(t["rows"]):
+        top = ".75pt" if r["kind"] == "stat" and prev != "stat" else ""
+        bottom = "1.5pt" if k == last else ""
+        pad = r["kind"] == "estimate" and k > 0
+        out.append(
+            "<tr>"
+            + "".join(
+                _word_cell(x, left=i == 0, top=top, bottom=bottom, pad_top=pad)
+                for i, x in enumerate([r["label"]] + r["cells"])
+            )
+            + "</tr>"
+        )
+        prev = r["kind"]
+    out.append("</table>")
+    for n in t["notes"]:
+        out.append(f'<p style="margin:3pt 0 0 0;font-size:9pt">{h(n)}</p>')
+    out.append("</body></html>")
+    return "\n".join(out) + "\n"
+
+
 RENDERERS = {
     "markdown": _render_markdown,
     "latex": _render_latex,
     "html": _render_html,
     "csv": _render_csv,
     "text": _render_text,
+    "word": _render_word,
 }
 
 
 def render(table: dict, format: str = "text", **options: Any) -> str:
-    """A built table (`build_table`) as text: "text", "markdown", "latex", "html" or "csv".
+    """A built table (`build_table`) as text: "text", "markdown", "latex", "html", "csv"
+    or "word" (an HTML document styled inline, for pasting into or opening in Word).
     LaTeX takes `escape=False` to keep labels as written (for math in labels)."""
     if format not in RENDERERS:
         raise ValueError(f"format is one of {', '.join(RENDERERS)}")

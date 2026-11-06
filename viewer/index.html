@@ -301,6 +301,7 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
             <div class="export-head">
               <div class="seg" id="formats" role="group" aria-label="Export format">
                 <button type="button" data-f="latex" aria-pressed="true">LaTeX</button>
+                <button type="button" data-f="word" aria-pressed="false">Word</button>
                 <button type="button" data-f="markdown" aria-pressed="false">Markdown</button>
                 <button type="button" data-f="html" aria-pressed="false">HTML</button>
                 <button type="button" data-f="csv" aria-pressed="false">CSV</button>
@@ -878,6 +879,13 @@ async function renderExport() {
   const box = $("export-text");
   if (state.format === "spec") box.value = state.spec ? JSON.stringify(await specForExport(), null, 2) + "\n" : "";
   else if (state.format === "web") box.value = lastTable ? webPage() : "";
+  else if (state.format === "word") {
+    box.value = lastTable ? E.render(lastTable, "word") : "";
+    const note = $("web-note");
+    note.hidden = false;
+    note.textContent = "Copy puts the formatted table on the clipboard: paste it into Word (or Google Docs, LibreOffice, Excel) and it arrives as a table with the rules and alignment shown here. "
+      + "In Word, \u201cKeep Source Formatting\u201d keeps the 10 pt size; \u201cMerge Formatting\u201d takes the document\u2019s. Save file gives an .html file that Word opens. Below is the HTML it pastes.";
+  }
   else box.value = lastTable ? E.render(lastTable, state.format) : "";
 }
 
@@ -1056,12 +1064,45 @@ $("formats").addEventListener("click", (e) => {
   state.format = b.dataset.f;
   renderExport();
 });
+// A formatted table on the clipboard: text/html for Word and the like, the text rendering as
+// text/plain. Async clipboard first; else copy a selection of the rendered table, which keeps
+// the inline styles (works where the clipboard API is blocked, e.g. inside an iframe).
+async function copyRich(htmlDoc, plain) {
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([htmlDoc], { type: "text/html" }),
+        "text/plain": new Blob([plain], { type: "text/plain" }),
+      })]);
+      return true;
+    } catch { /* fall through */ }
+  }
+  const body = new DOMParser().parseFromString(htmlDoc, "text/html").body;
+  const holder = el("div", { contenteditable: "true", style: "position:fixed;left:-10000px;top:0;background:#fff;color:#000" });
+  holder.append(...body.childNodes);
+  document.body.append(holder);
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(holder);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch { ok = false; }
+  sel.removeAllRanges();
+  holder.remove();
+  return ok;
+}
 $("copy").addEventListener("click", async () => {
   const box = $("export-text");
+  if (state.format === "word" && lastTable) {
+    if (await copyRich(box.value, E.render(lastTable, "text"))) toast("Copied: paste into Word");
+    else toast(embedded ? "Couldn\u2019t copy here: select the table in the preview and press Ctrl+C or \u2318C" : "Couldn\u2019t copy here: use Save file and open it in Word");
+    return;
+  }
   try { await navigator.clipboard.writeText(box.value); toast("Copied"); }
   catch { box.focus(); box.select(); toast("Selected: press Ctrl+C or ⌘C to copy"); }
 });
-const EXT = { latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", web: "html", spec: "estimation-table.json" };
+const EXT = { word: "html", latex: "tex", markdown: "md", html: "html", csv: "csv", text: "txt", web: "html", spec: "estimation-table.json" };
 $("save").hidden = embedded;
 $("save").addEventListener("click", () => {
   const text = $("export-text").value;

@@ -655,7 +655,43 @@
     return out.join("\n") + "\n";
   }
 
-  const RENDERERS = { text: renderText, markdown: renderMarkdown, latex: renderLatex, html: renderHTML, csv: renderCSV };
+  // Word: inline styles only (Word drops classes and style sheets when pasting), borders as a
+  // journal table's three rules, numbers centred, no font family (the document's is kept).
+  const WORD_RULE = "solid windowtext";
+  const WORD_CELL = "padding:0 5.4pt;border:none;white-space:nowrap";
+
+  function wordCell(text, { left, top = "", bottom = "", padTop = false }) {
+    let style = WORD_CELL + (left ? ";text-align:left" : ";text-align:center");
+    if (top) style += `;border-top:${top} ${WORD_RULE}`;
+    if (bottom) style += `;border-bottom:${bottom} ${WORD_RULE}`;
+    if (padTop) style += ";padding-top:3pt";
+    return `<td style="${style}">${escHTML(text)}</td>`;
+  }
+
+  // A whole HTML document that Word, Google Docs, LibreOffice and Excel paste or open as a
+  // formatted table (the viewer's Copy for Word puts it on the clipboard).
+  function renderWord(t) {
+    const h = escHTML;
+    const out = ["<!doctype html>", '<html><head><meta charset="utf-8">', `<title>${h(t.title || "Estimation table")}</title></head><body>`];
+    if (t.title) out.push(`<p style="margin:0 0 6pt 0"><b>${h(t.title)}</b></p>`);
+    out.push('<table style="border-collapse:collapse;border:none;font-size:10pt">');
+    out.push("<tr>" + ["", ...t.header].map((x, i) => wordCell(x, { left: i === 0, top: "1.5pt", bottom: ".75pt" })).join("") + "</tr>");
+    let prev = null;
+    const last = t.rows.length - 1;
+    t.rows.forEach((r, k) => {
+      const top = r.kind === "stat" && prev !== "stat" ? ".75pt" : "";
+      const bottom = k === last ? "1.5pt" : "";
+      const padTop = r.kind === "estimate" && k > 0;
+      out.push("<tr>" + [r.label, ...r.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom, padTop })).join("") + "</tr>");
+      prev = r.kind;
+    });
+    out.push("</table>");
+    for (const n of t.notes) out.push(`<p style="margin:3pt 0 0 0;font-size:9pt">${h(n)}</p>`);
+    out.push("</body></html>");
+    return out.join("\n") + "\n";
+  }
+
+  const RENDERERS = { text: renderText, markdown: renderMarkdown, latex: renderLatex, html: renderHTML, csv: renderCSV, word: renderWord };
 
   function render(t, format, opts) {
     const f = RENDERERS[format || "text"];

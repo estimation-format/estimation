@@ -1,6 +1,7 @@
 """Table specs (spec/table.md): building, validating and rendering."""
 
 import copy
+import html
 import json
 
 import pytest
@@ -271,3 +272,20 @@ def test_bad_lines_are_errors():
     ok["uncertainty"] = ["std_error", "p = {p_value}"]
     ok["format"] = {"p_digits": 4, "p_style": "less_than"}
     assert et.validate_table(ok) == []
+
+
+def test_word_render_has_three_rules_and_inline_styles():
+    t = et.build_table(spec(), base_dir=EXAMPLES)
+    doc = et.render(t, "word")
+    assert doc.startswith("<!doctype html>") and doc.rstrip().endswith("</body></html>")
+    assert "class=" not in doc and "<style" not in doc  # Word keeps inline styles only
+    assert doc.count("border-top:1.5pt") == len(t["header"]) + 1  # top rule over the header
+    assert doc.count("border-bottom:1.5pt") == len(t["header"]) + 1  # bottom rule
+    n_stat_starts = sum(
+        1
+        for i, r in enumerate(t["rows"])
+        if r["kind"] == "stat" and (i == 0 or t["rows"][i - 1]["kind"] != "stat")
+    )
+    assert doc.count("border-top:.75pt") == n_stat_starts * (len(t["header"]) + 1)
+    for n in t["notes"]:
+        assert html.escape(n) in doc

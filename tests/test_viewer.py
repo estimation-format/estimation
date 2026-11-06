@@ -212,7 +212,7 @@ def test_renderers_match_python(node_result):
     py = et.build_table(specs()[0], base_dir=EXAMPLES)
     script = (
         "const E=require(process.argv[1]);const t=JSON.parse(require('fs').readFileSync(0,'utf8'));"
-        "process.stdout.write(JSON.stringify(Object.fromEntries(['text','markdown','latex','html','csv'].map(f=>[f,E.render(t,f)]))))"
+        "process.stdout.write(JSON.stringify(Object.fromEntries(['text','markdown','latex','html','csv','word'].map(f=>[f,E.render(t,f)]))))"
     )
     run = subprocess.run(
         [NODE, "-e", script, str(ROOT / "viewer" / "estimation-table.js")],
