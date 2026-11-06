@@ -31,7 +31,7 @@ jobs:
           mkdir -p _site
           cp -r schema _site/schema
           mkdir -p _site/viewer
-          cp viewer/index.html viewer/estimation-table.js viewer/examples.js viewer/identifying.js _site/viewer/
+          cp viewer/index.html viewer/estrec-table.js viewer/examples.js viewer/identifying.js _site/viewer/
           cat > _site/index.html <<'EOF'
           <!doctype html>
           <meta charset="utf-8">

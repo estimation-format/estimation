@@ -1,6 +1,6 @@
 // Used by tests/test_viewer.py: reads {files, sources, specs, pvals} as JSON on stdin and prints
-// the viewer's tables and p-values, built by viewer/estimation-table.js, as JSON.
-const E = require("../viewer/estimation-table.js");
+// the viewer's tables and p-values, built by viewer/estrec-table.js, as JSON.
+const E = require("../viewer/estrec-table.js");
 let input = "";
 process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", async () => {

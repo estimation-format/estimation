@@ -1,5 +1,5 @@
 """The browser viewer (viewer/): its examples are current, and when node is installed, its
-table logic (viewer/estimation-table.js) builds the same tables as the Python reference."""
+table logic (viewer/estrec-table.js) builds the same tables as the Python reference."""
 
 import copy
 import importlib.util
@@ -75,7 +75,7 @@ def test_redaction_matches_python():
     rec = identified_record()
     paths = _make().identifying()
     script = (
-        "const E=require(process.argv[1]+'/estimation-table.js');const P=require(process.argv[1]+'/identifying.js');"
+        "const E=require(process.argv[1]+'/estrec-table.js');const P=require(process.argv[1]+'/identifying.js');"
         "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(E.redactRecord(r,P)))"
     )
     js = run_node(script, rec)
@@ -96,7 +96,7 @@ def test_web_page():
     coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
     recs = [r for _, _, r in ef.iter_members(coll)]
     script = (
-        "const E=require(process.argv[1]+'/estimation-table.js');const x=JSON.parse(require('fs').readFileSync(0,'utf8'));"
+        "const E=require(process.argv[1]+'/estrec-table.js');const x=JSON.parse(require('fs').readFileSync(0,'utf8'));"
         "process.stdout.write(JSON.stringify(E.renderWebPage(x.t,x.recs)))"
     )
     page = run_node(script, {"t": t, "recs": recs})
@@ -215,7 +215,7 @@ def test_renderers_match_python(node_result):
         "process.stdout.write(JSON.stringify(Object.fromEntries(['text','markdown','latex','html','csv','word'].map(f=>[f,E.render(t,f)]))))"
     )
     run = subprocess.run(
-        [NODE, "-e", script, str(ROOT / "viewer" / "estimation-table.js")],
+        [NODE, "-e", script, str(ROOT / "viewer" / "estrec-table.js")],
         input=json.dumps(py),
         capture_output=True,
         text=True,
