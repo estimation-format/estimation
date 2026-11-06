@@ -14,9 +14,13 @@ from typing import Any
 
 from .collection import is_collection, loads_collection
 from .records import loads
+from .table import DEFAULT_STARS
+from .table import _stars as _star_mark
 from .views import _locator_label, _num, glance, pick_vcov, tidy, vcovs
 
-STARS = ((0.001, "***"), (0.01, "**"), (0.05, "*"), (0.1, "+"))
+# the same cuts as new tables (`table.DEFAULT_STARS`), so a quick look and a table agree
+STARS = DEFAULT_STARS
+STAR_SYMBOLS = ["*" * (i + 1) for i in range(len(STARS))]
 TABLE_ROWS = (
     ("nobs", "N"),
     ("r2", "R2"),
@@ -30,9 +34,7 @@ TABLE_ROWS = (
 
 
 def _stars(p: float) -> str:
-    if p is None or math.isnan(p):
-        return ""
-    return next((s for cut, s in STARS if p < cut), "")
+    return _star_mark(p, STARS, STAR_SYMBOLS)
 
 
 def _fmt(x: Any, digits: int = 3) -> str:
@@ -237,7 +239,7 @@ def show_table(
     widths = [len(c) for c in lines[1].split("  ")]
     sep = "  ".join("-" * w for w in widths)
     lines = [sep if set(ln.replace(" ", "")) == {"-"} and i > 1 else ln for i, ln in enumerate(lines)]
-    lines.append("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
+    lines.append(", ".join(f"{sym} p < {t:g}" for t, sym in zip(STARS, STAR_SYMBOLS)))
     return "\n".join(lines)
 
 

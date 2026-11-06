@@ -57,7 +57,7 @@ def test_table_aligns_terms_and_stats():
     lines = text.splitlines()
     assert lines[0].split() == ["a", "b"]
     x = next(ln for ln in lines if ln.startswith("x "))
-    assert x.split()[1:] == ["1.500**", "2.500**"]
+    assert x.split()[1:] == ["1.500***", "2.500***"]
     w = next(ln for ln in lines if ln.startswith("w "))
     assert w.split()[1:] == ["-0.250"]  # only in b
     assert next(ln for ln in lines if ln.startswith("N ")).split()[1:] == ["123,456", "123,456"]
@@ -97,3 +97,12 @@ def test_examples_render(path):
 @pytest.mark.parametrize("path", sorted(EXAMPLES.glob("*.estimation-collection.json")), ids=lambda p: p.name)
 def test_example_collections_render(path):
     assert sh.show([path])
+
+
+def test_show_uses_the_table_star_cuts():
+    from estimation_format.table import DEFAULT_STARS
+
+    assert sh.STARS == DEFAULT_STARS == [0.1, 0.05, 0.01]
+    assert [sh._stars(p) for p in (0.2, 0.07, 0.03, 0.005, None)] == ["", "*", "**", "***", ""]
+    text = sh.show_table([("a", rec(1))])
+    assert text.splitlines()[-1] == "* p < 0.1, ** p < 0.05, *** p < 0.01"
