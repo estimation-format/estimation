@@ -19,7 +19,7 @@ not_found_handling = "404-page"
 CANONICAL_HOST = "estrec.org"
 REDIRECT_HOSTS = "www.estrec.org,estimation-record.org,www.estimation-record.org"
 # Public; from the Turnstile widget. The secret is set with `wrangler secret put TURNSTILE_SECRET`
-TURNSTILE_SITEKEY = ""
+TURNSTILE_SITEKEY = "0x4AAAAAAF3I3IY0tW4g4jHg"
 
 [[r2_buckets]]
 binding = "BUCKET"
