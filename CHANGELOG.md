@@ -20,6 +20,15 @@
   CC0 1.0 (default), CC BY 4.0 or CC BY-SA 4.0; Turnstile and per-IP limits guard publishing;
   there is a report page. The viewer shows **Publish…** when it is served from the site
   (`viewer/publish.js`). The GitHub Pages workflow is removed.
+- Writers report; they don't reinterpret (spec section 4, Ted 2026-11-07): values as the tool
+  reported them, renamed only when the math or the tool's documentation shows it's the same
+  quantity under a canonical name. `metrics.nobs` is now the number of observations as the
+  tool reports it (was "rows used"), so Stata's `e(N)` under frequency weights (the sum of the
+  weights) is kept, with a `definition`. `glm/0.1`: `deviance` is expected only when the tool
+  reports one and is no longer flagged when missing. `estrec` for Stata records `nobs` as
+  `e(N)`, and runs `estat gof` after `poisson` (its deviance goodness-of-fit, equal to `glm`'s
+  `e(deviance)`, as `metrics.deviance`; deviance and Pearson tests) and after `logit`,
+  `logistic`, `probit` (Pearson over covariate patterns, a test); `noestat` skips them.
 - `inference/0.1`: `metrics.df_residual` is no longer required when the default vcov has no
   `df_t` (absent or null), i.e. its tests and intervals are z (Ted, 2026-11-07). Tools that
   use z tests and report no residual df (Stata's ML commands, `ivregress`/`ivreg2` without

@@ -22,7 +22,11 @@ surveyed.
 - `structures.numerics.converged`: every surveyed tool stores it, and an unconverged GLM is a
   common source of discrepancies.
 
-`metrics.log_lik` and `metrics.deviance` are **expected**.
+`metrics.log_lik` is **expected**. `metrics.deviance` is expected **when the tool reports
+one**: GLM routines do (Stata `glm`, R `glm`, fixest, statsmodels `GLM`, ppmlhdfe, SAS
+`GENMOD`); dedicated likelihood commands mostly don't (Stata `logit`, `probit`, `nbreg`,
+statsmodels' discrete `Logit`/`Probit`/`Poisson`). Writers don't compute one, and a validator
+can't tell whether the tool had one, so a missing deviance isn't flagged.
 
 ### Why not `inference/0.1`
 
@@ -65,13 +69,13 @@ log-likelihood, so `log_lik` is absent.
 | `log_lik` | `e(ll)` (`glm`: not stored with `irls`) | `e(ll)` | `logLik()` | `loglik` | `llf` | `_loglik` (fepois) |
 | `log_lik_null` (constant only) | `e(ll_0)` | — | | `ll_null` | `llnull` | `_loglik_null` |
 | `log_lik_fe_only` | | `e(ll_0)` | | `ll_fe_only` | | |
-| `deviance` | `glm` `e(deviance)` | `e(deviance)` | `deviance` | `deviance` | `deviance` | `deviance` |
+| `deviance` | `glm` `e(deviance)`; `poisson` `estat gof` `r(chi2_d)` (equal to `glm, family(poisson)`'s) | `e(deviance)` | `deviance` | `deviance` | `deviance` | `deviance` |
 | `null_deviance`, `df_null` | | | `null.deviance`, `df.null` | | `null_deviance` | |
 | `df_residual` | `glm` `e(df)` | `e(df)` | `df.residual` | `df.residual()` | `df_resid` | |
 | `pseudo_r2` | `e(r2_p)` | `e(r2_p)` (vs FE-only) | | `fitstat(, "pr2")` | `pseudo_rsquared("mcf")` | `_pseudo_r2` |
 | `aic`, `bic` | `glm` `e(aic)` (per obs.), `e(bic)` | | `aic` | `AIC()`, `BIC()` | `aic`, `bic` | |
 | `dispersion` | `glm` `e(phi)` | | `summary()$dispersion` | `dispersion` | `scale` | |
-| `pearson_chi2` | `glm` `e(deviance_p)` | | | | `pearson_chi2` | |
+| `pearson_chi2` | `glm` `e(deviance_p)`; `poisson` `estat gof` `r(chi2_p)` | | | | `pearson_chi2` | |
 | `n_separated` | | `e(num_separated)` | | `obs_selection` / `fixef_removed` | | `n_separation_na` |
 | `n_completely_determined` | `logit`/`probit` `e(N_cds)` + `e(N_cdf)` | | | | | |
 | `n_singletons`, `nobs_full` | | `e(num_singletons)`, `e(N_full)` | | | | |

@@ -22,15 +22,15 @@ Or, from a clone: `net install estrec, from("path/to/estrec/stata") replace`.
 | `ivregress` | inference, iv | without `small`, z tests (no `df_residual`); runs `estat firststage`, `overid` and `endogenous` (`noestat` skips them) |
 | `ivreg2` | inference, iv | as `ivregress` without `small`; first-stage tests with `first`/`ffirst`, C test with `endog()` |
 | `ivreghdfe` | inference, iv, linear-fe | |
-| `logit`, `logistic`, `probit`, `poisson`, `nbreg` | inference, glm | z tests (no `df_residual`); no deviance, since these commands don't post one (the glm profile warns that it's missing) |
+| `logit`, `logistic`, `probit`, `poisson`, `nbreg` | inference, glm | z tests (no `df_residual`). After `poisson`, `estat gof`'s deviance and Pearson goodness-of-fit (the deviance equals `glm`'s); after `logit`, `logistic`, `probit`, its Pearson test over covariate patterns; `nbreg` reports no deviance |
 | `glm` | inference, glm | `glm, irls` stores no convergence flag, so only inference |
 | anything else with `e(b)`, `e(V)` | none | core fields only |
 
 Tested with Stata 18 MP, reghdfe 6.13.1, ivreg2 4.1.12 and ivreghdfe 1.1.4
-(`tests/test_stata.py`: each command at every disclosure level validates, with no warnings
-except the missing deviance after `logit`, `probit`, `poisson` and `nbreg`, and reproduces
-Stata's results table). estrec records what the command posts and does not compute
-statistics of its own.
+(`tests/test_stata.py`: each command at every disclosure level validates with no warnings
+and reproduces Stata's results table). estrec records what Stata reports, under the
+record's name for it, and does not compute statistics of its own: `nobs` is `e(N)`, which
+with frequency weights is the sum of the weights, as Stata counts it.
 
 ## Small-sample corrections
 

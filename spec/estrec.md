@@ -108,6 +108,17 @@ shape; the second is just fuller. Section 12 shows a minimal record.
 
 ## 4. Result sections
 
+Writers report; they don't reinterpret. A value is recorded as the tool reported it, under
+the record's name for the tool's quantity, so that a record can always say "this is what the
+tool reported", not something the writer worked out. A writer records a value under another
+name only when it can show the two are the same quantity, by the math or by the tool's own
+documentation, and the other name is the canonical one (for
+example Stata `estat gof`'s deviance goodness-of-fit, which equals `glm`'s `e(deviance)`).
+It computes nothing the tool didn't report beyond conveniences the tool itself would give
+from its own results (a p-value or interval from a reported statistic, df and vcov). When a
+writer knows a tool's value to be wrong, it records the value as reported and says so (a
+`definition`, or a `messages` entry) rather than replacing it.
+
 ### 4.1 `meta` (required)
 
 | Field | Status | Content |
@@ -144,8 +155,9 @@ What was asked for, in the estimating software's own terms, fully resolved:
 - `weights`: `{variable, type}` (`analytic`, `frequency`, `probability`), or `null`.
 - `fixed_effects`, `endogenous`, `instruments`, `clusters`: as specified.
 - `sample`: the restriction as written, plus `rows_input` and drop counts by reason (missing
-  per variable, singletons, zero weights, other). The number of rows used is
-  `metrics.nobs`.
+  per variable, singletons, zero weights, other). `metrics.nobs` is normally the rows left;
+  when the tool counts observations otherwise (frequency weights), it differs, and its
+  `definition` says so.
 - `state`: settings in force from *outside* the call that change results without
   appearing in it: an active filter, weight or split (SPSS); `xtset`/`tsset`, `if`/`in`, the
   random-number seed (Stata); R `options()` that change estimates; user-defined missing-value
@@ -155,8 +167,8 @@ What was asked for, in the estimating software's own terms, fully resolved:
 
 ### 4.3 `metrics` (expected)
 
-An object of named scalars. `nobs` (rows used) applies to nearly every estimator; the rest
-depend on it (`r2`, `aic`, `log_lik`, `auc`, `mse`, ...).
+An object of named scalars. `nobs` (observations, as the tool reports them) applies to nearly
+every estimator; the rest depend on it (`r2`, `aic`, `log_lik`, `auc`, `mse`, ...).
 
 - Names SHOULD follow broom's `glance` where one exists. The core schema registers
   recommended names and their definitions, and profiles add more, so that a name means the
@@ -717,7 +729,7 @@ profile: `name`, `file`, `kind` (`standard`, `tool` or `purpose`), `status` (`dr
 | [`did/0.1`](profiles/did.md) | standard | `meta.estimator.method`; `specification.did` (time, comparison, cohort or treatment); `metrics.nobs`; `estimate` and `std_error`; a `did` object saying which effect a row is; a default `vcov` with `type`; `structures.did` expected |
 | [`did2s/0.1`](profiles/did2s.md) | tool | `did` plus first- and second-stage specifications, the cluster, and a two-stage GMM or bootstrap vcov |
 | [`csdid/0.1`](profiles/csdid.md) | tool | `did` plus `method`, `agg`, `typebase`, an influence-function or wild-bootstrap vcov, and the `e(gtt)` cells |
-| [`glm/0.1`](profiles/glm.md) | standard | `meta.estimator.distribution` and `link`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `structures.numerics.converged`; `log_lik` and `deviance` expected |
+| [`glm/0.1`](profiles/glm.md) | standard | `meta.estimator.distribution` and `link`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `structures.numerics.converged`; `log_lik` expected, and `deviance` when the tool reports one |
 | [`ppmlhdfe/0.1`](profiles/ppmlhdfe.md) | tool | `glm` (Poisson, log) plus separation and singleton counts and options, and `structures.fixed_effects` |
 | [`conditional-logit/0.1`](profiles/conditional-logit.md) | standard | `specification.groups`; `options.likelihood` and `drop_uninformative`; `estimate`, `std_error`, `p_value`; `metrics.nobs`; a default `vcov` with `type` and `ssc.convention`; `n_groups`, `log_lik`, `structures.groups` expected |
 | [`mixed/0.1`](profiles/mixed.md) | standard | `meta.estimator.method` (REML/ML/quadrature); `specification.random_effects`; fixed-effect `estimate` and `std_error`; a `vc` object on variance-component rows; `metrics.nobs`; `structures.random_effects` with `levels`; a default `vcov` with `type`; `numerics.converged`; `log_lik` and `singular` expected |

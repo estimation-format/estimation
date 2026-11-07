@@ -3,7 +3,7 @@
   "$id": "https://estrec.org/schema/profiles/glm-0.1.json",
   "title": "glm/0.1",
   "x-license": "CC0-1.0",
-  "description": "Profile for generalized linear models (logit, probit, Poisson, ...), with or without absorbed fixed effects: Stata logit, probit, poisson, glm, ppmlhdfe; R glm, fixest feglm/fepois; Python statsmodels GLM/Logit/Poisson, pyfixest feglm/fepois (survey 2026-10-25, spec/profiles/glm.md). Requires meta.estimator distribution and link; estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; a default vcov with type and ssc.convention; and structures.numerics.converged, which every surveyed tool stores. metrics.log_lik and deviance are expected. Does not build on inference/0.1 (written when that required df_residual, which Stata's ML commands and ppmlhdfe don't post); records can claim both, z-test ones leaving out df_residual with no df_t on the default vcov. A GLM with absorbed fixed effects records them in structures.fixed_effects with linear-fe's names.",
+  "description": "Profile for generalized linear models (logit, probit, Poisson, ...), with or without absorbed fixed effects: Stata logit, probit, poisson, glm, ppmlhdfe; R glm, fixest feglm/fepois; Python statsmodels GLM/Logit/Poisson, pyfixest feglm/fepois (survey 2026-10-25, spec/profiles/glm.md). Requires meta.estimator distribution and link; estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; a default vcov with type and ssc.convention; and structures.numerics.converged, which every surveyed tool stores. metrics.log_lik is expected, and deviance when the tool reports one (never computed by the writer, so not flagged when missing). Does not build on inference/0.1 (written when that required df_residual, which Stata's ML commands and ppmlhdfe don't post); records can claim both, z-test ones leaving out df_residual with no df_t on the default vcov. A GLM with absorbed fixed effects records them in structures.fixed_effects with linear-fe's names.",
   "x-extends": [],
   "x-deviations": [],
   "allOf": [
@@ -72,7 +72,7 @@
         },
         "metrics": {
           "required": ["nobs"],
-          "x-expected": ["log_lik", "deviance"],
+          "x-expected": ["log_lik"],
           "properties": {
             "nobs": {"x-tools": {"Stata": "e(N)", "R glm": "nobs()", "fixest": "nobs", "statsmodels": "nobs", "pyfixest": "_N"}},
             "log_lik": {"x-tools": {"Stata": "e(ll)", "R glm": "logLik()", "fixest": "loglik", "statsmodels": "llf", "pyfixest": "_loglik (fepois)"}},
@@ -81,7 +81,7 @@
               "x-tools": {"Stata logit/poisson/glm": "e(ll_0)", "fixest": "ll_null", "statsmodels": "llnull", "pyfixest": "_loglik_null"}
             },
             "log_lik_fe_only": {"description": "Log-likelihood with only the fixed effects.", "x-tools": {"ppmlhdfe": "e(ll_0)", "fixest": "ll_fe_only"}},
-            "deviance": {"x-tools": {"Stata glm": "e(deviance)", "ppmlhdfe": "e(deviance)", "R glm": "deviance", "fixest": "deviance", "statsmodels": "deviance", "pyfixest": "deviance"}},
+            "deviance": {"description": "Expected when the tool reports one (not flagged when missing: logit, probit and nbreg report none). Never computed by the writer.", "x-tools": {"Stata glm": "e(deviance)", "Stata poisson": "estat gof r(chi2_d)", "ppmlhdfe": "e(deviance)", "R glm": "deviance", "fixest": "deviance", "statsmodels": "deviance", "pyfixest": "deviance"}},
             "null_deviance": {"x-tools": {"R glm": "null.deviance", "statsmodels": "null_deviance"}},
             "df_null": {"x-tools": {"R glm": "df.null"}},
             "df_residual": {"description": "As the tool reports it. ppmlhdfe stores it as e(df), not e(df_r).", "x-tools": {"R glm": "df.residual", "fixest": "df.residual()", "statsmodels": "df_resid", "ppmlhdfe": "e(df)", "Stata glm": "e(df)"}},
@@ -93,7 +93,7 @@
             "aic": {"x-tools": {"Stata glm": "e(aic) (per observation)", "R glm": "aic", "fixest": "AIC()", "statsmodels": "aic"}},
             "bic": {"x-tools": {"Stata glm": "e(bic)", "fixest": "BIC()", "statsmodels": "bic"}},
             "dispersion": {"description": "Dispersion (scale) parameter used for the vcov; 1 for binomial and Poisson unless estimated.", "x-tools": {"R glm": "summary()$dispersion", "fixest": "dispersion", "statsmodels": "scale", "Stata glm": "e(phi)"}},
-            "pearson_chi2": {"x-tools": {"Stata glm": "e(deviance_p)", "statsmodels": "pearson_chi2"}},
+            "pearson_chi2": {"x-tools": {"Stata glm": "e(deviance_p)", "Stata poisson": "estat gof r(chi2_p)", "statsmodels": "pearson_chi2"}},
             "n_separated": {"description": "Rows dropped as separated (their fitted mean is 0 or the outcome bound).", "type": ["integer", "null"], "x-tools": {"ppmlhdfe": "e(num_separated)", "pyfixest": "n_separation_na", "fixest": "obs_selection / fixef_removed (perfect_fit: singletons and separated together; a writer that splits them counts a one-row level at a bound as separated)"}},
             "n_completely_determined": {"description": "Rows whose outcome the model predicts exactly but kept (Stata logit/probit e(N_cds) + e(N_cdf)).", "type": ["integer", "null"]},
             "n_singletons": {"description": "As in linear-fe.", "x-tools": {"ppmlhdfe": "e(num_singletons)"}},

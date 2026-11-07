@@ -62,7 +62,7 @@
       "properties": {
         "id": {"description": "Unique within the record; referenced by other tests or tools.", "type": "string"},
         "category": {"type": "string", "x-vocabulary": ["model", "restriction", "linear_combination", "fixed_effects", "random_effects", "first_stage", "weak_identification", "underidentification", "overidentification", "endogeneity", "pretrend", "proportional_hazards", "small_study", "model_fit", "baseline_fit", "calibration", "specification"]},
-        "name": {"type": "string", "x-vocabulary": ["wald", "f", "t", "likelihood_ratio", "score", "sargan", "basmann", "hansen_j", "anderson_rubin", "stock_wright", "wu_hausman", "durbin", "hausman", "cragg_donald_f", "kleibergen_paap_rk_lm", "kleibergen_paap_rk_wald_f", "anderson_lm", "sanderson_windmeijer_f", "angrist_pischke_f", "effective_f", "schoenfeld", "egger", "begg", "chi2"]},
+        "name": {"type": "string", "x-vocabulary": ["wald", "f", "t", "likelihood_ratio", "score", "sargan", "basmann", "hansen_j", "anderson_rubin", "stock_wright", "wu_hausman", "durbin", "hausman", "cragg_donald_f", "kleibergen_paap_rk_lm", "kleibergen_paap_rk_wald_f", "anderson_lm", "sanderson_windmeijer_f", "angrist_pischke_f", "effective_f", "schoenfeld", "egger", "begg", "chi2", "deviance", "pearson"]},
         "label": {"description": "The user's own label.", "type": "string"},
         "origin": {"description": "\"estimation\": computed by the estimating software as part of the fit or its standard output; \"postestimation\": asked for afterwards (a test command, wald(), estat).", "type": "string", "x-vocabulary": ["estimation", "postestimation"]},
         "tags": {"$ref": "#/$defs/strings"},
@@ -302,7 +302,7 @@
       "description": "Flat dict of named scalars. Names follow broom glance where one exists; the registered names below have fixed meanings, and unregistered names are allowed. Profiles register more.",
       "type": "object",
       "properties": {
-        "nobs": {"description": "Rows used in estimation.", "$ref": "#/$defs/count_metric", "x-level": 1},
+        "nobs": {"description": "Number of observations as the tool reports it (Stata e(N), R nobs(), statsmodels nobs), not recounted by the writer. Normally the rows used; when the tool counts otherwise (Stata frequency weights: e(N) is the sum of the weights), record its value with {value, definition}.", "$ref": "#/$defs/count_metric", "x-level": 1},
         "df_residual": {"description": "Residual degrees of freedom as the tool reports it, normally N - K - absorbed levels; use {value, definition} when the tool's value means something else (e.g. min(G) - 1 under clustering). The df used for t tests goes in structures.vcov[].df_t.", "$ref": "#/$defs/metric", "x-level": 1},
         "df_model": {"description": "Model degrees of freedom.", "$ref": "#/$defs/metric"},
         "conf_level": {"description": "Level of conf_low/conf_high in parameters.", "$ref": "#/$defs/metric", "x-level": 1},

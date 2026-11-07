@@ -1,8 +1,7 @@
 """estrec for Stata (stata/estrec.ado): every supported command writes a valid record.
 
 Each command runs on Stata's auto data (plus a count and a panel id). The records must
-validate with no warnings at every disclosure level (but glm/0.1's missing deviance after
-commands that post none), claim the profiles listed below, and
+validate with no warnings at every disclosure level, claim the profiles listed below, and
 reproduce Stata's own results table (r(table)) to rounding. reghdfe records must equal the
 worked converter's (converters/reghdfe) apart from the writer's name and the formula text.
 
@@ -58,14 +57,21 @@ CASES = {
     "poisson": ("poisson cnt mpg weight, exposure(length)", [INF, GLM], None),
     "nbreg": ("nbreg cnt mpg weight, vce(cluster id)", [INF, GLM], None),
     "glm": ("glm cnt mpg weight, family(poisson) link(log)", [INF, GLM], None),
+    "glm_poisson": ("glm cnt mpg weight, family(poisson) link(log) exposure(length)", [INF, GLM], None),
+    "poisson_fw": ("poisson cnt mpg weight [fw=rep78], exposure(length)", [INF, GLM], None),
+    "glm_poisson_fw": (
+        "glm cnt mpg weight [fw=rep78], family(poisson) link(log) exposure(length)",
+        [INF, GLM],
+        None,
+    ),
     "glm_irls": ("glm foreign mpg weight, family(binomial) link(logit) irls", [INF], None),
     "tobit": ("tobit price mpg, ll(3500)", None, None),
 }
 
-# These post no deviance and estrec computes none, so glm/0.1 warns that it is missing
-NO_DEVIANCE = {"logit", "logistic", "probit", "poisson", "nbreg"}
+# Stata's ML commands (not glm)
+ML = {"logit", "logistic", "probit", "poisson", "poisson_fw", "nbreg"}
 # z tests: no e(df_r), so no df_residual and a null df_t (inference/0.1)
-Z_TESTS = NO_DEVIANCE | {"xtreg_re", "ivregress_2sls", "ivregress_gmm", "ivreg2_robust", "ivreg2_endog"}
+Z_TESTS = ML | {"xtreg_re", "ivregress_2sls", "ivregress_gmm", "ivreg2_robust", "ivreg2_endog"}
 
 SETUP = """
 set linesize 200
@@ -143,8 +149,6 @@ def _case(written: Path, installed: set, name: str, level: int = 4) -> dict:
     path = written / f"{name}_l{level}.estrec.json"
     rec = ef.read(path)
     issues = [i for i in ef.validate(rec, base_dir=path.parent) if i.level != "info"]
-    if name in NO_DEVIANCE:
-        issues = [i for i in issues if not (i.level == "warning" and i.path == "metrics.deviance")]
     assert not issues, f"{path.name}: {issues}"
     assert rec["meta"]["disclosure"] == {"level": level}
     assert ef.record_level(rec) <= level
@@ -217,9 +221,12 @@ def test_regress_keeps_the_model_based_vcov(written, installed):
     assert model["type"] == "iid" and not model["default"] and model["df_t"] == 69 - 7
 
 
-def test_frequency_weights_count_rows(written, installed):
-    rec = _case(written, installed, "regress_fw")
-    assert rec["metrics"]["nobs"]["value"] == 69 and rec["metrics"]["sum_weights"] == 235
+def test_frequency_weights_keep_statas_n(written, installed):
+    # nobs is e(N) as Stata reports it (235, the sum of the weights), not the 69 rows used
+    for name in ("regress_fw", "poisson_fw", "glm_poisson_fw"):
+        m = _case(written, installed, name)["metrics"]
+        assert m["nobs"]["value"] == 235 and "frequency weights" in m["nobs"]["definition"], name
+        assert m["sum_weights"]["value"] == 235, name
 
 
 def test_ivregress_records_estat(written, installed):
@@ -267,11 +274,26 @@ def test_z_tests_record_no_residual_df(written, installed, name):
     assert rec["structures"]["vcov"][0]["df_t"] is None
 
 
-def test_deviance_only_when_posted(written, installed):
-    for name in sorted(NO_DEVIANCE):
+def test_deviance_as_stata_reports_it(written, installed):
+    for name in ("logit", "logistic", "probit", "nbreg"):  # Stata reports none; estrec computes none
         assert "deviance" not in _case(written, installed, name)["metrics"], name
-    glm = _case(written, installed, "glm")
-    assert isinstance(glm["metrics"]["deviance"], float)
+    for ml, glm in (("poisson", "glm_poisson"), ("poisson_fw", "glm_poisson_fw")):
+        rec = _case(written, installed, ml)
+        dev, pearson = rec["metrics"]["deviance"], rec["metrics"]["pearson_chi2"]
+        assert "estat gof" in dev["definition"] and "estat gof" in pearson["definition"]
+        tests = _tests(rec)
+        assert tests[("model_fit", "deviance", "chi2")]["statistic"] == dev["value"]
+        assert tests[("model_fit", "deviance", "chi2")]["origin"] == "postestimation"
+        assert tests[("model_fit", "pearson", "chi2")]["statistic"] == pearson["value"]
+        # the same quantity as glm's e(deviance) and e(deviance_p), which is why it's named deviance
+        g = _case(written, installed, glm)["metrics"]
+        assert dev["value"] == pytest.approx(g["deviance"], rel=1e-10)
+        # poisson and glm stop at coefficients up to 1e-6 apart (relative); the deviance is flat at the
+        # optimum and agrees to 1e-12, Pearson's statistic moves with the coefficients
+        assert pearson["value"] == pytest.approx(g["pearson_chi2"], rel=1e-6)
+    for name in ("logit", "logistic", "probit"):
+        t = _tests(_case(written, installed, name))[("model_fit", "pearson", "chi2")]
+        assert "covariate patterns" in t["label"] and t["origin"] == "postestimation"
 
 
 def test_unmapped_command_is_core_only(written, installed):

@@ -23,7 +23,8 @@
 *   noidentifying    leave out user, host and the data file's path (level 5 only)
 *   nodatasignature  skip the in-memory data checksum (datasignature)
 *   call(string)     the command as written (default: e(cmdline))
-*   noestat          after ivregress, don't run estat firststage/overid/endogenous
+*   noestat          don't run estat (firststage/overid/endogenous after ivregress, gof after
+*                    poisson, logit, logistic, probit)
 *
 * The record has no core digest (meta.core_digest is optional): computing it needs RFC 8785
 * canonical JSON. Add it with the reference tool: `estrec digest --write FILE`.
@@ -408,7 +409,7 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 	real matrix b, V, dof, M, Vm
 	real scalar N, nobs, dfr, dft, small, linear, ml, iv, ncl, i, j, k, se, t, crit, level, lvconf
 	real scalar nsing, rows_input, n_complete, n_used, n_missing, n_other, conv_ok, fh, ident, rank
-	real scalar doestat, dev, alpha, rc, isiid, haveabs, fw
+	real scalar doestat, dev, alpha, rc, isiid, haveabs, fw, gofd, gofp, gofdf, gofpd, gofpp
 	struct erobj scalar meta, metrics, spec, sample, structures, prov, est, vc, opts, num, vm
 	struct ertests scalar T
 
@@ -435,7 +436,7 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 	wtype = _eg("wtype")
 	wvar = strtrim(subinstr(_eg("wexp"), "=", "", 1))
 	fw = wtype == "fweight"
-	nobs = (fw & !missing(n_used)) ? n_used : N
+	nobs = N    // as Stata reports it; with fweights e(N) is the sum of the weights (Ted, 2026-11-07)
 
 	linear = _isin(kind, ("regress", "areg", "xtreg_fe", "xtreg_re", "reghdfe", "ivregress", "ivreg2", "ivreghdfe"))
 	ml = _isin(kind, ("ml", "glm"))
@@ -583,7 +584,7 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 	// ---- metrics ----
 	nsing = _isin(kind, ("reghdfe", "ivreghdfe")) ? _e("num_singletons") : (_isin(kind, ("areg", "xtreg_fe")) ? 0 : .)
 	metrics = _on()
-	_oa(metrics, "nobs", _ej_def(_ej_n(nobs), fw ? "rows used; e(N) counts the frequency weights" : ""), 1)
+	_oa(metrics, "nobs", _ej_def(_ej_n(nobs), fw ? "Stata e(N): with frequency weights each row counts as its weight's number of observations" : ""), 1)
 	_oa(metrics, "nobs_full", _en("N_full"), 2)
 	_oa(metrics, "n_singletons", _ej_nx(nsing), 2)
 	dfdef = ""
@@ -619,21 +620,32 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 	_oa(metrics, "log_lik", _en("ll"), 2)
 	_oa(metrics, "log_lik_null", _en("ll_0"), 2)
 	if (ml) {
-		// Only what the command posts: logit, probit, poisson and nbreg post no deviance (Ted, 2026-11-07)
-		_oa(metrics, "deviance", _en("deviance"), 2)
+		// Only what Stata reports (Ted, 2026-11-07): glm's e(deviance), or after poisson the deviance
+		// goodness-of-fit of estat gof (equal to glm, family(poisson)'s e(deviance)); logit, probit
+		// and nbreg report none
+		gofd = gofp = gofdf = gofpd = gofpp = .
+		if (cmd == "poisson" & doestat) {
+			if (!_stata("quietly estat gof", 1)) {
+				gofd = _sc("r(chi2_d)"); gofp = _sc("r(chi2_p)"); gofdf = _sc("r(df)")
+				gofpd = _sc("r(p_d)"); gofpp = _sc("r(p_p)")
+			}
+		}
+		if (kind == "glm") _oa(metrics, "deviance", _en("deviance"), 2)
+		else _oa(metrics, "deviance", _ej_def(_ej_nx(gofd), "Stata estat gof, Deviance goodness-of-fit (r(chi2_d))"), 2)
 		_oa(metrics, "pseudo_r2", _en("r2_p"), 2)
 		if (!missing(_e("N_cds"))) _oa(metrics, "n_completely_determined", _ej_n(_e("N_cds") + _e("N_cdf")), 2)
 		_oa(metrics, "alpha", _en("alpha"), 2)
 		_oa(metrics, "aic", _ej_def(_en("aic"), "(-2 log_lik + 2 K) / N, per observation (Stata glm)"), 2)
 		_oa(metrics, "bic", _ej_def(_en("bic"), "deviance - df_residual * ln(N) (Stata glm)"), 2)
 		_oa(metrics, "dispersion", _en("phi"), 2)
-		_oa(metrics, "pearson_chi2", _en("deviance_p"), 2)
+		if (kind == "glm") _oa(metrics, "pearson_chi2", _en("deviance_p"), 2)
+		else _oa(metrics, "pearson_chi2", _ej_def(_ej_nx(gofp), "Stata estat gof, Pearson goodness-of-fit (r(chi2_p))"), 2)
 	}
 	if (iv) {
 		_oa(metrics, "kappa", (kind == "ivregress" ? (_eg("estimator") == "liml" ? _en("kappa") : "") : _en("lambda")), 2)
 		_oa(metrics, "fuller", _en("fuller"), 2)
 	}
-	_oa(metrics, "sum_weights", fw ? _ej_n(N) : _en("sumweights"), 2)
+	_oa(metrics, "sum_weights", fw ? _ej_def(_ej_n(N), "Stata e(N), which with frequency weights is the sum of the weights") : _en("sumweights"), 2)
 	_oa(metrics, "rank", _ej_nx(rank), 2)
 	_oa(metrics, "conf_level", _ej_n(level / 100), 1)
 
@@ -681,6 +693,17 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 		}
 	}
 	if (iv & kind == "ivregress" & doestat) _er_estat(T, perendog, endog, isiid, lv)
+	if (ml & doestat) {
+		s = lv < 4 ? "" : _ej_o(("name", "version", "call"), (_ej_s("stata"), _ej_s(strofreal(c("stata_version"))), _ej_s("estat gof")))
+		if (!missing(gofd)) {
+			_ta(T, "model_fit", "deviance", gofd, "chi2", gofdf, ., gofpd, "postestimation", "", "Deviance goodness-of-fit", s)
+			_ta(T, "model_fit", "pearson", gofp, "chi2", gofdf, ., gofpp, "postestimation", "", "Pearson goodness-of-fit", s)
+		}
+		else if (_isin(cmd, ("logit", "logistic", "probit"))) {
+			if (!_stata("quietly estat gof", 1)) _ta(T, "model_fit", "pearson", _sc("r(chi2)"), "chi2", _sc("r(df)"), ., _sc("r(p)"),
+				"postestimation", "", sprintf("Pearson chi2 over %g covariate patterns", _sc("r(m)")), s)
+		}
+	}
 
 	// ---- specification ----
 	sample = _on()

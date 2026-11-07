@@ -19,7 +19,7 @@
 {synopt:{opt noident:ifying}}leave out user, host and the data file's path (written only at level 5){p_end}
 {synopt:{opt nodatasig:nature}}skip the {helpb datasignature} checksum of the data in memory{p_end}
 {synopt:{opt call(string)}}the command as you want it recorded; default {cmd:e(cmdline)}{p_end}
-{synopt:{opt noestat}}after {cmd:ivregress}, don't run {cmd:estat firststage}, {cmd:estat overid} and {cmd:estat endogenous}{p_end}
+{synopt:{opt noestat}}don't run {cmd:estat}: {cmd:estat firststage}, {cmd:estat overid} and {cmd:estat endogenous} after {cmd:ivregress}, {cmd:estat gof} after {cmd:poisson}, {cmd:logit}, {cmd:logistic} and {cmd:probit}{p_end}
 {synoptline}
 
 
