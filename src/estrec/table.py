@@ -15,6 +15,7 @@ A spec holds no numbers: rendering reads the records it names (by `meta.id`) fro
 
 from __future__ import annotations
 
+import base64
 import html
 import json
 import math
@@ -71,28 +72,56 @@ _WORDS = {
 }
 
 
-def uncertainty_lines(spec: dict) -> list[str]:
-    """The templates for the lines under each estimate: `uncertainty` as a name, a list of
-    names and templates, or None (no lines)."""
+SPARK_COLOR = "#2b5f8e"
+SPARK_SCALES = ("column", "row", "table")
+_SPARK_TEXT = "[{conf_low}, {conf_high}]"
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _line_items(spec: dict) -> list:
     unc = spec.get("uncertainty", "std_error")
     if unc is None:
         return []
-    items = [unc] if isinstance(unc, str) else list(unc)
-    return [NAMED_LINES.get(x, x) for x in items]
+    return [unc] if isinstance(unc, (str, dict)) else list(unc)
+
+
+def uncertainty_lines(spec: dict) -> list:
+    """The lines under each estimate: `uncertainty` as a name, a template, a sparkline or a
+    list of them, or None (no lines). Names become templates; a sparkline becomes
+    {"sparkline": {"color", "scale"}} with the defaults filled in."""
+    out = []
+    for x in _line_items(spec):
+        if isinstance(x, dict):
+            sp = x.get("sparkline") or {}
+            out.append(
+                {"sparkline": {"color": sp.get("color", SPARK_COLOR), "scale": sp.get("scale", "column")}}
+            )
+        else:
+            out.append(NAMED_LINES.get(x, x))
+    return out
 
 
 def _line_issues(spec: dict) -> list[Issue]:
     unc = spec.get("uncertainty", "std_error")
     if unc is None:
         return []
-    items = [unc] if isinstance(unc, str) else unc
+    items = [unc] if isinstance(unc, (str, dict)) else unc
     if not isinstance(items, list):
         return [Issue("error", "uncertainty", "a name, a list of names and templates, or null")]
     out = []
     for j, x in enumerate(items):
-        path = "uncertainty" if isinstance(unc, str) else f"uncertainty[{j}]"
-        if not isinstance(x, str):
-            out.append(Issue("error", path, "a name or a template string"))
+        path = "uncertainty" if isinstance(unc, (str, dict)) else f"uncertainty[{j}]"
+        if isinstance(x, dict):
+            sp = x.get("sparkline")
+            if list(x) != ["sparkline"] or not isinstance(sp, dict):
+                out.append(Issue("error", path, 'an object line is {"sparkline": {color, scale}}'))
+                continue
+            if "color" in sp and not (isinstance(sp["color"], str) and _HEX.match(sp["color"])):
+                out.append(Issue("error", f"{path}.sparkline.color", "a colour as #rrggbb"))
+            if "scale" in sp and sp["scale"] not in SPARK_SCALES:
+                out.append(Issue("error", f"{path}.sparkline.scale", "'column', 'row' or 'table'"))
+        elif not isinstance(x, str):
+            out.append(Issue("error", path, "a name, a template string or a sparkline"))
         elif x in NAMED_LINES:
             continue
         elif "{" not in x:
@@ -118,6 +147,9 @@ def _uncertainty_note(spec: dict, lines: list[str]) -> str | None:
         return _NAMED_NOTES[unc]
     parts = []
     for t in lines:
+        if isinstance(t, dict):
+            parts.append("confidence interval drawn as a line, the estimate as a dot, 0 as a grey rule")
+            continue
         t = t.replace("{conf_low}, {conf_high}", "confidence interval")
         parts.append(_PLACEHOLDER.sub(lambda m: _WORDS.get(m.group(1), m.group(1)), t))
     return "Under each estimate: " + "; ".join(parts) + "."
@@ -452,6 +484,74 @@ def _fill(template: str, row: dict, digits: int, p_digits: int, p_style: str, mi
     return _PLACEHOLDER.sub(lambda m: vals[m.group(1)], template)
 
 
+def _spark_mark(r: dict) -> dict | None:
+    vals = [r.get(k) for k in ("conf_low", "estimate", "conf_high")]
+    if any(v is None or not math.isfinite(v) for v in vals):
+        return None
+    return {"low": vals[0], "estimate": vals[1], "high": vals[2]}
+
+
+def _spark_domains(rows: list[dict]) -> None:
+    """Give each sparkline mark the axis it is drawn on, [lo, hi], always holding 0: shared
+    down a column, along a row or across the table (the line's `scale`), among the marks of
+    sparkline lines with the same scale."""
+    groups: dict = {}
+    for i, r in enumerate(rows):
+        sp = r.get("sparkline")
+        if not sp:
+            continue
+        for j, m in enumerate(sp["marks"]):
+            if m is None:
+                continue
+            key = {"column": j, "row": i, "table": 0}[sp["scale"]]
+            groups.setdefault((sp["scale"], key), []).append(m)
+    for ms in groups.values():
+        lo = min([0.0] + [m["low"] for m in ms])
+        hi = max([0.0] + [m["high"] for m in ms])
+        if lo == hi:
+            lo, hi = -1.0, 1.0
+        for m in ms:
+            m["domain"] = [lo, hi]
+
+
+def _spark_dark(color: str) -> str:
+    """The estimate dot's colour: the line's, about a third darker."""
+    rgb = [int(color[k : k + 2], 16) * 13 // 20 for k in (1, 3, 5)]
+    return "#" + "".join(f"{v:02x}" for v in rgb)
+
+
+SPARK_W, SPARK_H = 72, 12
+
+
+def _spark_svg(m: dict | None, color: str, label: str = "") -> str:
+    """One interval as a small SVG: a grey rule at 0, the interval as a line with a dot at
+    each end in `color`, the estimate as a darker dot."""
+    if m is None:
+        return ""
+    lo, hi = m["domain"]
+    pad = 3.0
+
+    def x(v):
+        # tenths of a pixel, rounded half up with integers so the browser draws the same
+        n = math.floor((pad + (v - lo) / (hi - lo) * (SPARK_W - 2 * pad)) * 10 + 0.5)
+        return f"{n // 10}.{n % 10}"
+
+    y = f"{SPARK_H / 2:.1f}"
+    x0, xl, xe, xh = x(0.0), x(m["low"]), x(m["estimate"]), x(m["high"])
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{SPARK_W}" height="{SPARK_H}" '
+        f'viewBox="0 0 {SPARK_W} {SPARK_H}" role="img"'
+        + (f' aria-label="{html.escape(label)}"' if label else "")
+        + ">"
+        f'<line x1="{x0}" y1="0" x2="{x0}" y2="{SPARK_H}" stroke="#555555" stroke-width="1"/>'
+        f'<line x1="{xl}" y1="{y}" x2="{xh}" y2="{y}" stroke="{color}" stroke-width="1.5"/>'
+        f'<circle cx="{xl}" cy="{y}" r="1.6" fill="{color}"/>'
+        f'<circle cx="{xh}" cy="{y}" r="1.6" fill="{color}"/>'
+        f'<circle cx="{xe}" cy="{y}" r="2.4" fill="{_spark_dark(color)}"/>'
+        "</svg>"
+    )
+
+
 def _stars(p: float, thresholds: list[float], symbols: list[str]) -> str:
     if p is None or math.isnan(p):
         return ""
@@ -559,18 +659,29 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
     for label, names in listed:
         est = []
         below: list[list[str]] = [[] for _ in lines]
+        marks: list[list] = [[] for _ in lines]
         for c in cols:
             r = next((c["tidy"][n] for n in names if n in c["tidy"]), None)
             if r is None:
                 est.append(missing)
-                for b in below:
+                for b, m in zip(below, marks):
                     b.append(missing)
+                    m.append(None)
                 continue
             est.append(_fixed(r["estimate"], digits) + _stars(r["p_value"], stars, symbols))
-            for b, t in zip(below, lines):
-                b.append(_fill(t, r, digits, p_digits, p_style, missing))
+            for b, m, t in zip(below, marks, lines):
+                if isinstance(t, dict):
+                    b.append(_fill(_SPARK_TEXT, r, digits, p_digits, p_style, missing))
+                    m.append(_spark_mark(r))
+                else:
+                    b.append(_fill(t, r, digits, p_digits, p_style, missing))
         out_rows.append({"label": label, "cells": est, "kind": "estimate"})
-        out_rows += [{"label": "", "cells": b, "kind": "uncertainty"} for b in below]
+        for b, m, t in zip(below, marks, lines):
+            row = {"label": "", "cells": b, "kind": "uncertainty"}
+            if isinstance(t, dict):
+                row["sparkline"] = dict(t["sparkline"], marks=m)
+            out_rows.append(row)
+    _spark_domains(out_rows)
 
     for s in spec.get("stats") or []:
         d = s.get("digits", digits)
@@ -702,6 +813,24 @@ def _render_latex(t: dict, escape: bool = True) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _html_cell(r: dict, j: int) -> str:
+    sp = r.get("sparkline")
+    if sp is None:
+        return f"<td>{html.escape(r['cells'][j])}</td>"
+    return f'<td class="spark">{_spark_svg(sp["marks"][j], sp["color"], r["cells"][j])}</td>'
+
+
+def _spark_img(m: dict | None, color: str, label: str) -> str:
+    """A sparkline as an <img> of its SVG (Word keeps images, not inline SVG)."""
+    if m is None:
+        return ""
+    data = base64.b64encode(_spark_svg(m, color).encode("ascii")).decode("ascii")
+    return (
+        f'<img width="{SPARK_W}" height="{SPARK_H}" alt="{html.escape(label)}" '
+        f'src="data:image/svg+xml;base64,{data}">'
+    )
+
+
 def _render_html(t: dict) -> str:
     h = html.escape
     out = ['<table class="estrec-table">']
@@ -723,7 +852,7 @@ def _render_html(t: dict) -> str:
         cls = r["kind"] + (" first-stat" if r["kind"] == "stat" and prev != "stat" else "")
         out.append(
             f'<tr class="{cls}"><th>{h(r["label"])}</th>'
-            + "".join(f"<td>{h(x)}</td>" for x in r["cells"])
+            + "".join(_html_cell(r, j) for j in range(len(r["cells"])))
             + "</tr>"
         )
         prev = r["kind"]
@@ -783,7 +912,9 @@ _WORD_RULE = "solid windowtext"
 _WORD_CELL = "padding:0 5.4pt;border:none;white-space:nowrap"
 
 
-def _word_cell(text: str, *, left: bool, top: str = "", bottom: str = "", pad_top: bool = False) -> str:
+def _word_cell(
+    text: str, *, left: bool, top: str = "", bottom: str = "", pad_top: bool = False, raw: str | None = None
+) -> str:
     style = _WORD_CELL + (";text-align:left" if left else ";text-align:center")
     if top:
         style += f";border-top:{top} {_WORD_RULE}"
@@ -791,7 +922,7 @@ def _word_cell(text: str, *, left: bool, top: str = "", bottom: str = "", pad_to
         style += f";border-bottom:{bottom} {_WORD_RULE}"
     if pad_top:
         style += ";padding-top:3pt"
-    return f'<td style="{style}">{html.escape(text)}</td>'
+    return f'<td style="{style}">{html.escape(text) if raw is None else raw}</td>'
 
 
 def _render_word(t: dict) -> str:
@@ -826,10 +957,18 @@ def _render_word(t: dict) -> str:
             top = "1.5pt"
         bottom = "1.5pt" if k == last else ""
         pad = r["kind"] == "estimate" and k > 0
+        sp = r.get("sparkline")
         out.append(
             "<tr>"
             + "".join(
-                _word_cell(x, left=i == 0, top=top, bottom=bottom, pad_top=pad)
+                _word_cell(
+                    x,
+                    left=i == 0,
+                    top=top,
+                    bottom=bottom,
+                    pad_top=pad,
+                    raw=_spark_img(sp["marks"][i - 1], sp["color"], x) if sp and i else None,
+                )
                 for i, x in enumerate([r["label"]] + r["cells"])
             )
             + "</tr>"

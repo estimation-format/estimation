@@ -169,6 +169,14 @@ def specs():
         s["response_labels"] = {"mpg": "Miles per gallon"}
         s["columns"][1]["header"] = "with hp"
         out.append(s)
+    for unc in (
+        ["std_error", {"sparkline": {}}],
+        [{"sparkline": {"color": "#c0392b", "scale": "row"}}, "[{p_value}]"],
+        {"sparkline": {"scale": "table", "color": "#0A7F3F"}},
+    ):
+        s = copy.deepcopy(base)
+        s["uncertainty"] = unc
+        out.append(s)
     return out
 
 
@@ -207,6 +215,7 @@ def test_tables_match_python(node_result):
         assert "error" not in js, (i, js)
         assert js["header"] == py["header"], i
         assert js["head"] == py["head"], i
+        assert [r.get("sparkline") for r in js["rows"]] == [r.get("sparkline") for r in py["rows"]], i
         assert [r["label"] for r in js["rows"]] == [r["label"] for r in py["rows"]], i
         assert [r["cells"] for r in js["rows"]] == [r["cells"] for r in py["rows"]], i
         assert js["notes"] == py["notes"], i
@@ -217,7 +226,9 @@ def test_renderers_match_python(node_result):
     if NODE is None:
         pytest.skip("node not installed")
     all_specs = specs()
-    for spec in [all_specs[0]] + [s for s in all_specs if "head" in s]:
+    sparks = [s for s in all_specs if "sparkline" in json.dumps(s.get("uncertainty"))]
+    assert len(sparks) == 3
+    for spec in [all_specs[0]] + [s for s in all_specs if "head" in s] + sparks:
         py = et.build_table(spec, base_dir=EXAMPLES)
         script = (
             "const E=require(process.argv[1]);const t=JSON.parse(require('fs').readFileSync(0,'utf8'));"

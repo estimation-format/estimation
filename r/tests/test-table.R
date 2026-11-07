@@ -45,6 +45,12 @@ if (dir.exists(ex)) {
   spec$head <- list("number", "bogus")
   stopifnot(grepl("'bogus' is not one of", tryCatch(render_table(spec, base_dir = ex), error = conditionMessage)))
   spec$head <- NULL; spec$response_labels <- NULL
+  # a sparkline line is the interval as text here
+  spec$uncertainty <- list("std_error", list(sparkline = list(color = "#c0392b")))
+  x <- render_table(spec, output = "data.frame", base_dir = ex)
+  stopifnot(identical(unname(unlist(x[3, 4])), "[-4.750, -1.661]"))
+  spec$uncertainty <- list(sparkline = list(scale = "row"))
+  stopifnot(identical(unname(unlist(render_table(spec, output = "data.frame", base_dir = ex)[2, 4])), "[-4.750, -1.661]"))
   spec$uncertainty <- list("({stderr})")
   stopifnot(grepl("unknown placeholder \\{stderr\\}", tryCatch(render_table(spec, base_dir = ex), error = conditionMessage)))
   spec$uncertainty <- NULL; spec["uncertainty"] <- list(NULL)

@@ -191,9 +191,14 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
 
 .tab_lines <- function(unc) {
   if (is.null(unc)) return(character())
-  items <- unlist(unc)
+  items <- if (is.list(unc) && !is.null(names(unc))) list(unc) else as.list(unc)
   vapply(seq_along(items), function(j) {
     x <- items[[j]]
+    # a sparkline (spec/table.md 5): modelsummary draws no plots, so the interval as text
+    if (is.list(x)) {
+      if (!identical(names(x), "sparkline")) stop("uncertainty[", j - 1, "]: an object line is {\"sparkline\": {color, scale}}", call. = FALSE)
+      return("[{conf_low}, {conf_high}]")
+    }
     if (x %in% names(.tab_named_lines)) return(unname(.tab_named_lines[x]))
     if (!grepl("{", x, fixed = TRUE))
       stop("uncertainty[", j - 1, "]: '", x, "' is neither a name (",

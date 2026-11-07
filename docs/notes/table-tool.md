@@ -42,6 +42,16 @@ Decisions so far:
   of `{kind, cells}`) and `header` (the numbers). Markdown and modelsummary have one heading
   row: the first; the others open the body. Viewer: "Heading rows" (on/off, up/down) and a
   name box per dependent variable.
+- Interval sparklines (Ted, 2026-11-07): a line type `{"sparkline": {"color", "scale"}}`
+  under each estimate. The CI is drawn as a coloured line with a dot at each end, the
+  estimate as a darker dot (channels x 0.65) and 0 as a dark grey rule. `scale` is
+  `column` (default; for event studies, leads and lags down a column read as a coefficient
+  plot), `row` or `table`; an axis always holds 0. HTML, the web page and the viewer
+  draw inline SVG; Word gets `<img>` of the SVG, and the viewer's Copy turns it into PNG
+  (Word drops SVG on paste); text, Markdown, CSV, LaTeX, great_tables and R show
+  `[low, high]`. Coordinates are rounded in integer tenths so JS and Python match.
+  Open: Ted to check the Word paste; perhaps LaTeX (TikZ), R (tinytable images),
+  great_tables (`gt.html`); a continuous 0 rule down a column (rows between break it now).
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).
 
@@ -53,7 +63,7 @@ Decisions so far:
   the generated files are stale.
 - valiant has no browser. The UI was checked with a node DOM stand-in, so Ted reviews it via
   a private artifact preview (latest: https://claude.ai/artifact/En9fanz81wP5ueYEBHkFYB,
-  v6 with heading rows (same link as v5, the Word export), an inlined copy of `viewer/` without `publish.js`; v4 was
+  v7 with interval sparklines (same link since v5; v6 heading rows, v5 the Word export); event-study sparkline example https://claude.ai/artifact/7p3VZjgZDwtsrH7pv7MikW, an inlined copy of `viewer/` without `publish.js`; v4 was
   https://claude.ai/artifact/FZJU8TRYRWEFpY64nnyy1Z; web-export example https://claude.ai/artifact/LmYbDiLtDB59NqohaPR3LN). Downloads
   don't work inside artifacts; they do on a normal host.
 - R: `R CMD check` must stay clean. Use ASCII only in R code (`²` escapes). Ted

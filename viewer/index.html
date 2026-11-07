@@ -145,6 +145,10 @@ table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: n
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
 table.estrec-table tr.uncertainty td { color: var(--muted); }
+table.estrec-table td.spark { padding-top: 0; padding-bottom: 0; line-height: 0; }
+table.estrec-table td.spark svg { display: inline-block; vertical-align: middle; }
+.spark-fields { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.spark-fields input[type=color] { width: 34px; height: 24px; padding: 0 2px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
 table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
 table.estrec-table tr.first-stat th, table.estrec-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
 table.estrec-table tbody tr:last-child th, table.estrec-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
@@ -259,6 +263,7 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
                 <option value="({statistic})">t / z statistic: (-4.25)</option>
                 <option value="[{conf_low}, {conf_high}]">Confidence interval: [-4.75, -1.66]</option>
                 <option value="p = {p_value}">p-value: p = 0.012</option>
+                <option value="sparkline">Interval sparkline: a small plot of the interval</option>
               </select>
               <button class="btn small" id="line-add-btn" type="button">Add line</button>
             </div>
@@ -821,6 +826,20 @@ function renderLines() {
   const arr = lineList();
   if (!arr.length) box.append(el("p", { class: "empty", text: "No lines: estimates only." }));
   arr.forEach((x, i) => {
+    if (x && typeof x === "object") {
+      const sp = Object.assign({ color: E.SPARK_COLOR, scale: "column" }, x.sparkline);
+      const save = () => { arr[i] = { sparkline: { color: sp.color, scale: sp.scale } }; setLines(arr); update({ keepControls: true }); };
+      const color = el("input", { type: "color", id: `line-${i}-color`, value: sp.color, "aria-label": "Sparkline colour" });
+      color.addEventListener("input", () => { sp.color = color.value; save(); });
+      const scale = el("select", { id: `line-${i}-scale`, "aria-label": "Sparklines that share an axis" },
+        el("option", { value: "column", text: "Same axis down each column" }),
+        el("option", { value: "row", text: "Same axis along each row" }),
+        el("option", { value: "table", text: "One axis for the table" }));
+      scale.value = sp.scale;
+      scale.addEventListener("change", () => { sp.scale = scale.value; save(); });
+      box.append(el("div", { class: "item" }, el("div", { class: "fields spark-fields" }, el("span", { text: "Interval sparkline" }), color, scale), toolButtons(arr, i, () => { setLines(arr); update(); })));
+      return;
+    }
     const inp = el("input", { type: "text", id: `line-${i}`, value: E.NAMED_LINES[x] || x, "aria-label": `Line ${i + 1} under each estimate`, spellcheck: "false", class: "mono" });
     inp.addEventListener("input", () => { arr[i] = inp.value; setLines(arr); update({ keepControls: true }); });
     box.append(el("div", { class: "item" }, el("div", { class: "fields" }, inp), toolButtons(arr, i, () => { setLines(arr); update(); })));
@@ -1106,7 +1125,8 @@ for (const id of ["opt-title", "opt-notes", "opt-feyes", "opt-digits", "opt-pdig
 for (const id of ["opt-stars", "opt-pstyle"]) $(id).addEventListener("change", () => update({ keepControls: true }));
 $("line-add-btn").addEventListener("click", () => {
   const arr = lineList();
-  arr.push($("line-add").value);
+  const v = $("line-add").value;
+  arr.push(v === "sparkline" ? { sparkline: { color: E.SPARK_COLOR, scale: "column" } } : v);
   setLines(arr);
   update();
 });
@@ -1140,17 +1160,36 @@ $("formats").addEventListener("click", (e) => {
 // A formatted table on the clipboard: text/html for Word and the like, the text rendering as
 // text/plain. Async clipboard first; else copy a selection of the rendered table, which keeps
 // the inline styles (works where the clipboard API is blocked, e.g. inside an iframe).
+// Word drops SVG from pasted HTML, so sparkline images become PNGs (drawn at 4x) first
+async function svgImagesToPng(htmlDoc) {
+  if (!htmlDoc.includes("data:image/svg+xml")) return htmlDoc;
+  const doc = new DOMParser().parseFromString(htmlDoc, "text/html");
+  for (const img of doc.querySelectorAll('img[src^="data:image/svg+xml"]')) {
+    try {
+      const w = Number(img.getAttribute("width")), h = Number(img.getAttribute("height")), k = 4;
+      const im = new Image();
+      await new Promise((ok, bad) => { im.onload = ok; im.onerror = bad; im.src = img.getAttribute("src"); });
+      const cv = document.createElement("canvas");
+      cv.width = w * k; cv.height = h * k;
+      const cx = cv.getContext("2d");
+      cx.drawImage(im, 0, 0, w * k, h * k);
+      img.setAttribute("src", cv.toDataURL("image/png"));
+    } catch { /* keep the SVG */ }
+  }
+  return "<!doctype html>\n" + doc.documentElement.outerHTML;
+}
+
 async function copyRich(htmlDoc, plain) {
   if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
     try {
       await navigator.clipboard.write([new ClipboardItem({
-        "text/html": new Blob([htmlDoc], { type: "text/html" }),
+        "text/html": svgImagesToPng(htmlDoc).then((d) => new Blob([d], { type: "text/html" })),
         "text/plain": new Blob([plain], { type: "text/plain" }),
       })]);
       return true;
     } catch { /* fall through */ }
   }
-  const body = new DOMParser().parseFromString(htmlDoc, "text/html").body;
+  const body = new DOMParser().parseFromString(await svgImagesToPng(htmlDoc), "text/html").body;
   const holder = el("div", { contenteditable: "true", style: "position:fixed;left:-10000px;top:0;background:#fff;color:#000" });
   holder.append(...body.childNodes);
   document.body.append(holder);

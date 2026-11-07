@@ -25,10 +25,26 @@
   const NAMED_NOTES = { std_error: "Standard errors in parentheses.", statistic: "Test statistics in parentheses.", p_value: "p-values in brackets.", conf_int: "Confidence intervals in brackets." };
   const WORDS = { estimate: "estimate", std_error: "standard error", statistic: "test statistic", p_value: "p-value", conf_low: "lower bound", conf_high: "upper bound" };
 
-  function uncertaintyLines(spec) {
+  const SPARK_COLOR = "#2b5f8e";
+  const SPARK_SCALES = ["column", "row", "table"];
+  const SPARK_TEXT = "[{conf_low}, {conf_high}]";
+  const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+
+  function lineItems(spec) {
     const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
     if (unc === null) return [];
-    return (Array.isArray(unc) ? unc : [unc]).map((x) => NAMED_LINES[x] || x);
+    return Array.isArray(unc) ? unc : [unc];
+  }
+
+  // names become templates; a sparkline becomes {sparkline: {color, scale}} with defaults
+  function uncertaintyLines(spec) {
+    return lineItems(spec).map((x) => {
+      if (isObj(x)) {
+        const sp = x.sparkline || {};
+        return { sparkline: { color: sp.color !== undefined ? sp.color : SPARK_COLOR, scale: sp.scale !== undefined ? sp.scale : "column" } };
+      }
+      return NAMED_LINES[x] || x;
+    });
   }
 
   function lineIssues(spec) {
@@ -38,7 +54,12 @@
     const out = [];
     items.forEach((x, j) => {
       const path = Array.isArray(unc) ? `uncertainty[${j}]` : "uncertainty";
-      if (typeof x !== "string") out.push(issue("error", path, "a name or a template string"));
+      if (isObj(x)) {
+        const sp = x.sparkline;
+        if (Object.keys(x).join() !== "sparkline" || !isObj(sp)) { out.push(issue("error", path, 'an object line is {"sparkline": {color, scale}}')); return; }
+        if ("color" in sp && !(typeof sp.color === "string" && /^#[0-9a-fA-F]{6}$/.test(sp.color))) out.push(issue("error", `${path}.sparkline.color`, "a colour as #rrggbb"));
+        if ("scale" in sp && !SPARK_SCALES.includes(sp.scale)) out.push(issue("error", `${path}.sparkline.scale`, "'column', 'row' or 'table'"));
+      } else if (typeof x !== "string") out.push(issue("error", path, "a name, a template string or a sparkline"));
       else if (x in NAMED_LINES) return;
       else if (!x.includes("{")) out.push(issue("error", path, `'${x}' is neither a name (${Object.keys(NAMED_LINES).join(", ")}) nor a template`));
       else {
@@ -55,7 +76,7 @@
     const unc = spec.uncertainty === undefined ? "std_error" : spec.uncertainty;
     if (unc === null || !lines.length) return null;
     if (typeof unc === "string" && NAMED_NOTES[unc]) return NAMED_NOTES[unc];
-    const parts = lines.map((t) => t.replace("{conf_low}, {conf_high}", "confidence interval").replace(PLACEHOLDER, (_, n) => WORDS[n] || n));
+    const parts = lines.map((t) => isObj(t) ? "confidence interval drawn as a line, the estimate as a dot, 0 as a grey rule" : t.replace("{conf_low}, {conf_high}", "confidence interval").replace(PLACEHOLDER, (_, n) => WORDS[n] || n));
     return "Under each estimate: " + parts.join("; ") + ".";
   }
 
@@ -492,6 +513,70 @@
     return out;
   }
 
+  function sparkMark(r) {
+    const v = [r.conf_low, r.estimate, r.conf_high];
+    if (v.some((x) => typeof x !== "number" || !Number.isFinite(x))) return null;
+    return { low: v[0], estimate: v[1], high: v[2] };
+  }
+
+  // each mark's axis [lo, hi], holding 0: shared down a column, along a row or across the
+  // table (the line's scale), among sparkline lines with the same scale
+  function sparkDomains(rows) {
+    const groups = new Map();
+    rows.forEach((r, i) => {
+      const sp = r.sparkline;
+      if (!sp) return;
+      sp.marks.forEach((m, j) => {
+        if (!m) return;
+        const key = sp.scale + "/" + { column: j, row: i, table: 0 }[sp.scale];
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(m);
+      });
+    });
+    for (const ms of groups.values()) {
+      let lo = Math.min(0, ...ms.map((m) => m.low));
+      let hi = Math.max(0, ...ms.map((m) => m.high));
+      if (lo === hi) { lo = -1; hi = 1; }
+      for (const m of ms) m.domain = [lo, hi];
+    }
+  }
+
+  function sparkDark(color) {
+    return "#" + [1, 3, 5].map((k) => Math.floor(parseInt(color.slice(k, k + 2), 16) * 13 / 20).toString(16).padStart(2, "0")).join("");
+  }
+
+  const SPARK_W = 72, SPARK_H = 12;
+
+  function sparkSVG(m, color, label) {
+    if (!m) return "";
+    const [lo, hi] = m.domain;
+    const pad = 3;
+    const x = (v) => { const n = Math.floor((pad + (v - lo) / (hi - lo) * (SPARK_W - 2 * pad)) * 10 + 0.5); return `${Math.floor(n / 10)}.${n % 10}`; };
+    const y = (SPARK_H / 2).toFixed(1);
+    const [x0, xl, xe, xh] = [x(0), x(m.low), x(m.estimate), x(m.high)];
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${SPARK_W}" height="${SPARK_H}" viewBox="0 0 ${SPARK_W} ${SPARK_H}" role="img"` +
+      (label ? ` aria-label="${escHTML(label)}"` : "") + ">" +
+      `<line x1="${x0}" y1="0" x2="${x0}" y2="${SPARK_H}" stroke="#555555" stroke-width="1"/>` +
+      `<line x1="${xl}" y1="${y}" x2="${xh}" y2="${y}" stroke="${color}" stroke-width="1.5"/>` +
+      `<circle cx="${xl}" cy="${y}" r="1.6" fill="${color}"/>` +
+      `<circle cx="${xh}" cy="${y}" r="1.6" fill="${color}"/>` +
+      `<circle cx="${xe}" cy="${y}" r="2.4" fill="${sparkDark(color)}"/>` +
+      "</svg>";
+  }
+
+  const b64 = (s) => (typeof btoa === "function" ? btoa(s) : Buffer.from(s, "ascii").toString("base64"));
+
+  function sparkImg(m, color, label) {
+    if (!m) return "";
+    return `<img width="${SPARK_W}" height="${SPARK_H}" alt="${escHTML(label)}" src="data:image/svg+xml;base64,${b64(sparkSVG(m, color))}">`;
+  }
+
+  function htmlCell(r, j) {
+    const sp = r.sparkline;
+    if (!sp) return `<td>${escHTML(r.cells[j])}</td>`;
+    return `<td class="spark">${sparkSVG(sp.marks[j], sp.color, r.cells[j])}</td>`;
+  }
+
   function buildTable(spec, idx) {
     const issues = validateTable(spec, idx);
     const errors = issues.filter((i) => i.level === "error");
@@ -543,16 +628,25 @@
     for (const [label, names] of listed) {
       const est = [];
       const below = lines.map(() => []);
+      const marks = lines.map(() => []);
       for (const c of cols) {
         const n = names.find((x) => c.tidy.has(x));
         const r = n === undefined ? null : c.tidy.get(n);
-        if (!r) { est.push(missing); below.forEach((b) => b.push(missing)); continue; }
+        if (!r) { est.push(missing); below.forEach((b) => b.push(missing)); marks.forEach((m) => m.push(null)); continue; }
         est.push(fixed(r.estimate, digits) + starsFor(r.p_value, stars, symbols));
-        lines.forEach((t, k) => below[k].push(fill(t, r, digits, pDigits, pStyle, missing)));
+        lines.forEach((t, k) => {
+          if (isObj(t)) { below[k].push(fill(SPARK_TEXT, r, digits, pDigits, pStyle, missing)); marks[k].push(sparkMark(r)); }
+          else below[k].push(fill(t, r, digits, pDigits, pStyle, missing));
+        });
       }
       rows.push({ label, cells: est, kind: "estimate" });
-      for (const b of below) rows.push({ label: "", cells: b, kind: "uncertainty" });
+      lines.forEach((t, k) => {
+        const row = { label: "", cells: below[k], kind: "uncertainty" };
+        if (isObj(t)) row.sparkline = Object.assign({}, t.sparkline, { marks: marks[k] });
+        rows.push(row);
+      });
     }
+    sparkDomains(rows);
 
     for (const s of spec.stats || []) {
       const d = s.digits !== undefined ? s.digits : digits;
@@ -663,7 +757,7 @@
     let prev = null;
     for (const r of t.rows) {
       const cls = r.kind + (r.kind === "stat" && prev !== "stat" ? " first-stat" : "");
-      out.push(`<tr class="${cls}"><th>${h(r.label)}</th>` + r.cells.map((x) => `<td>${h(x)}</td>`).join("") + "</tr>");
+      out.push(`<tr class="${cls}"><th>${h(r.label)}</th>` + r.cells.map((_, j) => htmlCell(r, j)).join("") + "</tr>");
       prev = r.kind;
     }
     out.push("</tbody>");
@@ -704,12 +798,12 @@
   const WORD_RULE = "solid windowtext";
   const WORD_CELL = "padding:0 5.4pt;border:none;white-space:nowrap";
 
-  function wordCell(text, { left, top = "", bottom = "", padTop = false }) {
+  function wordCell(text, { left, top = "", bottom = "", padTop = false, raw = null }) {
     let style = WORD_CELL + (left ? ";text-align:left" : ";text-align:center");
     if (top) style += `;border-top:${top} ${WORD_RULE}`;
     if (bottom) style += `;border-bottom:${bottom} ${WORD_RULE}`;
     if (padTop) style += ";padding-top:3pt";
-    return `<td style="${style}">${escHTML(text)}</td>`;
+    return `<td style="${style}">${raw === null ? escHTML(text) : raw}</td>`;
   }
 
   // A whole HTML document that Word, Google Docs, LibreOffice and Excel paste or open as a
@@ -732,7 +826,8 @@
       if (k === 0 && !nh) top = "1.5pt";
       const bottom = k === last ? "1.5pt" : "";
       const padTop = r.kind === "estimate" && k > 0;
-      out.push("<tr>" + [r.label, ...r.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom, padTop })).join("") + "</tr>");
+      const sp = r.sparkline;
+      out.push("<tr>" + [r.label, ...r.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom, padTop, raw: sp && i ? sparkImg(sp.marks[i - 1], sp.color, x) : null })).join("") + "</tr>");
       prev = r.kind;
     });
     out.push("</table>");
@@ -819,6 +914,8 @@ table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: n
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
 table.estrec-table tr.uncertainty td { color: var(--muted); }
+table.estrec-table td.spark { padding-top: 0; padding-bottom: 0; line-height: 0; }
+table.estrec-table td.spark svg { display: inline-block; vertical-align: middle; }
 table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
 table.estrec-table tr.first-stat th, table.estrec-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
 table.estrec-table tbody tr:last-child th, table.estrec-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }
@@ -961,7 +1058,7 @@ ${table}</div>
   return {
     TABLE_SCHEMA, DEFAULT_STARS, DEFAULT_HEAD, HEAD_KINDS, TABLE_METRICS, STAT_LABELS,
     twoSidedP, criticalValue, erfc, qnorm,
-    NAMED_LINES, PLACEHOLDERS, uncertaintyLines, pValue,
+    NAMED_LINES, PLACEHOLDERS, SPARK_COLOR, SPARK_SCALES, sparkSVG, uncertaintyLines, pValue,
     num, vcovs, vcovLabel, pickVcov, tidy, glance, findTest,
     canonicalJSON, sha256Hex, recordSha256,
     indexRecords, validateTable, checkPins, columnResponse, buildTable, render, renderers: RENDERERS,

@@ -321,3 +321,50 @@ def test_heading_rows_order_and_label_row():
     s["head"] = ["number", "bogus", "number"]
     msgs = [i.path for i in et.validate_table(s, schema=None)]
     assert msgs == ["head[1]", "head[2]"]
+
+
+def sparkline_table(scale):
+    s = spec()
+    s["uncertainty"] = ["std_error", {"sparkline": {"color": "#c0392b", "scale": scale}}]
+    return et.build_table(s, base_dir=EXAMPLES)
+
+
+def test_sparkline_rows_carry_intervals_and_text():
+    t = sparkline_table("column")
+    sp = [r for r in t["rows"] if "sparkline" in r]
+    assert sp and all(r["kind"] == "uncertainty" for r in sp)
+    m = sp[0]["sparkline"]["marks"][0]
+    assert m["low"] < m["estimate"] < m["high"]
+    assert sp[0]["cells"][0] == f"[{m['low']:.3f}, {m['high']:.3f}]"  # text formats show the interval
+    assert "[" in et.render(t, "text") and "<svg" not in et.render(t, "latex")
+    assert any("drawn as a line" in n for n in t["notes"])
+
+
+def test_sparkline_scales():
+    def domains(t):
+        sp = [r["sparkline"]["marks"] for r in t["rows"] if "sparkline" in r]
+        return [[m and tuple(m["domain"]) for m in row] for row in sp]
+
+    col, row, tab = (domains(sparkline_table(k)) for k in ("column", "row", "table"))
+    for j in range(len(col[0])):  # one axis down each column
+        assert len({r[j] for r in col if r[j]}) == 1
+    for r in row:  # one axis along each row
+        assert len({d for d in r if d}) == 1
+    assert len({d for r in tab for d in r if d}) == 1
+    for d in {d for r in col + row + tab for d in r if d}:
+        assert d[0] <= 0 <= d[1]
+
+
+def test_sparkline_html_and_word():
+    t = sparkline_table("column")
+    h = et.render(t, "html")
+    assert h.count('<td class="spark"><svg') == 5 and 'stroke="#555555"' in h and 'fill="#7c251b"' in h
+    w = et.render(t, "word")
+    assert w.count('src="data:image/svg+xml;base64,') == 5 and "<svg" not in w
+
+
+def test_sparkline_validation():
+    s = spec()
+    s["uncertainty"] = [{"sparkline": {"color": "red", "scale": "diagonal"}}, {"sparkline": 1}]
+    paths = [i.path for i in et.validate_table(s, schema=None)]
+    assert paths == ["uncertainty[0].sparkline.color", "uncertainty[0].sparkline.scale", "uncertainty[1]"]

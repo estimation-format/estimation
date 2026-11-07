@@ -119,7 +119,15 @@ row per line:
 - a **template**: text with placeholders `{estimate}`, `{std_error}`, `{statistic}`,
   `{p_value}`, `{conf_low}` and `{conf_high}`, such as `"[{p_value}]"`, `"p = {p_value}"` or
   `"({conf_low} to {conf_high})"`;
-- a **list** of names and templates, one row each, in order: `["std_error", "[{p_value}]"]`;
+- a **sparkline**: `{"sparkline": {"color": "#2b5f8e", "scale": "column"}}` draws the
+  confidence interval as a small horizontal line: a dot at each end in `color` (`#rrggbb`,
+  default `#2b5f8e`), the estimate as a darker dot (each channel × 0.65), and 0 as a dark
+  grey rule. `scale` sets which sparklines share an axis: `"column"` (the default; down a
+  column, so an event study's leads and lags read as a coefficient plot), `"row"` (along a
+  row) or `"table"`. An axis spans the intervals it holds and always 0. Formats that can't
+  draw (text, Markdown, CSV, LaTeX, a renderer without graphics) show `[conf_low,
+  conf_high]` instead;
+- a **list** of names, templates and sparklines, one row each, in order: `["std_error", "[{p_value}]"]`;
 - `null`: no lines.
 
 The default is `"std_error"`. A line is blank in a column when any value it needs is missing.
