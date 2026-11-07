@@ -1,0 +1,48 @@
+:root {
+  --bg: #ffffff; --ink: #18212b; --muted: #5a6573; --line: #d6dce3; --accent: #2b5f8e; --soft: #eef3f8;
+  --bad: #a3312b;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14191f; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541; --accent: #84b3df; --soft: #1d2732;
+    --bad: #e58a83;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14191f; --ink: #e3e8ee; --muted: #97a3b2; --line: #2c3541; --accent: #84b3df; --soft: #1d2732;
+  --bad: #e58a83;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+h1 { font: 600 34px/1.15 Georgia, "Times New Roman", serif; margin: 0 0 6px; letter-spacing: -0.01em; }
+h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 36px 0 10px; }
+.lede { font-size: 19px; color: var(--muted); margin: 0 0 24px; }
+a { color: var(--accent); }
+code, pre { font: 14px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+pre { background: var(--soft); padding: 12px 14px; border-radius: 8px; overflow-x: auto; margin: 0; }
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; padding: 0; list-style: none; }
+.links a { display: block; height: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: var(--ink); }
+.links a:hover, .links a:focus-visible { border-color: var(--accent); }
+.links b { display: block; color: var(--accent); margin-bottom: 2px; }
+.links span { color: var(--muted); font-size: 14px; }
+.status { border-left: 3px solid var(--accent); padding: 2px 12px; color: var(--muted); }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+label { display: block; font-weight: 600; margin: 16px 0 6px; }
+textarea, input[type=text] {
+  width: 100%; font: inherit; color: inherit; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+button {
+  font: inherit; border: 1px solid var(--accent); background: var(--accent); color: var(--bg);
+  border-radius: 8px; padding: 7px 16px; cursor: pointer; margin-top: 14px;
+}
+button:disabled { opacity: .5; cursor: default; }
+.msg { margin-top: 14px; }
+.msg.bad { color: var(--bad); }

@@ -29,6 +29,7 @@ standard errors, convergence, the software and environment, and the data's check
 | [`schema/`](schema/) | JSON Schemas (2020-12) for the core, the profiles and collections; the catalog; example records and collections | CC0 1.0 |
 | [`src/estrec/`](src/estrec/) | `estrec`, the reference validator, writer and redactor (Python) | MIT |
 | [`r/`](r/) | `estrec`, an R package that writes records from fitted models (fixest `feols` so far) | MIT |
+| [`viewer/`](viewer/), [`server/`](server/) | the record viewer, and estrec.org: the site and the Publish service (one Cloudflare Worker) | MIT |
 
 Schemas are served at `https://estrec.org/schema/`.
 

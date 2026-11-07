@@ -12,6 +12,14 @@
   `viewer/estrec-table.js`; the repository moves to github.com/estrec/estrec. Profile names
   and function names (`to_estimation()`, `write_estimation()`, `read_estimation()`,
   `as_estimation_test()`, the converters) are unchanged. Entries below use the old names.
+- estrec.org (`server/`): one Cloudflare Worker serves the home page, the schemas at their
+  `$id`s and the viewer, and a Publish service. `POST /api/publish` stores a table spec and
+  its records, with identifying fields removed, in R2 and returns an unlisted `/t/<id>` link
+  and a delete token. The page is the viewer's web export, rendered by the Worker under a CSP
+  that allows only its own script. Tables expire a year after their last view; the licence is
+  CC0 1.0 (default), CC BY 4.0 or CC BY-SA 4.0; Turnstile and per-IP limits guard publishing;
+  there is a report page. The viewer shows **Publish…** when it is served from the site
+  (`viewer/publish.js`). The GitHub Pages workflow is removed.
 
 - Table specs, `estimation-table/0.1` (`spec/table.md`, `schema/estimation-table-0.1.json`,
   catalog entry `table`; proposal `docs/proposals/table-spec.md`, Ted 2026-11-05): a saved

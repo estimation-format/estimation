@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>estrec</title>
+<meta name="description" content="estrec, the estimation record: a small JSON record of one statistical estimation run that any software can write and read.">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<main>
+  <h1>estrec</h1>
+  <p class="lede">The estimation record: what was estimated, what came out, and how and where it
+  ran, as a small JSON file that any software can write and read.</p>
+  <p class="status"><b>0.1 draft for comment.</b> The format may still change. Issues and
+  comments are welcome on <a href="https://github.com/estrec/estrec/issues">GitHub</a>.</p>
+
+  <h2>Start here</h2>
+  <ul class="links">
+    <li><a href="/viewer/"><b>Record viewer</b><span>Open records and collections, build a
+      regression table, export it or publish it. Files stay in your browser.</span></a></li>
+    <li><a href="https://github.com/estrec/estrec/blob/main/spec/estrec.md"><b>Specification</b><span>The
+      core, profiles, collections and disclosure levels.</span></a></li>
+    <li><a href="/schema/catalog.json"><b>Schemas</b><span>JSON Schema 2020-12, served at their
+      <code>$id</code>s under <code>/schema/</code>.</span></a></li>
+    <li><a href="https://github.com/estrec/estrec"><b>Source</b><span>The reference tools (MIT);
+      the spec and schemas are CC0.</span></a></li>
+  </ul>
+
+  <h2>Write a record</h2>
+  <p>Python, the reference validator, writer and redactor:</p>
+  <pre>pip install "estrec[jsonschema] @ git+https://github.com/estrec/estrec"
+estrec validate model.estrec.json</pre>
+  <p>R, from fixest fits:</p>
+  <pre>remotes::install_github("estrec/estrec", subdir = "r")
+estrec::write_estimation(fit, "fit.estrec.json")</pre>
+
+  <h2>Published tables</h2>
+  <p>A table published from the viewer gets an unlisted link at <code>estrec.org/t/…</code>.
+  Identifying details (user, host, paths) are removed before it is stored. It is kept for a
+  year after its last view, and you can delete it any time with the link you get when you
+  publish. Licence: CC0 by default, or CC BY or CC BY-SA.</p>
+
+  <footer>estrec.org · <a href="https://github.com/estrec/estrec">github.com/estrec/estrec</a></footer>
+</main>
+</body>
+</html>

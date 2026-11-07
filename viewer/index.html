@@ -314,10 +314,12 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
               <label class="inline" id="redact-wrap" hidden><input type="checkbox" id="opt-redact" checked> Leave out identifying details</label>
               <button class="btn small" id="copy" type="button">Copy</button>
               <button class="btn small" id="save" type="button">Save file</button>
+              <button class="btn small" id="publish" type="button" hidden>Publish…</button>
               <button class="btn small" id="load-spec" type="button">Open table spec</button>
               <input id="spec-input" type="file" accept=".json" hidden>
             </div>
             <p class="export-note" id="web-note" hidden></p>
+            <p class="export-note" id="publish-panel" hidden></p>
             <textarea id="export-text" readonly spellcheck="false" aria-label="Exported table"></textarea>
           </div>
         </div>
@@ -871,6 +873,15 @@ function webPage() {
   return E.renderWebPage(lastTable, recs);
 }
 
+// For publish.js: the table spec and the records behind its columns, identifying fields left out
+window.estrecPublishData = function () {
+  if (!state.spec || !lastTable) return null;
+  const ids = [...new Set(lastTable.column_records)];
+  const recs = ids.map((id) => columnItem(lastTable.column_records.indexOf(id)))
+    .filter(Boolean).map((it) => E.redactRecord(it.record, window.EST_IDENTIFYING || []).record);
+  return { spec: JSON.parse(JSON.stringify(state.spec)), records: recs };
+};
+
 async function renderExport() {
   for (const b of $("formats").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.f === state.format));
   $("pin-wrap").hidden = state.format !== "spec";
@@ -1133,5 +1144,6 @@ document.addEventListener("drop", async (e) => {
 
 loadExamples();
 </script>
+<script src="publish.js"></script>
 </body>
 </html>

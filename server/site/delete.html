@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete a table</title>
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<main>
+  <h1>Delete a published table</h1>
+  <p class="lede" id="what">This link deletes the table it was made for. It can't be undone.</p>
+  <button type="button" id="go" disabled>Delete the table</button>
+  <p class="msg" id="msg" role="status"></p>
+  <footer><a href="/">estrec.org</a></footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  // The link is /delete.html#<id>.<token>: the fragment never reaches the server or its logs
+  var parts = location.hash.slice(1).split("."), id = parts[0], token = parts.slice(1).join(".");
+  var go = document.getElementById("go"), msg = document.getElementById("msg");
+  if (!/^[A-Za-z0-9_-]{22}$/.test(id) || !token) {
+    msg.className = "msg bad"; msg.textContent = "This isn't a complete delete link."; return;
+  }
+  var a = document.createElement("a"); a.href = "/t/" + id; a.textContent = location.host + "/t/" + id;
+  var what = document.getElementById("what"); what.textContent = "This deletes "; what.appendChild(a);
+  what.appendChild(document.createTextNode(". It can't be undone."));
+  go.disabled = false;
+  go.addEventListener("click", function () {
+    go.disabled = true; msg.className = "msg"; msg.textContent = "Deleting…";
+    fetch("/api/t/" + id, { method: "DELETE", headers: { Authorization: "Bearer " + token } })
+      .then(function (r) {
+        if (r.status === 204) { msg.textContent = "Deleted."; history.replaceState(null, "", location.pathname); return; }
+        return r.json().then(function (b) { msg.className = "msg bad"; msg.textContent = b.error || "It couldn't be deleted."; go.disabled = false; });
+      })
+      .catch(function () { msg.className = "msg bad"; msg.textContent = "It couldn't be deleted."; go.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

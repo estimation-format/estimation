@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report a table</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<main>
+  <h1>Report a table</h1>
+  <p class="lede">Tell us what is wrong with a published table: personal or confidential data,
+  something unlawful, or anything else. Reports are read by the site's maintainer.</p>
+  <form id="f">
+    <label for="id">Table</label>
+    <input type="text" id="id" required pattern="[A-Za-z0-9_-]{22}" autocomplete="off" placeholder="the id after /t/">
+    <label for="reason">What is wrong</label>
+    <textarea id="reason" rows="6" maxlength="2000" required></textarea>
+    <button type="submit" id="send">Send report</button>
+    <p class="msg" id="msg" role="status"></p>
+  </form>
+  <footer><a href="/">estrec.org</a></footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  var id = document.getElementById("id"), msg = document.getElementById("msg");
+  if (location.hash.length > 1) id.value = decodeURIComponent(location.hash.slice(1));
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var send = document.getElementById("send");
+    send.disabled = true; msg.className = "msg"; msg.textContent = "Sending…";
+    fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: id.value.trim(), reason: document.getElementById("reason").value }) })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (x) {
+        if (x.ok) { msg.textContent = "Thank you. The report was received."; return; }
+        msg.className = "msg bad"; msg.textContent = x.b.error || "The report couldn't be sent."; send.disabled = false;
+      })
+      .catch(function () { msg.className = "msg bad"; msg.textContent = "The report couldn't be sent."; send.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

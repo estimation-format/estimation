@@ -1,0 +1,16 @@
+{
+  "name": "estrec-site",
+  "private": true,
+  "description": "estrec.org: the static site and the Publish service, one Cloudflare Worker",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node build-site.mjs",
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

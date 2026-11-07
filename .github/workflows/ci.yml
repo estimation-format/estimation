@@ -82,3 +82,14 @@ jobs:
         run: |
           pip install dist/*.whl 'jsonschema>=4.18'
           cd /tmp && estrec validate "$(python -c 'import estrec as ef; print(ef.PACKAGED_SCHEMAS)')"/examples/*.json
+
+  server:
+    # The estrec.org Worker (server/): its tests with node's runner, and the site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - run: node --test server/test/*.test.mjs
+      - run: node server/build-site.mjs
