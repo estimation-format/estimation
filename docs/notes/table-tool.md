@@ -79,6 +79,26 @@ Decisions so far:
 - The Disclosure levels chat (05fe2fb6) also edits this repo, so commit only your own
   files.
 
+## Next chat: sparklines everywhere and the `show_table` refactor (Ted, 2026-11-07)
+
+1. **Sparklines in every renderer that can draw.** Today HTML, the web page, the viewer
+   and Word draw them; text, Markdown, CSV, LaTeX, great_tables and estrec's
+   `render_table` show `[low, high]`. To do:
+   - LaTeX: a TikZ picture per cell (or one per column, so the 0 rule is continuous), with
+     the preamble line (`\usepackage{tikz}`) in the notes or a comment. Match the SVG's
+     marks: band, round-capped line, end dots, darker estimate dot, background halo.
+   - great_tables: `gt.html` with the same SVG the HTML renderer writes.
+   - R (estrec): modelsummary's tinytable backend can put images in cells (`plot_tt`);
+     draw with base graphics or write the SVG; same marks and the same axes (column / row
+     / table, always holding 0) as `_spark_domains`.
+   - Keep JS and Python byte-identical; R matches cell for cell where it can, and a test
+     says where it can't.
+2. **`show_table` as a thin wrapper** over `new_table` + `build_table` + `render(...,
+   "text")`, so `estrec show` can't drift from the table spec. It changes `show`'s
+   layout; show Ted the before/after first.
+
+Web-page export outside the viewer (backlog 2) is on hold: Ted is unsure about it.
+
 ## Backlog (proposals; ask Ted before changing behaviour)
 
 1. ~~Star cuts~~: settled (above). Follow-up: make `show_table` a thin wrapper over
