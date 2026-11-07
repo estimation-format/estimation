@@ -1,0 +1,4 @@
+v 3
+d estrec: Stata estimation results as estimation records (JSON)
+d https://github.com/estimation-format/estimation
+p estrec Write the results of regress, areg, xtreg, reghdfe, ivregress, ivreg2, ivreghdfe, logit, probit, poisson, nbreg and glm as estimation records

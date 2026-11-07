@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- `estrec` for Stata (`stata/`, installable with `net install estrec`): `estrec write using
+  FILE` writes a record from `e()` after `regress`, `areg`, `xtreg` (fe, re), `reghdfe`,
+  `ivregress`, `ivreg2`, `ivreghdfe`, `logit`, `logistic`, `probit`, `poisson`, `nbreg` and
+  `glm`, claiming `inference/0.1`, `linear-fe/0.1`, `iv/0.1` and `glm/0.1` as each fits; any
+  other e-class command gets a core record with no profile claims, and prefix results are
+  refused. Small-sample corrections are written out per command, checked against each other in
+  Stata 18 (`areg` counts absorbed levels nested in the clusters, `xtreg, fe` and reghdfe
+  don't; `ivregress` and `ivreg2` without `small` apply no factor). IV records carry the
+  first-stage, identification, overidentification and endogeneity tests (`ivreg2` from `e()`,
+  `ivregress` from `estat`); GLM records the deviance, convergence and offset or exposure.
+  Disclosure levels 1-5 as in the converters. `reghdfe` records equal
+  `converters/reghdfe`'s apart from the writer and the formula text. `tests/test_stata.py`:
+  22 commands at every level validate with no warnings and match Stata's results table.
 - Table specs, `estimation-table/0.1` (`spec/table.md`, `schema/estimation-table-0.1.json`,
   catalog entry `table`; proposal `docs/proposals/table-spec.md`, Ted 2026-11-05): a saved
   layout for a regression table from records, with no results in it. Columns name records by
