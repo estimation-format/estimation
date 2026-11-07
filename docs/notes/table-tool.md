@@ -56,7 +56,9 @@ Decisions so far:
   sparkline rows have no vertical padding and an 80x16 image whose 0 rule runs its full
   height, so stacked rows join; marks: a faint band swelling toward the estimate, a thin
   round-capped line, dots with a background-coloured halo (`var(--bg,#fff)`).
-  Open: perhaps LaTeX (TikZ), R (tinytable images),
+  Example spec `schema/examples/event-study.estrec-table.json` (csdid record, t-3..t+3,
+  sparklines only; in the parity tests and R tests; the viewer's example note switches
+  between example tables). Open: perhaps LaTeX (TikZ), R (tinytable images),
   great_tables (`gt.html`); a continuous 0 rule down a column (rows between break it now).
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).

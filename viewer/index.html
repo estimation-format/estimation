@@ -102,6 +102,7 @@ body.dragging .drop { border-color: var(--accent); color: var(--accent); backgro
 .rec .meta { grid-column: 1; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .rec .add { grid-row: 1 / span 2; grid-column: 2; }
 .badge { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+.example-note .linkish { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .example-note { margin: 0 14px 12px; font-size: 12px; color: var(--warn); background: var(--warn-soft); padding: 6px 10px; border-radius: var(--r); }
 
 /* work area */
@@ -437,6 +438,7 @@ async function loadFiles(files, { examples = false } = {}) {
   $("example-note").hidden = !examples;
   if (specs.length) applySpec(specs[specs.length - 1].spec, specs[specs.length - 1].name);
   else if (!state.spec && state.items.length) state.spec = freshSpec(state.items.slice(0, 3));
+  exampleTables(examples ? specs : []);
   if (!state.selected && state.items.length) state.selected = state.items[0].key;
   state.loadMsgs = msgs;
   renderAll();
@@ -451,6 +453,16 @@ function clearAll() {
 function loadExamples() {
   clearAll();
   loadFiles(window.EST_EXAMPLES || [], { examples: true });
+}
+
+// with the examples open, buttons to switch between the example table specs
+function exampleTables(specs) {
+  const note = $("example-note");
+  note.querySelectorAll(".example-tables").forEach((n) => n.remove());
+  if (specs.length < 2) return;
+  note.append(el("span", { class: "example-tables" }, " Example tables: ",
+    ...specs.map((s, i) => [i ? " \u00b7 " : "", el("button", { class: "linkish", type: "button", text: s.spec.title || s.name,
+      onclick: () => { applySpec(s.spec, s.name); state.loadMsgs = []; renderAll(); } })])));
 }
 
 function applySpec(spec, name) {

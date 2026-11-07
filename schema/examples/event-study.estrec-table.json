@@ -1,0 +1,24 @@
+{
+  "schema": "estrec-table/0.1",
+  "meta": {"id": "8c0e5d1a-6b3f-4e2a-9d17-3f5a2c4b6e03", "created": "2026-11-07T09:00:00Z",
+           "producer": {"name": "hand-written", "version": "0.1"}},
+  "title": "Event study: minimum wage and teen employment",
+  "sources": [{"id": "csdid", "path": "csdid.estrec.json"}],
+  "columns": [
+    {"record": "b0e4a7d2-6c19-4f3a-8e57-1d2c3b4a5f60", "source": "csdid"}
+  ],
+  "rows": [
+    {"term": "Tm3", "label": "t − 3"},
+    {"term": "Tm2", "label": "t − 2"},
+    {"term": "Tm1", "label": "t − 1"},
+    {"term": "Tp0", "label": "t"},
+    {"term": "Tp1", "label": "t + 1"},
+    {"term": "Tp2", "label": "t + 2"},
+    {"term": "Tp3", "label": "t + 3"}
+  ],
+  "keep_unlisted": false,
+  "estimate": false,
+  "uncertainty": {"sparkline": {"color": "#2b5f8e", "scale": "column"}},
+  "stats": [{"metric": "nobs"}],
+  "notes": ["Callaway and Sant'Anna group-time effects aggregated by event time; 95% intervals."]
+}

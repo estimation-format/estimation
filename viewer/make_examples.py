@@ -16,6 +16,8 @@ FILES = [
     "iv.estrec.json",
     "glm-logit.estrec.json",
     "dfeols-linear-fe.estrec.json",
+    "csdid.estrec.json",
+    "event-study.estrec-table.json",
     "paper.estrec-table.json",
 ]
 

@@ -62,6 +62,13 @@ if (dir.exists(ex)) {
   stopifnot(!any(grepl("^\\(", unlist(x[x$part == "estimates", 4]))))
 }
 
+# the event-study example: no estimate rows, sparklines shown as intervals
+if (dir.exists(ex)) {
+  x <- render_table(file.path(ex, "event-study.estrec-table.json"), output = "data.frame")
+  stopifnot(identical(x$term[1:7], c("t \u2212 3", "t \u2212 2", "t \u2212 1", "t", "t + 1", "t + 2", "t + 3")),
+            all(grepl("^\\[", unlist(x[1:7, 4]))))
+}
+
 # records in memory: another vcov per column, shared rows, keep/drop, uncertainty, errors
 if (requireNamespace("fixest", quietly = TRUE)) {
   suppressMessages(library(fixest))

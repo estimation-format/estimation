@@ -385,3 +385,25 @@ def test_no_estimate_row_lines_carry_the_term():
     assert [i.path for i in et.validate_table(s, schema=None)] == ["estimate"]
     s["estimate"] = "no"
     assert [i.path for i in et.validate_table(s, schema=None)] == ["estimate"]
+
+
+def test_event_study_example_is_a_column_of_sparklines():
+    t = et.render_table(EXAMPLES / "event-study.estrec-table.json", "html")
+    assert t.count("<svg") == 7 and "***" not in t
+    built = et.build_table(et.read_table(EXAMPLES / "event-study.estrec-table.json"), base_dir=EXAMPLES)
+    assert [r["label"] for r in built["rows"]][:7] == [
+        "t \u2212 3",
+        "t \u2212 2",
+        "t \u2212 1",
+        "t",
+        "t + 1",
+        "t + 2",
+        "t + 3",
+    ]
+    doms = {tuple(r["sparkline"]["marks"][0]["domain"]) for r in built["rows"] if "sparkline" in r}
+    assert len(doms) == 1  # one axis down the column
+    if pytest.importorskip("jsonschema"):
+        assert (
+            et.validate_table(et.read_table(EXAMPLES / "event-study.estrec-table.json"), base_dir=EXAMPLES)
+            == []
+        )

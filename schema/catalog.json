@@ -27,7 +27,7 @@
     "status": "draft",
     "maintainer": "jemather",
     "description": "A table spec: how to lay out a regression table from records (columns by meta.id, rows and labels, statistics rows, format). No results; a companion to the format (spec/table.md).",
-    "examples": ["examples/paper.estrec-table.json"]
+    "examples": ["examples/paper.estrec-table.json", "examples/event-study.estrec-table.json"]
   },
   "profiles": [
     {
