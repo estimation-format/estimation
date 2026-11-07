@@ -137,7 +137,10 @@ label.stack { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
 .paper { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 20px; overflow-x: auto; }
 table.estrec-table { border-collapse: collapse; font-family: var(--font-table); font-size: 15px; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
 table.estrec-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; text-wrap: balance; }
-table.estrec-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estrec-table thead th { padding: 2px 14px; font-weight: 400; }
+table.estrec-table thead tr:first-child th { border-top: 1.5px solid var(--ink); padding-top: 5px; }
+table.estrec-table thead tr:last-child th { border-bottom: 0.75px solid var(--ink); padding-bottom: 5px; }
+.item .fields.inline { display: flex; align-items: center; gap: 8px; }
 table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: nowrap; }
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
@@ -269,6 +272,12 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
                 </select>
               </label>
             </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Heading rows</legend>
+            <div id="heads"></div>
+            <div id="responses"></div>
           </fieldset>
 
           <fieldset>
@@ -522,7 +531,7 @@ function newTable() {
 
 function addColumn(it) {
   const s = ensureSpec();
-  s.columns.push({ record: it.record.meta.id, header: `(${s.columns.length + 1})` });
+  s.columns.push({ record: it.record.meta.id });
   renderAll();
   showTab("table");
   toast(`Added ${recordName(it)} as column ${s.columns.length}`);
@@ -543,6 +552,58 @@ function toolButtons(arr, i, after, extra) {
 
 function columnRecords(idx) {
   return (state.spec.columns || []).map((c) => { const f = c.record ? (c.source && idx.get(c.source + "\u0000" + c.record)) || idx.get(c.record) : null; return f ? f.record : null; });
+}
+
+const HEAD_NAMES = { number: "Numbers: (1), (2), ...", response: "Dependent variable", label: "Labels (set under Columns)" };
+
+// heading rows: the ones shown, top to bottom, then the ones switched off
+function renderHeads() {
+  const box = $("heads");
+  box.replaceChildren();
+  const s = state.spec;
+  const on = (s.head || E.DEFAULT_HEAD).slice();
+  const view = [...on, ...E.HEAD_KINDS.filter((k) => !on.includes(k))];
+  const save = () => {
+    const head = view.filter((k) => on.includes(k));
+    if (head.join() === E.DEFAULT_HEAD.join()) delete s.head; else s.head = head;
+    update();
+  };
+  view.forEach((k, i) => {
+    const cb = el("input", { type: "checkbox", id: `head-${k}`, checked: on.includes(k) });
+    cb.addEventListener("change", () => { if (cb.checked) on.push(k); else on.splice(on.indexOf(k), 1); save(); });
+    box.append(el("div", { class: "item" + (on.includes(k) ? "" : " off") },
+      el("label", { class: "fields inline" }, cb, el("span", { text: HEAD_NAMES[k] })),
+      toolButtons(view, i, save, el("span"))));
+  });
+}
+
+// a box per dependent variable in the columns, to rename it in the heading
+function renderResponses(idx) {
+  const box = $("responses");
+  box.replaceChildren();
+  const s = state.spec;
+  const names = [];
+  (s.columns || []).forEach((c) => {
+    const f = c.record ? (c.source && idx.get(c.source + "\u0000" + c.record)) || idx.get(c.record) : null;
+    if (!f) return;
+    let rows;
+    try { rows = E.tidy(f.record, { vcov: c.vcov, component: c.component }); } catch { rows = []; }
+    if (c.response) rows = rows.filter((r) => r.response === c.response);
+    const n = E.columnResponse(c, f.record, rows, {});
+    if (n && !names.includes(n)) names.push(n);
+  });
+  if (!names.length || !(s.head || E.DEFAULT_HEAD).includes("response")) return;
+  box.append(el("p", { class: "hint-line", text: "Dependent variable names (blank keeps the record's):" }));
+  names.forEach((n, i) => {
+    const inp = el("input", { type: "text", id: `resp-${i}`, value: (s.response_labels || {})[n] || "", placeholder: n, "aria-label": `Name shown for ${n}` });
+    inp.addEventListener("input", () => {
+      const labels = Object.assign({}, s.response_labels);
+      if (inp.value) labels[n] = inp.value; else delete labels[n];
+      if (Object.keys(labels).length) s.response_labels = labels; else delete s.response_labels;
+      update({ keepControls: true });
+    });
+    box.append(el("div", { class: "item" }, el("label", { class: "fields" }, el("span", { class: "hint", text: n }), inp), el("span")));
+  });
 }
 
 function renderColumns(idx) {
@@ -567,8 +628,9 @@ function renderColumns(idx) {
       else { const v = vs[Number(sel.value)]; c.vcov = vs.filter((x) => x.type === v.type).length === 1 ? v.type : Number(sel.value); }
       update();
     });
-    const head = el("input", { type: "text", id: `col-head-${i}`, value: c.header || "", "aria-label": "Column heading" });
-    head.addEventListener("input", () => { c.header = head.value; update({ keepControls: true }); });
+    const auto = (f && ((f.member || {}).label || (rec.meta || {}).title)) || "";
+    const head = el("input", { type: "text", id: `col-head-${i}`, value: c.header || "", placeholder: auto || "Label", "aria-label": `Label for column ${i + 1}` });
+    head.addEventListener("input", () => { if (head.value) c.header = head.value; else delete c.header; update({ keepControls: true }); });
     const name = f ? recordName(state.items.find((x) => (x.record.meta || {}).id === c.record) || { record: rec, member: f.member, file: "" }) : `missing: ${c.record}`;
     box.append(el("div", { class: "item" + (rec ? "" : " off") },
       el("div", { class: "fields" }, head, el("span", { class: "hint", text: name }), vs.length > 1 ? sel : null),
@@ -696,7 +758,7 @@ function renderStats(idx) {
       if (st.values.length > n) st.values.length = n;
       const grid = el("div", { class: "row2" });
       st.values.forEach((v, j) => {
-        const inp = el("input", { type: "text", id: `stat-${i}-val-${j}`, value: v, placeholder: s.columns[j].header || `(${j + 1})`, "aria-label": `Value for column ${j + 1}` });
+        const inp = el("input", { type: "text", id: `stat-${i}-val-${j}`, value: v, placeholder: `(${j + 1})`, "aria-label": `Value for column ${j + 1}` });
         inp.addEventListener("input", () => { st.values[j] = inp.value; update({ keepControls: true }); });
         grid.append(inp);
       });
@@ -776,7 +838,7 @@ async function renderTable({ keepControls = false } = {}) {
     return;
   }
   const idx = index();
-  if (!keepControls) { writeOptions(); renderLines(); renderColumns(idx); renderRows(idx); renderStats(idx); }
+  if (!keepControls) { writeOptions(); renderLines(); renderHeads(); renderResponses(idx); renderColumns(idx); renderRows(idx); renderStats(idx); }
   if (!state.spec.columns.length) {
     $("preview").replaceChildren(el("p", { class: "empty", text: "No columns yet: add records with + Table." }));
     lastTable = null; renderExport(); return;
@@ -841,7 +903,7 @@ function recordSummary(r) {
 
 // column headings in the preview open their record
 function linkHeaders() {
-  const ths = $("preview").querySelectorAll("thead th");
+  const ths = $("preview").querySelectorAll("thead tr:first-child th");
   [...ths].slice(1).forEach((th, i) => {
     const it = columnItem(i);
     if (!it) return;

@@ -34,6 +34,14 @@ Decisions so far:
   `format.p_style` is `fixed` or `less_than`.
 - Star cuts (Ted, 2026-11-06): `* .1, ** .05, *** .01` everywhere a default is needed
   (`new_table`, the viewer, `estrec show`); the spec has no default (absent = no stars).
+- Heading rows (Ted, 2026-11-06): `(1)`, `(2)`, ... on top and the dependent variable
+  under them, whichever way the columns were added; no stub label. Column labels are an
+  optional row that can move above the numbers or replace the dependent variable. Spec
+  `head` (ordered `number` / `response` / `label`, default `["number", "response"]`) and
+  `response_labels`; `header` is now the label row only. The built table has `head` (rows
+  of `{kind, cells}`) and `header` (the numbers). Markdown and modelsummary have one heading
+  row: the first; the others open the body. Viewer: "Heading rows" (on/off, up/down) and a
+  name box per dependent variable.
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).
 
@@ -45,7 +53,7 @@ Decisions so far:
   the generated files are stale.
 - valiant has no browser. The UI was checked with a node DOM stand-in, so Ted reviews it via
   a private artifact preview (latest: https://claude.ai/artifact/En9fanz81wP5ueYEBHkFYB,
-  v5 with the Word export, an inlined copy of `viewer/`; v4 was
+  v6 with heading rows (same link as v5, the Word export), an inlined copy of `viewer/` without `publish.js`; v4 was
   https://claude.ai/artifact/FZJU8TRYRWEFpY64nnyy1Z; web-export example https://claude.ai/artifact/LmYbDiLtDB59NqohaPR3LN). Downloads
   don't work inside artifacts; they do on a normal host.
 - R: `R CMD check` must stay clean. Use ASCII only in R code (`²` escapes). Ted

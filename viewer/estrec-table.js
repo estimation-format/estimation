@@ -413,6 +413,13 @@
       });
     }
     out.push(...lineIssues(spec));
+    if (spec.head !== undefined && spec.head !== null) {
+      if (!Array.isArray(spec.head)) out.push(issue("error", "head", "a list of 'number', 'response', 'label'"));
+      else spec.head.forEach((k, j) => {
+        if (!HEAD_KINDS.includes(k)) out.push(issue("error", `head[${j}]`, `'${k}' is not one of 'number', 'response', 'label'`));
+        else if (spec.head.indexOf(k) !== j) out.push(issue("error", `head[${j}]`, `'${k}' appears twice`));
+      });
+    }
     (spec.stats || []).forEach((s, j) => {
       if (s.values && s.values.length !== cols.length) out.push(issue("error", `stats[${j}].values`, `${s.values.length} values for ${cols.length} columns`));
     });
@@ -458,6 +465,33 @@
     return out;
   }
 
+  const HEAD_KINDS = ["number", "response", "label"];
+  const DEFAULT_HEAD = ["number", "response"];
+
+  // A column's dependent variable: its `response`, else the one response its rows share (a
+  // first stage's endogenous variable), else the record's `meta.responses`; then relabelled.
+  function columnResponse(c, record, rows, labels) {
+    let name = c.response;
+    if (!name) {
+      const named = [...new Set(rows.filter((r) => r.response).map((r) => r.response))].sort();
+      if (named.length === 1) name = named[0];
+    }
+    if (!name) name = ((record.meta || {}).responses || []).map(String).join(", ");
+    return String(Object.prototype.hasOwnProperty.call(labels, name) ? labels[name] : name);
+  }
+
+  // The heading rows, top to bottom (spec `head`); a response or label row that would be
+  // empty in every column is left out.
+  function headRows(spec, cols) {
+    const out = [];
+    for (const kind of spec.head || DEFAULT_HEAD) {
+      const cells = cols.map((c) => c[kind]);
+      if (kind !== "number" && !cells.some(Boolean)) continue;
+      out.push({ kind, cells });
+    }
+    return out;
+  }
+
   function buildTable(spec, idx) {
     const issues = validateTable(spec, idx);
     const errors = issues.filter((i) => i.level === "error");
@@ -476,8 +510,11 @@
       const f = lookup(idx, c);
       let rows = tidy(f.record, { vcov: c.vcov, component: c.component });
       if (c.response) rows = rows.filter((r) => r.response === c.response);
-      const header = c.header !== undefined ? c.header : (f.member || {}).label || (f.record.meta || {}).title || `(${i + 1})`;
-      return { spec: c, found: f, tidy: new Map(rows.map((r) => [r.term, r])), order: rows.map((r) => r.term), header };
+      const label = c.header !== undefined ? c.header : (f.member || {}).label || (f.record.meta || {}).title || "";
+      return {
+        spec: c, found: f, tidy: new Map(rows.map((r) => [r.term, r])), order: rows.map((r) => r.term),
+        number: `(${i + 1})`, response: columnResponse(c, f.record, rows, spec.response_labels || {}), label,
+      };
     });
 
     const listed = [];
@@ -567,7 +604,8 @@
     if (note) notes.push(note);
     return {
       title: spec.title === undefined ? null : spec.title,
-      header: cols.map((c) => c.header),
+      head: headRows(spec, cols),
+      header: cols.map((c) => c.number),
       column_records: cols.map((c) => c.found.record.meta.id),
       rows,
       notes,
@@ -585,8 +623,12 @@
     const esc = (s) => String(s).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\*/g, "\\*");
     const lines = [];
     if (t.title) lines.push(`**${esc(t.title)}**`, "");
-    lines.push("| | " + t.header.map(esc).join(" | ") + " |");
-    lines.push("|---|" + "---:|".repeat(t.header.length));
+    const n = t.header.length;
+    const head = t.head.length ? t.head.map((h) => h.cells) : [Array(n).fill("")];
+    // Markdown has one heading row: the first; the others open the body
+    lines.push("| | " + head[0].map(esc).join(" | ") + " |");
+    lines.push("|---|" + "---:|".repeat(n));
+    for (const cells of head.slice(1)) lines.push("| | " + cells.map(esc).join(" | ") + " |");
     for (const r of t.rows) lines.push(`| ${esc(r.label)} | ` + r.cells.map(esc).join(" | ") + " |");
     if (t.notes.length) lines.push("", ...t.notes.map((n) => `${esc(n)}  `));
     return lines.join("\n").replace(/\s+$/, "") + "\n";
@@ -598,7 +640,7 @@
     const lines = ["\\begin{table}[htbp]", "\\centering"];
     if (t.title) lines.push(`\\caption{${e(t.title)}}`);
     lines.push(`\\begin{tabular}{l${"c".repeat(n)}}`, "\\toprule");
-    lines.push(" & " + t.header.map(e).join(" & ") + " \\\\");
+    for (const h of t.head) lines.push(" & " + h.cells.map(e).join(" & ") + " \\\\");
     lines.push("\\midrule");
     let prev = null;
     for (const r of t.rows) {
@@ -616,7 +658,7 @@
     const h = escHTML;
     const out = ['<table class="estrec-table">'];
     if (t.title) out.push(`<caption>${h(t.title)}</caption>`);
-    out.push("<thead><tr><th></th>" + t.header.map((x) => `<th>${h(x)}</th>`).join("") + "</tr></thead>");
+    out.push("<thead>" + t.head.map((r) => `<tr class="head-${r.kind}"><th></th>` + r.cells.map((x) => `<th>${h(x)}</th>`).join("") + "</tr>").join("") + "</thead>");
     out.push("<tbody>");
     let prev = null;
     for (const r of t.rows) {
@@ -632,23 +674,25 @@
 
   function renderCSV(t) {
     const q = (s) => (/[",\n\r]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : String(s));
-    const lines = [["", ...t.header].map(q).join(",")];
+    const lines = t.head.map((h) => ["", ...h.cells].map(q).join(","));
     for (const r of t.rows) lines.push([r.label, ...r.cells].map(q).join(","));
     return lines.join("\n") + "\n";
   }
 
   function renderText(t) {
-    const rows = [["", ...t.header], ...t.rows.map((r) => [r.label, ...r.cells])];
+    const head = t.head.map((h) => ["", ...h.cells]);
+    const body = t.rows.map((r) => [r.label, ...r.cells]);
+    const rows = [...head, ...body, Array(t.header.length + 1).fill("")];
     const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => r[i].length)));
     const line = (r) => r.map((c, i) => (i === 0 ? c.padEnd(widths[0]) : c.padStart(widths[i]))).join("  ").replace(/\s+$/, "");
     const rule = widths.map((w) => "-".repeat(w)).join("  ");
     const out = [];
     if (t.title) out.push(t.title);
-    out.push(line(rows[0]), rule);
+    out.push(...head.map(line), rule);
     let prev = null;
     t.rows.forEach((src, i) => {
       if (src.kind === "stat" && prev !== "stat") out.push(rule);
-      out.push(line(rows[i + 1]));
+      out.push(line(body[i]));
       prev = src.kind;
     });
     out.push(rule, ...t.notes);
@@ -675,11 +719,17 @@
     const out = ["<!doctype html>", '<html><head><meta charset="utf-8">', `<title>${h(t.title || "Estimation table")}</title></head><body>`];
     if (t.title) out.push(`<p style="margin:0 0 6pt 0"><b>${h(t.title)}</b></p>`);
     out.push('<table style="border-collapse:collapse;border:none;font-size:10pt">');
-    out.push("<tr>" + ["", ...t.header].map((x, i) => wordCell(x, { left: i === 0, top: "1.5pt", bottom: ".75pt" })).join("") + "</tr>");
+    const nh = t.head.length;
+    t.head.forEach((hr, k) => {
+      const top = k === 0 ? "1.5pt" : "";
+      const bottom = k === nh - 1 ? ".75pt" : "";
+      out.push("<tr>" + ["", ...hr.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom })).join("") + "</tr>");
+    });
     let prev = null;
     const last = t.rows.length - 1;
     t.rows.forEach((r, k) => {
-      const top = r.kind === "stat" && prev !== "stat" ? ".75pt" : "";
+      let top = r.kind === "stat" && prev !== "stat" ? ".75pt" : "";
+      if (k === 0 && !nh) top = "1.5pt";
       const bottom = k === last ? "1.5pt" : "";
       const padTop = r.kind === "estimate" && k > 0;
       out.push("<tr>" + [r.label, ...r.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom, padTop })).join("") + "</tr>");
@@ -743,9 +793,9 @@
     const byId = new Map(records.map((r) => [((r || {}).meta || {}).id, r]));
     const used = [...new Set(t.column_records || [])].map((id) => byId.get(id)).filter(Boolean);
     const json = JSON.stringify({ columns: t.column_records || [], records: used }).replace(/</g, "\\u003c");
-    const table = renderHTML(t).replace(/<thead><tr><th><\/th>(.*?)<\/tr><\/thead>/, (_, ths) => {
+    const table = renderHTML(t).replace(/<thead>(<tr class="head-\w+">)<th><\/th>(.*?)<\/tr>/, (_, tr, ths) => {
       let i = 0;
-      return "<thead><tr><th></th>" + ths.replace(/<th>(.*?)<\/th>/g, (__, h) => `<th><button type="button" class="col" data-col="${i++}" aria-haspopup="dialog">${h}</button></th>`) + "</tr></thead>";
+      return "<thead>" + tr + "<th></th>" + ths.replace(/<th>(.*?)<\/th>/g, (__, h) => `<th><button type="button" class="col" data-col="${i++}" aria-haspopup="dialog">${h}</button></th>`) + "</tr>";
     });
     const title = escHTML(t.title || "Estimation table");
     return `<!doctype html>
@@ -762,7 +812,9 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Geor
 .wrap { overflow-x: auto; }
 table.estrec-table { border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; margin: 0 auto; }
 table.estrec-table caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 10px; }
-table.estrec-table thead th { border-top: 1.5px solid var(--ink); border-bottom: 0.75px solid var(--ink); padding: 5px 14px; font-weight: 400; }
+table.estrec-table thead th { padding: 2px 14px; font-weight: 400; }
+table.estrec-table thead tr:first-child th { border-top: 1.5px solid var(--ink); padding-top: 5px; }
+table.estrec-table thead tr:last-child th { border-bottom: 0.75px solid var(--ink); padding-bottom: 5px; }
 table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: nowrap; }
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
@@ -898,7 +950,7 @@ ${table}</div>
     const spec = {
       schema: TABLE_SCHEMA,
       meta: { id: uuid, created: new Date().toISOString().replace(/\.\d+Z$/, "Z"), producer: { name: "estrec viewer", version: "0.1" } },
-      columns: items.map((it, i) => ({ record: it.record.meta.id, header: (it.member || {}).label || `(${i + 1})` })),
+      columns: items.map((it) => ({ record: it.record.meta.id })),
       uncertainty: "std_error",
       stars: DEFAULT_STARS.slice(),
       stats: [{ metric: "nobs" }, { metric: "r2" }, { vcov: "type" }],
@@ -907,12 +959,12 @@ ${table}</div>
   }
 
   return {
-    TABLE_SCHEMA, DEFAULT_STARS, TABLE_METRICS, STAT_LABELS,
+    TABLE_SCHEMA, DEFAULT_STARS, DEFAULT_HEAD, HEAD_KINDS, TABLE_METRICS, STAT_LABELS,
     twoSidedP, criticalValue, erfc, qnorm,
     NAMED_LINES, PLACEHOLDERS, uncertaintyLines, pValue,
     num, vcovs, vcovLabel, pickVcov, tidy, glance, findTest,
     canonicalJSON, sha256Hex, recordSha256,
-    indexRecords, validateTable, checkPins, buildTable, render, renderers: RENDERERS,
+    indexRecords, validateTable, checkPins, columnResponse, buildTable, render, renderers: RENDERERS,
     redactRecord, renderWebPage,
     recordsIn, newSpec, fixed, statValue,
   };

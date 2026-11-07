@@ -86,6 +86,17 @@
       ]
     },
     "stats": {"type": "array", "items": {"$ref": "#/$defs/stat"}},
+    "head": {
+      "description": "The heading rows, top to bottom: column numbers (1), (2), ...; the dependent variable; the column labels (`header`, else the member label, else the record's title). Default [\"number\", \"response\"]; [] for none.",
+      "type": "array",
+      "items": {"enum": ["number", "response", "label"]},
+      "uniqueItems": true
+    },
+    "response_labels": {
+      "description": "Display names for dependent variables in the response row, by name.",
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
     "format": {
       "type": "object",
       "properties": {

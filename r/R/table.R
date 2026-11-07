@@ -48,11 +48,11 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
         .tab_fill(lines[[k]], t[j, , drop = FALSE], digits, p_digits, p_style, missing), "")
     t
   })
-  headers <- vapply(seq_along(cols), function(i) {
-    h <- cols[[i]]$header %||% attr(found[[i]], "member")$label %||% found[[i]]$meta$title
-    if (is.null(h)) sprintf("(%d)", i) else as.character(h)
-  }, "")
-  headers <- make.unique(headers, sep = " ")
+  # heading rows (spec/table.md 3.1): the first names the models; the others open the body
+  head <- .tab_head(spec, cols, found, tidies)
+  headers <- if (length(head)) head[[1]] else strrep("\u00a0", seq_along(cols))
+  # modelsummary needs distinct names; it pads repeats with spaces, as here
+  headers <- paste0(headers, strrep(" ", stats::ave(seq_along(headers), headers, FUN = seq_along) - 1L))
 
   # terms: listed rows first, then unlisted ones (by first appearance) through keep/drop
   coef_map <- character()
@@ -125,10 +125,12 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
                            else s$test)
     c(unname(label), cells)
   })
+  top <- lapply(head[-1], function(h) c("", h))
   add_rows <- NULL
-  if (length(stat_rows)) {
-    add_rows <- as.data.frame(do.call(rbind, stat_rows), stringsAsFactors = FALSE)
+  if (length(top) || length(stat_rows)) {
+    add_rows <- as.data.frame(do.call(rbind, c(top, stat_rows)), stringsAsFactors = FALSE)
     names(add_rows) <- c("term", headers)
+    attr(add_rows, "position") <- c(seq_along(top), rep(NA, length(stat_rows)))
   }
 
   stars <- unlist(spec$stars)
@@ -144,6 +146,35 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
   if (!is.null(spec$title)) args$title <- spec$title
   if (length(notes)) args$notes <- as.list(notes)
   do.call(modelsummary::modelsummary, c(args, list(...)))
+}
+
+.tab_head_kinds <- c("number", "response", "label")
+
+# The heading rows' cells, top to bottom: a list of character vectors, one per row; a
+# response or label row blank in every column is left out.
+.tab_head <- function(spec, cols, found, tidies) {
+  kinds <- if ("head" %in% names(spec)) as.character(unlist(spec$head)) else c("number", "response")
+  bad <- setdiff(kinds, .tab_head_kinds)
+  if (length(bad)) stop("head: '", bad[1], "' is not one of 'number', 'response', 'label'", call. = FALSE)
+  if (anyDuplicated(kinds)) stop("head: '", kinds[anyDuplicated(kinds)], "' appears twice", call. = FALSE)
+  labels <- spec$response_labels %||% list()
+  cells <- list(
+    number = sprintf("(%d)", seq_along(cols)),
+    response = vapply(seq_along(cols), function(i) {
+      name <- cols[[i]]$response
+      if (is.null(name) && "response" %in% names(tidies[[i]])) {
+        named <- sort(unique(stats::na.omit(tidies[[i]]$response)))
+        named <- named[nzchar(named)]
+        if (length(named) == 1L) name <- named
+      }
+      if (is.null(name)) name <- paste(unlist(found[[i]]$meta$responses), collapse = ", ")
+      as.character(labels[[name]] %||% name)
+    }, ""),
+    label = vapply(seq_along(cols), function(i)
+      as.character(cols[[i]]$header %||% attr(found[[i]], "member")$label %||% found[[i]]$meta$title %||% ""), "")
+  )
+  out <- lapply(kinds, function(k) cells[[k]])
+  Filter(Negate(is.null), Map(function(k, x) if (k != "number" && !any(nzchar(x))) NULL else x, kinds, out))
 }
 
 .tab_stat_labels <- c(nobs = "N", r2 = "R\u00b2", adj_r2 = "Adj. R\u00b2", r2_within = "Within R\u00b2",

@@ -163,6 +163,12 @@ def specs():
     s["keep"] = ["^x1$"]
     s["uncertainty"] = "conf_int"
     out.append(s)
+    for head in (["label", "number", "response"], ["number", "label"], ["response"], []):
+        s = copy.deepcopy(base)
+        s["head"] = head
+        s["response_labels"] = {"mpg": "Miles per gallon"}
+        s["columns"][1]["header"] = "with hp"
+        out.append(s)
     return out
 
 
@@ -200,6 +206,7 @@ def test_tables_match_python(node_result):
         py = et.build_table(spec, base_dir=EXAMPLES)
         assert "error" not in js, (i, js)
         assert js["header"] == py["header"], i
+        assert js["head"] == py["head"], i
         assert [r["label"] for r in js["rows"]] == [r["label"] for r in py["rows"]], i
         assert [r["cells"] for r in js["rows"]] == [r["cells"] for r in py["rows"]], i
         assert js["notes"] == py["notes"], i
@@ -209,21 +216,23 @@ def test_renderers_match_python(node_result):
     """Each format renders the built table the same way (the JS renderers on Python's table)."""
     if NODE is None:
         pytest.skip("node not installed")
-    py = et.build_table(specs()[0], base_dir=EXAMPLES)
-    script = (
-        "const E=require(process.argv[1]);const t=JSON.parse(require('fs').readFileSync(0,'utf8'));"
-        "process.stdout.write(JSON.stringify(Object.fromEntries(['text','markdown','latex','html','csv','word'].map(f=>[f,E.render(t,f)]))))"
-    )
-    run = subprocess.run(
-        [NODE, "-e", script, str(ROOT / "viewer" / "estrec-table.js")],
-        input=json.dumps(py),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert run.returncode == 0, run.stderr
-    for fmt, text in json.loads(run.stdout).items():
-        assert text == et.render(py, fmt), fmt
+    all_specs = specs()
+    for spec in [all_specs[0]] + [s for s in all_specs if "head" in s]:
+        py = et.build_table(spec, base_dir=EXAMPLES)
+        script = (
+            "const E=require(process.argv[1]);const t=JSON.parse(require('fs').readFileSync(0,'utf8'));"
+            "process.stdout.write(JSON.stringify(Object.fromEntries(['text','markdown','latex','html','csv','word'].map(f=>[f,E.render(t,f)]))))"
+        )
+        run = subprocess.run(
+            [NODE, "-e", script, str(ROOT / "viewer" / "estrec-table.js")],
+            input=json.dumps(py),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert run.returncode == 0, run.stderr
+        for fmt, text in json.loads(run.stdout).items():
+            assert text == et.render(py, fmt), (spec.get("head"), fmt)
 
 
 def test_distributions_match_python(node_result):

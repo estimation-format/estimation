@@ -8,6 +8,7 @@ ex <- Sys.getenv("ESTREC_EXAMPLES", "../../schema/examples")
 if (dir.exists(ex)) {
   x <- render_table(file.path(ex, "paper.estrec-table.json"), output = "data.frame")
   stopifnot(identical(names(x)[4:6], c("(1)", "(2)", "(3)")),
+            identical(unname(unlist(x[x$part == "manual" & x$term == "", 4:6])), rep("mpg", 3)),
             identical(cells(x, "Weight (1000 lbs)"), c("-3.206***", "-3.181***", "-3.310***")),
             identical(unname(unlist(x[2, 4:6])), c("(0.754)", "(0.693)", "(1.064)")),
             identical(cells(x, "Horsepower"), c("", "-0.023**", "-0.021*")),
@@ -33,6 +34,17 @@ if (dir.exists(ex)) {
     spec$format <- c(list(digits = 3), case$f)
     stopifnot(identical(render_table(spec, output = "data.frame", base_dir = ex)[2, 4], case$want))
   }
+  # heading rows: labels on top, the dependent variable renamed, none at all, a bad kind
+  spec$head <- list("response", "label")
+  spec$response_labels <- list(mpg = "Miles per gallon")
+  x <- render_table(spec, output = "data.frame", base_dir = ex)
+  stopifnot(identical(names(x)[4:6], c("Miles per gallon", "Miles per gallon ", "Miles per gallon  ")),
+            identical(unname(unlist(x[x$part == "manual" & x$term == "", 4:6])), c("baseline", "horsepower", "full")))
+  spec["head"] <- list(list())
+  stopifnot(identical(names(render_table(spec, output = "data.frame", base_dir = ex))[4], "\u00a0"))
+  spec$head <- list("number", "bogus")
+  stopifnot(grepl("'bogus' is not one of", tryCatch(render_table(spec, base_dir = ex), error = conditionMessage)))
+  spec$head <- NULL; spec$response_labels <- NULL
   spec$uncertainty <- list("({stderr})")
   stopifnot(grepl("unknown placeholder \\{stderr\\}", tryCatch(render_table(spec, base_dir = ex), error = conditionMessage)))
   spec$uncertainty <- NULL; spec["uncertainty"] <- list(NULL)
@@ -59,7 +71,12 @@ if (requireNamespace("fixest", quietly = TRUE)) {
                             list(fixed_effect = "id"), list(label = "Sample", values = list("all", "all", "all", "all"))),
                stars = list(0.05, 0.01), format = list(digits = 2, fe_yes = "X"))
   x <- render_table(spec, output = "data.frame", records = list(r1, r2))
+  stopifnot(identical(names(x)[4:7], c("(1)", "(2)", "(3)", "(4)")),
+            identical(unname(unlist(x[x$part == "manual" & x$term == "", 4:7])), rep("y", 4)))
+  spec$head <- list("label", "number")
+  x <- render_table(spec, output = "data.frame", records = list(r1, r2))
   stopifnot(identical(names(x)[4:7], c("A", "B", "B iid", "A HC1")),
+            identical(unname(unlist(x[x$part == "manual" & x$term == "", 4:7])), c("(1)", "(2)", "(3)", "(4)")),
             identical(x$term[x$part == "estimates"], c("Treatment", "Treatment", "z", "z")),
             identical(cells(x, "Std. errors"), c("iid", "by: id", "iid", "HC1")),
             identical(cells(x, "Clusters"), c("", "30", "", "")),

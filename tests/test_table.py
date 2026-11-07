@@ -151,7 +151,9 @@ def test_column_vcov_and_clusters():
     t = et.build_table(s, records=coll)
     rec = next(r for _, _, r in ef.iter_members(coll))
     iid = ef.tidy(rec, vcov="iid")[0]
-    assert t["header"] == ["firm", "firm_year", "iid"]
+    assert t["header"] == ["(1)", "(2)", "(3)"]
+    s["head"] = ["label"]
+    assert et.build_table(s, records=coll)["head"][0]["cells"] == ["firm", "firm_year", "iid"]
     assert t["rows"][1]["cells"][2] == f"({iid['std_error']:.3f})"
     assert cells(t, "Std. errors") == ["by: firm", "by: firm", "iid"]
     assert cells(t, "Clusters")[0] == "980" and cells(t, "Clusters")[2] == ""
@@ -161,7 +163,7 @@ def test_column_vcov_and_clusters():
 def test_new_table_and_round_trip(tmp_path):
     coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
     s = et.new_table(coll, title="T", pin=True, sources=[{"id": "p", "path": "paper.estrec-collection.json"}])
-    assert [c["header"] for c in s["columns"]] == ["baseline", "horsepower", "full"]
+    assert all("header" not in c for c in s["columns"])
     assert all(len(c["sha256"]) == 64 for c in s["columns"])
     path = et.write_table(s, tmp_path / "t.estrec-table.json")
     assert et.read_table(path) == json.loads(json.dumps(s))
@@ -287,3 +289,35 @@ def test_word_render_has_three_rules_and_inline_styles():
     assert doc.count("border-top:.75pt") == n_stat_starts * (len(t["header"]) + 1)
     for n in t["notes"]:
         assert html.escape(n) in doc
+
+
+def test_heading_rows_number_then_response_by_default():
+    coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
+    s = et.new_table(coll)
+    t = et.build_table(s, records=coll)
+    assert [h["kind"] for h in t["head"]] == ["number", "response"]
+    assert t["head"][0]["cells"] == t["header"] == ["(1)", "(2)", "(3)"]
+    resp = [", ".join(r["meta"]["responses"]) for _, _, r in ef.iter_members(coll)]
+    assert t["head"][1]["cells"] == resp
+    s["response_labels"] = {resp[0]: "Miles per gallon"}
+    assert et.build_table(s, records=coll)["head"][1]["cells"][0] == "Miles per gallon"
+
+
+def test_heading_rows_order_and_label_row():
+    coll = ef.read_collection(EXAMPLES / "paper.estrec-collection.json")
+    s = et.new_table(coll, head=["label", "number"])
+    t = et.build_table(s, records=coll)
+    assert [h["cells"] for h in t["head"]] == [["baseline", "horsepower", "full"], ["(1)", "(2)", "(3)"]]
+    text = et.render(t, "text").splitlines()
+    assert "baseline" in text[0] and "(1)" in text[1] and set(text[2]) <= {"-", " "}
+    md = et.render(t, "markdown").splitlines()
+    assert "baseline" in md[0] and md[1].startswith("|---|") and "(1)" in md[2]
+    assert et.render(t, "latex").count(" & (1) & ") == 1
+    assert '<tr class="head-label">' in et.render(t, "html")
+    assert et.render(t, "csv").splitlines()[:2] == [",baseline,horsepower,full", ",(1),(2),(3)"]
+    s["head"] = []
+    t = et.build_table(s, records=coll)
+    assert t["head"] == [] and "1.5pt" in et.render(t, "word").split("<tr>")[1]
+    s["head"] = ["number", "bogus", "number"]
+    msgs = [i.path for i in et.validate_table(s, schema=None)]
+    assert msgs == ["head[1]", "head[2]"]

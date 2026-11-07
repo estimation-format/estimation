@@ -221,8 +221,8 @@ def new_table(
     cols = []
     for i, (rec, m) in enumerate(items):
         col = {"record": rec["meta"]["id"]}
-        h = heads[i] if heads else ((m or {}).get("label") or f"({i + 1})")
-        col["header"] = str(h)
+        if heads:
+            col["header"] = str(heads[i])
         if pin:
             col["sha256"] = member_sha256(rec)
         cols.append(col)
@@ -310,6 +310,18 @@ def _structural(spec: dict) -> list[Issue]:
             except re.error as e:
                 out.append(Issue("error", f"{key}[{j}]", f"pattern doesn't compile: {e}"))
     out += _line_issues(spec)
+    head = spec.get("head")
+    if head is not None:
+        if not isinstance(head, list):
+            out.append(Issue("error", "head", "a list of 'number', 'response', 'label'"))
+        else:
+            for j, k in enumerate(head):
+                if k not in HEAD_KINDS:
+                    out.append(
+                        Issue("error", f"head[{j}]", f"{k!r} is not one of 'number', 'response', 'label'")
+                    )
+                elif head.index(k) != j:
+                    out.append(Issue("error", f"head[{j}]", f"{k!r} appears twice"))
     for j, s in enumerate(spec.get("stats") or []):
         if "values" in s and len(s["values"]) != len(cols):
             out.append(
@@ -450,10 +462,41 @@ def _stars(p: float, thresholds: list[float], symbols: list[str]) -> str:
     return out
 
 
+HEAD_KINDS = ("number", "response", "label")
+DEFAULT_HEAD = ["number", "response"]
+
+
+def _column_response(c: dict, record: dict, rows: list[dict], labels: dict) -> str:
+    """A column's dependent variable: its `response`, else the one response its rows share (a
+    first stage's endogenous variable), else the record's `meta.responses`; then relabelled."""
+    name = c.get("response")
+    if not name:
+        named = sorted({r["response"] for r in rows if r.get("response")})
+        if len(named) == 1:
+            name = named[0]
+    if not name:
+        name = ", ".join(str(x) for x in (record.get("meta") or {}).get("responses") or [])
+    return str(labels.get(name, name))
+
+
+def _head_rows(spec: dict, cols: list[dict]) -> list[dict]:
+    """The heading rows, top to bottom (spec `head`); a response or label row that would be
+    empty in every column is left out."""
+    out = []
+    for kind in spec.get("head", DEFAULT_HEAD):
+        cells = [c[kind] for c in cols]
+        if kind != "number" and not any(cells):
+            continue
+        out.append({"kind": kind, "cells": cells})
+    return out
+
+
 def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, records: Any = None) -> dict:
-    """The table as cells: {"title", "header": [..], "column_records": [meta.id per column],
-    "rows": [{"label", "cells", "kind"}], "notes": [..], "warnings": [..]}. `kind` is "estimate", "uncertainty" or "stat". Raises
-    ValueError on errors (spec/table.md section 9)."""
+    """The table as cells: {"title", "head": [{"kind", "cells"}] (heading rows, top to bottom;
+    `kind` "number", "response" or "label"), "header": ["(1)", ...], "column_records":
+    [meta.id per column], "rows": [{"label", "cells", "kind"}], "notes": [..], "warnings":
+    [..]}. A row's `kind` is "estimate", "uncertainty" or "stat". Raises ValueError on errors
+    (spec/table.md section 9)."""
     issues = validate_table(spec, base_dir=base_dir, records=records, schema=None)
     errors = [i for i in issues if i.level == "error"]
     if errors:
@@ -475,18 +518,18 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
         rows = tidy(f.record, vcov=c.get("vcov"), component=c.get("component"))
         if c.get("response"):
             rows = [r for r in rows if r.get("response") == c["response"]]
-        header = c.get("header")
-        if header is None:
-            header = (
-                (f.member or {}).get("label") or (f.record.get("meta") or {}).get("title") or f"({i + 1})"
-            )
+        label = c.get("header")
+        if label is None:
+            label = (f.member or {}).get("label") or (f.record.get("meta") or {}).get("title") or ""
         cols.append(
             {
                 "spec": c,
                 "found": f,
                 "tidy": {r["term"]: r for r in rows},
                 "order": [r["term"] for r in rows],
-                "header": header,
+                "number": f"({i + 1})",
+                "response": _column_response(c, f.record, rows, spec.get("response_labels") or {}),
+                "label": label,
             }
         )
 
@@ -585,7 +628,8 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
         notes.append(note)
     return {
         "title": spec.get("title"),
-        "header": [c["header"] for c in cols],
+        "head": _head_rows(spec, cols),
+        "header": [c["number"] for c in cols],
         "column_records": [c["found"].record["meta"]["id"] for c in cols],
         "rows": out_rows,
         "notes": notes,
@@ -620,8 +664,13 @@ def _render_markdown(t: dict) -> str:
     lines = []
     if t["title"]:
         lines += [f"**{esc(t['title'])}**", ""]
-    lines.append("| | " + " | ".join(map(esc, t["header"])) + " |")
-    lines.append("|---|" + "---:|" * len(t["header"]))
+    n = len(t["header"])
+    head = [h["cells"] for h in t["head"]] or [[""] * n]
+    # Markdown has one heading row: the first; the others open the body
+    lines.append("| | " + " | ".join(map(esc, head[0])) + " |")
+    lines.append("|---|" + "---:|" * n)
+    for cells in head[1:]:
+        lines.append("| | " + " | ".join(map(esc, cells)) + " |")
     for r in t["rows"]:
         lines.append(f"| {esc(r['label'])} | " + " | ".join(map(esc, r["cells"])) + " |")
     if t["notes"]:
@@ -636,7 +685,8 @@ def _render_latex(t: dict, escape: bool = True) -> str:
     if t["title"]:
         lines.append(f"\\caption{{{e(t['title'])}}}")
     lines += [f"\\begin{{tabular}}{{l{'c' * n}}}", "\\toprule"]
-    lines.append(" & " + " & ".join(map(e, t["header"])) + " \\\\")
+    for h in t["head"]:
+        lines.append(" & " + " & ".join(map(e, h["cells"])) + " \\\\")
     lines.append("\\midrule")
     prev = None
     for r in t["rows"]:
@@ -657,7 +707,16 @@ def _render_html(t: dict) -> str:
     out = ['<table class="estrec-table">']
     if t["title"]:
         out.append(f"<caption>{h(t['title'])}</caption>")
-    out.append("<thead><tr><th></th>" + "".join(f"<th>{h(x)}</th>" for x in t["header"]) + "</tr></thead>")
+    out.append(
+        "<thead>"
+        + "".join(
+            f'<tr class="head-{r["kind"]}"><th></th>'
+            + "".join(f"<th>{h(x)}</th>" for x in r["cells"])
+            + "</tr>"
+            for r in t["head"]
+        )
+        + "</thead>"
+    )
     out.append("<tbody>")
     prev = None
     for r in t["rows"]:
@@ -685,14 +744,17 @@ def _render_csv(t: dict) -> str:
 
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
-    w.writerow([""] + t["header"])
+    for h in t["head"]:
+        w.writerow([""] + h["cells"])
     for r in t["rows"]:
         w.writerow([r["label"]] + r["cells"])
     return buf.getvalue()
 
 
 def _render_text(t: dict) -> str:
-    rows = [[""] + t["header"]] + [[r["label"]] + r["cells"] for r in t["rows"]]
+    head = [[""] + h["cells"] for h in t["head"]]
+    body = [[r["label"]] + r["cells"] for r in t["rows"]]
+    rows = head + body + [[""] * (len(t["header"]) + 1)]
     widths = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
 
     def line(r):
@@ -704,9 +766,9 @@ def _render_text(t: dict) -> str:
     out = []
     if t["title"]:
         out.append(t["title"])
-    out += [line(rows[0]), rule]
+    out += [line(r) for r in head] + [rule]
     prev = None
-    for r, src in zip(rows[1:], t["rows"]):
+    for r, src in zip(body, t["rows"]):
         if src["kind"] == "stat" and prev != "stat":
             out.append(rule)
         out.append(line(r))
@@ -745,17 +807,23 @@ def _render_word(t: dict) -> str:
     if t["title"]:
         out.append(f'<p style="margin:0 0 6pt 0"><b>{h(t["title"])}</b></p>')
     out.append('<table style="border-collapse:collapse;border:none;font-size:10pt">')
-    out.append(
-        "<tr>"
-        + "".join(
-            _word_cell(x, left=i == 0, top="1.5pt", bottom=".75pt") for i, x in enumerate([""] + t["header"])
+    nh = len(t["head"])
+    for k, hr in enumerate(t["head"]):
+        top = "1.5pt" if k == 0 else ""
+        bottom = ".75pt" if k == nh - 1 else ""
+        out.append(
+            "<tr>"
+            + "".join(
+                _word_cell(x, left=i == 0, top=top, bottom=bottom) for i, x in enumerate([""] + hr["cells"])
+            )
+            + "</tr>"
         )
-        + "</tr>"
-    )
     prev = None
     last = len(t["rows"]) - 1
     for k, r in enumerate(t["rows"]):
         top = ".75pt" if r["kind"] == "stat" and prev != "stat" else ""
+        if k == 0 and not nh:
+            top = "1.5pt"
         bottom = "1.5pt" if k == last else ""
         pad = r["kind"] == "estimate" and k > 0
         out.append(
@@ -834,6 +902,13 @@ def to_great_table(table: dict):
             }
         )
     g = gt.GT(frame)
+    if table["head"]:
+        g = g.cols_label(
+            **{
+                h: gt.html("<br>".join(html.escape(r["cells"][i]) for r in table["head"]))
+                for i, h in enumerate(table["header"])
+            }
+        )
     if table["title"]:
         g = g.tab_header(title=table["title"])
     for n in table["notes"]:

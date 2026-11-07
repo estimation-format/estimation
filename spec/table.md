@@ -19,8 +19,9 @@ key words MUST, SHOULD and MAY are as in `spec/estrec.md` section 1.1. Schema:
  "title": "Table 2: Fares and concentration",
  "sources": [{"id": "t2", "path": "table2.estrec-collection.json"}],
  "columns": [
-   {"record": "2b7e6e56-...", "source": "t2", "header": "(1)"},
-   {"record": "380a95f5-...", "source": "t2", "header": "(2)", "vcov": "iid"}],
+   {"record": "2b7e6e56-...", "source": "t2"},
+   {"record": "380a95f5-...", "source": "t2", "vcov": "iid"}],
+ "response_labels": {"fare_log": "log(fare)"},
  "rows": [
    {"term": "hhi", "label": "HHI"},
    {"terms": ["price_log", "fit_price_log"], "label": "log(price)"}],
@@ -47,6 +48,7 @@ key words MUST, SHOULD and MAY are as in `spec/estrec.md` section 1.1. Schema:
 | `title` | optional | the table's caption |
 | `sources` | optional | where to find the records (2) |
 | `columns` | required | one entry per column, left to right (3) |
+| `head`, `response_labels` | optional | the heading rows (3.1) |
 | `rows` | optional | the terms to show, in order, with labels (4) |
 | `keep`, `drop`, `keep_unlisted` | optional | which other terms to show (4) |
 | `uncertainty` | optional | the lines under each estimate (5); default `"std_error"` |
@@ -68,7 +70,7 @@ some other way (loaded in a browser, passed to a function); sources are where to
 | `record` | required | the record's `meta.id` |
 | `source` | optional | the `id` of the source that holds it |
 | `sha256` | optional | the record's RFC 8785 hash, as a collection member's (`spec/estrec.md` 11.3) |
-| `header` | optional | the column heading; default: the member label, else the record's title, else `(1)`, `(2)`, ... |
+| `header` | optional | the column's label (the `label` heading row, 3.1); default: the member label, else the record's title |
 | `vcov` | optional | another vcov in the record: its `type`, its cluster variables (`"firm"`, `"firm & year"`), or its position (0-based). Standard errors, tests and intervals are computed from it (8) |
 | `component` | optional | a `parameters[*].component` to show (`"first_stage"`); default the rows with none |
 | `response` | optional | for a record with several responses, which one |
@@ -77,6 +79,23 @@ Columns name records by id, so a spec survives files being moved or renamed. A r
 can't be found is an error, not a blank column. With `sha256`, a renderer warns when the
 record found has a different hash: it has changed since the table was made (a test added,
 say).
+
+### 3.1 Heading rows
+
+`head` lists the heading rows above the estimates, top to bottom, each at most once:
+
+- `"number"`: `(1)`, `(2)`, ... by position;
+- `"response"`: the dependent variable: the column's `response`, else the one response its
+  rows have (a first stage's), else the record's `meta.responses` joined with `", "`.
+  `response_labels` MAY give display names, `{"fare_log": "log(fare)"}`;
+- `"label"`: the column's `header`, else its collection member's label, else the record's
+  title.
+
+The default is `["number", "response"]`. `["label", "number", "response"]` puts labels on
+top; `["number", "label"]` shows them instead of the dependent variable; `[]` gives no
+heading. A `response` or `label` row that would be blank in every column is left out. The
+stub (the row labels' column) is blank in heading rows. Formats with one heading row
+(Markdown) show the first as the heading and the others at the top of the body.
 
 ## 4. Rows
 
@@ -156,6 +175,7 @@ reference readers' `tidy`.
 A validator reports, as **errors**: a spec that fails the schema, a column whose record can't
 be found, a `source` naming no source, duplicate source ids, a `keep`/`drop` pattern that
 doesn't compile, a literal row whose `values` don't match the columns, and an `uncertainty`
-line that is neither a name nor a template, or uses an unknown placeholder. As **warnings**: a
+line that is neither a name nor a template, or uses an unknown placeholder, and a `head`
+entry that isn't `number`, `response` or `label` or appears twice. As **warnings**: a
 column whose record's hash isn't its `sha256`, a vcov a record doesn't have, a row term that
 no column has, and a metric, fixed effect or test that no column's record has.
