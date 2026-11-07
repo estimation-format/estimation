@@ -242,6 +242,24 @@ def test_inference_requires():
     assert errors(p, dropped) == []
 
 
+def test_inference_df_residual_optional_for_z_tests():
+    rec = example("lm-minimal.estrec.json")
+    p = PROFILES["inference/0.1"]
+    z = copy.deepcopy(rec)
+    del z["metrics"]["df_residual"]
+    assert errors(p, z)  # df_t 30: t tests need df_residual
+    z["structures"]["vcov"][0]["df_t"] = None
+    assert errors(p, z) == []
+    del z["structures"]["vcov"][0]["df_t"]
+    assert errors(p, z) == []
+    two = example("dfeols-linear-fe.estrec.json")
+    del two["metrics"]["df_residual"]
+    two["structures"]["vcov"][1]["df_t"] = None  # not the default
+    assert errors(p, two)
+    two["structures"]["vcov"][0]["df_t"] = None
+    assert errors(p, two) == []
+
+
 def test_inference_default_vcov():
     rec = example("dfeols-linear-fe.estrec.json")
     p = PROFILES["inference/0.1"]

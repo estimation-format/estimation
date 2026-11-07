@@ -908,10 +908,14 @@ def _profile_inference(rec: dict) -> list[Issue]:
             if missing:
                 issues.append(Issue("error", f"parameters[{i}]", f"missing {', '.join(missing)}"))
     metrics = rec.get("metrics") or {}
-    for k in ("nobs", "df_residual"):
-        if k not in metrics:
-            issues.append(Issue("error", f"metrics.{k}", "required"))
     vc = _default_vcov(rec)
+    if "nobs" not in metrics:
+        issues.append(Issue("error", "metrics.nobs", "required"))
+    # df_residual can be left out only by z-test fits: a default vcov with no df_t (Ted, 2026-11-07)
+    if "df_residual" not in metrics and (vc is None or vc.get("df_t") is not None):
+        issues.append(
+            Issue("error", "metrics.df_residual", "required unless the default vcov has no df_t (z tests)")
+        )
     if vc is None:
         issues.append(Issue("error", "structures.vcov", "a default vcov is required"))
     else:

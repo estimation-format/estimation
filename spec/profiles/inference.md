@@ -11,7 +11,11 @@ Records of models that report estimates with standard errors. The other inferenc
 A record claiming `inference/0.1` MUST have:
 
 - in `parameters`, on every row that is not `dropped`: `estimate`, `std_error` and `p_value`;
-- `metrics.nobs` and `metrics.df_residual`;
+- `metrics.nobs`;
+- `metrics.df_residual`, unless the default vcov has no `df_t` (absent or null), which means
+  its tests and intervals use the normal distribution (z tests). Tools that use z tests and
+  report no residual df (Stata's ML commands, `ivregress` and `ivreg2` without `small`,
+  `xtreg, re`) leave it out rather than writing a value the tool doesn't report;
 - a default vcov in `structures.vcov`: the one marked `default: true`, or the only one. It
   MUST have `type` and `ssc` with at least `convention`. Two vcovs both marked default are an
   error.

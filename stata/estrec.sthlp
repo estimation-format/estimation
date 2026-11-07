@@ -42,7 +42,7 @@ The record claims the profiles of the format that fit the command:
 {p2col:{cmd:xtreg, re}}inference{p_end}
 {p2col:{cmd:ivregress}, {cmd:ivreg2}}inference, iv{p_end}
 {p2col:{cmd:ivreghdfe}}inference, iv, linear-fe{p_end}
-{p2col:{cmd:logit}, {cmd:logistic}, {cmd:probit}, {cmd:poisson}, {cmd:nbreg}}glm{p_end}
+{p2col:{cmd:logit}, {cmd:logistic}, {cmd:probit}, {cmd:poisson}, {cmd:nbreg}}inference, glm{p_end}
 {p2col:{cmd:glm}}inference, glm ({cmd:glm, irls}: inference only){p_end}
 {p2colreset}{...}
 

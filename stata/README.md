@@ -17,18 +17,20 @@ Or, from a clone: `net install estrec, from("path/to/estrec/stata") replace`.
 | `regress` | inference | the model-based vcov is kept beside a robust or cluster one |
 | `areg` | inference, linear-fe | K counts the absorbed levels even when nested in the clusters |
 | `xtreg, fe` | inference, linear-fe | the panel variable is the fixed effect; `xtset` in `specification.state` |
-| `xtreg, re` | inference | z tests; `df_residual` is N − K, labelled |
+| `xtreg, re` | inference | z tests, so no `df_residual` and `df_t` null |
 | `reghdfe` | inference, linear-fe | same record as `converters/reghdfe` |
-| `ivregress` | inference, iv | runs `estat firststage`, `overid` and `endogenous` (`noestat` skips them) |
-| `ivreg2` | inference, iv | first-stage tests with `first`/`ffirst`, C test with `endog()` |
+| `ivregress` | inference, iv | without `small`, z tests (no `df_residual`); runs `estat firststage`, `overid` and `endogenous` (`noestat` skips them) |
+| `ivreg2` | inference, iv | as `ivregress` without `small`; first-stage tests with `first`/`ffirst`, C test with `endog()` |
 | `ivreghdfe` | inference, iv, linear-fe | |
-| `logit`, `logistic`, `probit`, `poisson`, `nbreg` | glm | deviance computed for the record (−2 log L for 0/1 outcomes; from `predict, n` for counts) |
+| `logit`, `logistic`, `probit`, `poisson`, `nbreg` | inference, glm | z tests (no `df_residual`); no deviance, since these commands don't post one (the glm profile warns that it's missing) |
 | `glm` | inference, glm | `glm, irls` stores no convergence flag, so only inference |
 | anything else with `e(b)`, `e(V)` | none | core fields only |
 
 Tested with Stata 18 MP, reghdfe 6.13.1, ivreg2 4.1.12 and ivreghdfe 1.1.4
-(`tests/test_stata.py`: each command at every disclosure level validates with no warnings
-and reproduces Stata's results table).
+(`tests/test_stata.py`: each command at every disclosure level validates, with no warnings
+except the missing deviance after `logit`, `probit`, `poisson` and `nbreg`, and reproduces
+Stata's results table). estrec records what the command posts and does not compute
+statistics of its own.
 
 ## Small-sample corrections
 

@@ -1,7 +1,8 @@
 """estrec for Stata (stata/estrec.ado): every supported command writes a valid record.
 
 Each command runs on Stata's auto data (plus a count and a panel id). The records must
-validate with no warnings at every disclosure level, claim the profiles listed below, and
+validate with no warnings at every disclosure level (but glm/0.1's missing deviance after
+commands that post none), claim the profiles listed below, and
 reproduce Stata's own results table (r(table)) to rounding. reghdfe records must equal the
 worked converter's (converters/reghdfe) apart from the writer's name and the formula text.
 
@@ -51,15 +52,20 @@ CASES = {
         [INF, IV, FE],
         "ivreghdfe",
     ),
-    "logit": ("logit foreign mpg weight", [GLM], None),
-    "logistic": ("logistic foreign mpg i.rep78", [GLM], None),
-    "probit": ("probit foreign mpg weight, vce(robust)", [GLM], None),
-    "poisson": ("poisson cnt mpg weight, exposure(length)", [GLM], None),
-    "nbreg": ("nbreg cnt mpg weight, vce(cluster id)", [GLM], None),
+    "logit": ("logit foreign mpg weight", [INF, GLM], None),
+    "logistic": ("logistic foreign mpg i.rep78", [INF, GLM], None),
+    "probit": ("probit foreign mpg weight, vce(robust)", [INF, GLM], None),
+    "poisson": ("poisson cnt mpg weight, exposure(length)", [INF, GLM], None),
+    "nbreg": ("nbreg cnt mpg weight, vce(cluster id)", [INF, GLM], None),
     "glm": ("glm cnt mpg weight, family(poisson) link(log)", [INF, GLM], None),
     "glm_irls": ("glm foreign mpg weight, family(binomial) link(logit) irls", [INF], None),
     "tobit": ("tobit price mpg, ll(3500)", None, None),
 }
+
+# These post no deviance and estrec computes none, so glm/0.1 warns that it is missing
+NO_DEVIANCE = {"logit", "logistic", "probit", "poisson", "nbreg"}
+# z tests: no e(df_r), so no df_residual and a null df_t (inference/0.1)
+Z_TESTS = NO_DEVIANCE | {"xtreg_re", "ivregress_2sls", "ivregress_gmm", "ivreg2_robust", "ivreg2_endog"}
 
 SETUP = """
 set linesize 200
@@ -137,6 +143,8 @@ def _case(written: Path, installed: set, name: str, level: int = 4) -> dict:
     path = written / f"{name}_l{level}.estrec.json"
     rec = ef.read(path)
     issues = [i for i in ef.validate(rec, base_dir=path.parent) if i.level != "info"]
+    if name in NO_DEVIANCE:
+        issues = [i for i in issues if not (i.level == "warning" and i.path == "metrics.deviance")]
     assert not issues, f"{path.name}: {issues}"
     assert rec["meta"]["disclosure"] == {"level": level}
     assert ef.record_level(rec) <= level
@@ -224,7 +232,7 @@ def test_ivregress_records_estat(written, installed):
         ("weak_identification", "cragg_donald_f", None),
     } <= set(tests)
     assert rec["structures"]["vcov"][0]["df_t"] is None  # z tests without small
-    assert rec["metrics"]["df_residual"]["value"] == 71
+    assert "df_residual" not in rec["metrics"]
     assert rec["specification"]["instruments"] == ["length", "turn"]
     assert rec["specification"]["endogenous"] == ["mpg"]
 
@@ -250,6 +258,20 @@ def test_glm_family(written, installed):
     assert po["structures"]["numerics"]["converged"] is True
     irls = _case(written, installed, "glm_irls")
     assert irls["meta"]["messages"][0]["code"] == "convergence_unknown"
+
+
+@pytest.mark.parametrize("name", sorted(Z_TESTS))
+def test_z_tests_record_no_residual_df(written, installed, name):
+    rec = _case(written, installed, name)
+    assert "df_residual" not in rec["metrics"]
+    assert rec["structures"]["vcov"][0]["df_t"] is None
+
+
+def test_deviance_only_when_posted(written, installed):
+    for name in sorted(NO_DEVIANCE):
+        assert "deviance" not in _case(written, installed, name)["metrics"], name
+    glm = _case(written, installed, "glm")
+    assert isinstance(glm["metrics"]["deviance"], float)
 
 
 def test_unmapped_command_is_core_only(written, installed):

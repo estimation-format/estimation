@@ -10,7 +10,7 @@
 *   xtreg re                        inference/0.1
 *   ivregress, ivreg2               inference/0.1, iv/0.1
 *   ivreghdfe                       inference/0.1, iv/0.1, linear-fe/0.1
-*   logit, logistic, probit,        glm/0.1
+*   logit, logistic, probit,        inference/0.1, glm/0.1
 *     poisson, nbreg
 *   glm                             inference/0.1, glm/0.1 (glm, irls: inference/0.1 only)
 *
@@ -593,8 +593,7 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 		_oa(metrics, "df_residual", _ej_def(_ej_n(dfr), dfdef), 1)
 	}
 	else if (kind == "glm") _oa(metrics, "df_residual", _en("df"), 1)
-	else if (linear) _oa(metrics, "df_residual", _ej_def(_ej_n(N - rank),
-		"N - K, K = rank; " + (kind == "xtreg_re" ? "xtreg, re" : cmd) + " used z tests, so this df isn't used"), 1)
+	// z-test fits (no e(df_r)) record no df_residual: the default vcov's df_t is null (inference/0.1)
 	_oa(metrics, "df_model", _ej_def(_en("df_m"), kind == "xtreg_fe" ? "regressors plus absorbed levels (xtreg, fe e(df_m))" : ""), 2)
 	if (_isin(kind, ("areg", "xtreg_fe", "reghdfe", "ivreghdfe"))) {
 		_oa(metrics, "df_absorbed", _en("df_a"), 2)
@@ -620,14 +619,8 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 	_oa(metrics, "log_lik", _en("ll"), 2)
 	_oa(metrics, "log_lik_null", _en("ll_0"), 2)
 	if (ml) {
-		dev = .
-		if (kind == "glm") dev = _e("deviance")
-		else if (_isin(cmd, ("logit", "logistic", "probit"))) dev = -2 * _e("ll")
-		else if (cmd == "poisson" | (cmd == "nbreg" & _eg("dispers") == "mean")) dev = _er_deviance(cmd, depvar, wvar, _e("alpha"))
-		s = ""
-		if (_isin(cmd, ("logit", "logistic", "probit"))) s = "-2 log_lik: a 0/1 outcome's saturated log-likelihood is 0"
-		else if (cmd != "glm") s = "computed by estrec from predict, n" + (cmd == "nbreg" ? " and e(alpha)" : "")
-		_oa(metrics, "deviance", _ej_def(_ej_nx(dev), s), 2)
+		// Only what the command posts: logit, probit, poisson and nbreg post no deviance (Ted, 2026-11-07)
+		_oa(metrics, "deviance", _en("deviance"), 2)
 		_oa(metrics, "pseudo_r2", _en("r2_p"), 2)
 		if (!missing(_e("N_cds"))) _oa(metrics, "n_completely_determined", _ej_n(_e("N_cds") + _e("N_cdf")), 2)
 		_oa(metrics, "alpha", _en("alpha"), 2)
@@ -792,7 +785,7 @@ void _er_write(string scalar fn, real scalar replace, real scalar lv)
 
 	// ---- meta ----
 	profiles = J(1, 0, "")
-	if (lv >= 2 & (linear | (kind == "glm"))) profiles = profiles, "inference/0.1"
+	if (lv >= 2 & (linear | ml)) profiles = profiles, "inference/0.1"
 	if (lv >= 3 & iv) profiles = profiles, "iv/0.1"
 	if (lv >= 3 & _isin(kind, ("areg", "xtreg_fe", "reghdfe", "ivreghdfe"))) profiles = profiles, "linear-fe/0.1"
 	if (lv >= 4 & ml & !missing(conv_ok)) profiles = profiles, "glm/0.1"
@@ -928,26 +921,6 @@ string scalar _er_dep(string scalar name, string scalar ver)
 {
 	return(_ej_o(("name", "version", "purl", "role", "source"), (_ej_s(name), (ver != "" ? _ej_s(ver) : ""),
 		(ver != "" ? _ej_s("pkg:generic/" + name + "@" + ver) : ""), _ej_s("dependency"), _ej_s("SSC"))))
-}
-
-// Poisson or NB2 deviance over e(sample), from predict, n
-real scalar _er_deviance(string scalar cmd, string scalar y, string scalar w, real scalar alpha)
-{
-	string scalar mu, ts
-	real colvector Y, MU, W, d
-	real scalar dev
-	mu = st_tempname()
-	ts = st_tempname()
-	if (_stata("quietly predict double " + mu + " if e(sample), n", 1)) return(.)
-	stata("quietly generate byte " + ts + " = e(sample)")
-	Y = st_data(., y, ts)
-	MU = st_data(., mu, ts)
-	W = (w != "" ? st_data(., w, ts) : J(rows(Y), 1, 1))
-	if (cmd == "poisson") d = (Y :> 0) :* Y :* ln(Y :/ MU) - (Y - MU)
-	else d = (Y :> 0) :* Y :* ln(Y :/ MU) - (Y :+ 1 / alpha) :* ln((1 :+ alpha * Y) :/ (1 :+ alpha * MU))
-	dev = 2 * quadsum(W :* editmissing(d, 0))
-	st_dropvar((mu, ts))
-	return(dev)
 }
 
 // ivregress first-stage, overidentification and endogeneity tests (estat)

@@ -26,9 +26,11 @@ surveyed.
 
 ### Why not `inference/0.1`
 
-`inference/0.1` requires `metrics.df_residual`. Stata's ML commands (`logit`, `poisson`, ...)
-and ppmlhdfe post no `e(df_r)` and use z tests. Records that also have a residual df (R `glm`,
-fixest, statsmodels) claim `inference/0.1` too.
+This profile was written when `inference/0.1` required `metrics.df_residual`, which Stata's ML
+commands (`logit`, `poisson`, ...) and ppmlhdfe don't post (they use z tests). Since 2026-11-07
+`inference/0.1` lets a record leave out `df_residual` when its default vcov has no `df_t`, so
+those records can claim `inference/0.1` as well, like R `glm`, fixest and statsmodels records.
+`glm/0.1` still doesn't require it.
 
 ## Model
 

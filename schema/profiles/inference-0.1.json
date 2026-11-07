@@ -3,7 +3,7 @@
   "$id": "https://estrec.org/schema/profiles/inference-0.1.json",
   "title": "inference/0.1",
   "x-license": "CC0-1.0",
-  "description": "Profile for records with classical inference (R lm/estimatr, statsmodels, Stata regress). Requires, on top of the core: estimate, std_error and p_value on every row that isn't dropped; metrics.nobs and df_residual; a default vcov (the one marked default, or the only one) with type and ssc.convention.",
+  "description": "Profile for records with classical inference (R lm/estimatr, statsmodels, Stata regress). Requires, on top of the core: estimate, std_error and p_value on every row that isn't dropped; metrics.nobs; a default vcov (the one marked default, or the only one) with type and ssc.convention; and metrics.df_residual unless that vcov has no df_t (absent or null: normal reference distribution, z tests and intervals).",
   "allOf": [
     {"$ref": "../estrec-0.1.json"},
     {"$ref": "#/$defs/rules"}
@@ -19,7 +19,7 @@
             "else": {"required": ["estimate", "std_error", "p_value"]}
           }
         },
-        "metrics": {"required": ["nobs", "df_residual"]},
+        "metrics": {"required": ["nobs"]},
         "structures": {
           "required": ["vcov"],
           "properties": {
@@ -35,7 +35,26 @@
             }
           }
         }
+      },
+      "if": {"required": ["metrics"], "properties": {"metrics": {"not": {"required": ["df_residual"]}}}},
+      "then": {
+        "description": "No df_residual: the default vcov (or the lone one) must have no df_t, i.e. z tests.",
+        "properties": {
+          "structures": {
+            "properties": {
+              "vcov": {
+                "anyOf": [
+                  {"contains": {"allOf": [{"$ref": "#/$defs/default_vcov"}, {"$ref": "#/$defs/normal_vcov"}]}},
+                  {"maxItems": 1, "items": {"$ref": "#/$defs/normal_vcov"}}
+                ]
+              }
+            }
+          }
+        }
       }
+    },
+    "normal_vcov": {
+      "anyOf": [{"not": {"required": ["df_t"]}}, {"properties": {"df_t": {"type": "null"}}, "required": ["df_t"]}]
     },
     "complete_vcov": {
       "required": ["type", "ssc"],

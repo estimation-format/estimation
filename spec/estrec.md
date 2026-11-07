@@ -710,7 +710,7 @@ profile: `name`, `file`, `kind` (`standard`, `tool` or `purpose`), `status` (`dr
 
 | Profile | Kind | Requires |
 |---|---|---|
-| [`inference/0.1`](profiles/inference.md) | standard | `parameters` with `estimate`, `std_error`, `p_value`; a default `vcov` with `type` and `ssc.convention`; `metrics.nobs` and `df_residual` |
+| [`inference/0.1`](profiles/inference.md) | standard | `parameters` with `estimate`, `std_error`, `p_value`; a default `vcov` with `type` and `ssc.convention`; `metrics.nobs`; `df_residual` unless the default vcov has no `df_t` (z tests) |
 | [`linear-fe/0.1`](profiles/linear-fe.md) | standard | `inference` plus `n_singletons`, `specification.options.drop_singletons`, and `structures.fixed_effects` with `levels` |
 | [`iv/0.1`](profiles/iv.md) | standard | `inference` plus `specification.endogenous` and `instruments`; a `first_stage` test expected |
 | [`dfeols/0.1`](profiles/dfeols.md) | tool | `linear-fe` plus `extensions.dfeols`: the first worked tool profile |

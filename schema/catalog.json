@@ -36,7 +36,7 @@
       "kind": "standard",
       "status": "draft",
       "maintainer": "jemather",
-      "description": "Parameters with estimates, standard errors and p-values; a default vcov with type and ssc; nobs and df_residual.",
+      "description": "Parameters with estimates, standard errors and p-values; a default vcov with type and ssc; nobs, and df_residual unless the default vcov has no df_t (z tests).",
       "examples": ["examples/lm-minimal.estrec.json"]
     },
     {
