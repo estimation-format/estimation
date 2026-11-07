@@ -434,6 +434,8 @@
       });
     }
     out.push(...lineIssues(spec));
+    if ("estimate" in spec && typeof spec.estimate !== "boolean") out.push(issue("error", "estimate", "true or false"));
+    else if (spec.estimate === false && !uncertaintyLines(spec).length) out.push(issue("error", "estimate", "with no estimate and no lines, terms have nothing to show"));
     if (spec.head !== undefined && spec.head !== null) {
       if (!Array.isArray(spec.head)) out.push(issue("error", "head", "a list of 'number', 'response', 'label'"));
       else spec.head.forEach((k, j) => {
@@ -545,22 +547,24 @@
     return "#" + [1, 3, 5].map((k) => Math.floor(parseInt(color.slice(k, k + 2), 16) * 13 / 20).toString(16).padStart(2, "0")).join("");
   }
 
-  const SPARK_W = 72, SPARK_H = 12;
+  const SPARK_W = 80, SPARK_H = 16;
+  const HALO = 'style="stroke:var(--bg,#ffffff)"';
 
   function sparkSVG(m, color, label) {
     if (!m) return "";
     const [lo, hi] = m.domain;
-    const pad = 3;
+    const pad = 4;
     const x = (v) => { const n = Math.floor((pad + (v - lo) / (hi - lo) * (SPARK_W - 2 * pad)) * 10 + 0.5); return `${Math.floor(n / 10)}.${n % 10}`; };
-    const y = (SPARK_H / 2).toFixed(1);
+    const y = "8.0", top = "2.0", bottom = "14.0";
     const [x0, xl, xe, xh] = [x(0), x(m.low), x(m.estimate), x(m.high)];
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${SPARK_W}" height="${SPARK_H}" viewBox="0 0 ${SPARK_W} ${SPARK_H}" role="img"` +
       (label ? ` aria-label="${escHTML(label)}"` : "") + ">" +
       `<line x1="${x0}" y1="0" x2="${x0}" y2="${SPARK_H}" stroke="#555555" stroke-width="1"/>` +
-      `<line x1="${xl}" y1="${y}" x2="${xh}" y2="${y}" stroke="${color}" stroke-width="1.5"/>` +
-      `<circle cx="${xl}" cy="${y}" r="1.6" fill="${color}"/>` +
-      `<circle cx="${xh}" cy="${y}" r="1.6" fill="${color}"/>` +
-      `<circle cx="${xe}" cy="${y}" r="2.4" fill="${sparkDark(color)}"/>` +
+      `<path d="M${xl} ${y}Q${xe} ${top} ${xh} ${y}Q${xe} ${bottom} ${xl} ${y}Z" fill="${color}" fill-opacity="0.22"/>` +
+      `<line x1="${xl}" y1="${y}" x2="${xh}" y2="${y}" stroke="${color}" stroke-width="1.3" stroke-linecap="round"/>` +
+      `<circle cx="${xl}" cy="${y}" r="1.9" fill="${color}" stroke-width="0.9" ${HALO}/>` +
+      `<circle cx="${xh}" cy="${y}" r="1.9" fill="${color}" stroke-width="0.9" ${HALO}/>` +
+      `<circle cx="${xe}" cy="${y}" r="2.9" fill="${sparkDark(color)}" stroke-width="1.1" ${HALO}/>` +
       "</svg>";
   }
 
@@ -568,7 +572,7 @@
 
   function sparkImg(m, color, label) {
     if (!m) return "";
-    return `<img width="${SPARK_W}" height="${SPARK_H}" alt="${escHTML(label)}" src="data:image/svg+xml;base64,${b64(sparkSVG(m, color))}">`;
+    return `<img width="${SPARK_W}" height="${SPARK_H}" style="display:block;margin:0 auto;vertical-align:middle" alt="${escHTML(label)}" src="data:image/svg+xml;base64,${b64(sparkSVG(m, color))}">`;
   }
 
   function htmlCell(r, j) {
@@ -588,6 +592,7 @@
     const stars = spec.stars || [];
     const symbols = fmt.star_symbols || stars.map((_, i) => "*".repeat(i + 1));
     const lines = uncertaintyLines(spec);
+    const showEst = spec.estimate !== false;
     const pDigits = fmt.p_digits !== undefined ? fmt.p_digits : digits;
     const pStyle = fmt.p_style || "fixed";
 
@@ -639,12 +644,16 @@
           else below[k].push(fill(t, r, digits, pDigits, pStyle, missing));
         });
       }
-      rows.push({ label, cells: est, kind: "estimate" });
+      const block = [];
+      if (showEst) block.push({ label, cells: est, kind: "estimate" });
       lines.forEach((t, k) => {
         const row = { label: "", cells: below[k], kind: "uncertainty" };
         if (isObj(t)) row.sparkline = Object.assign({}, t.sparkline, { marks: marks[k] });
-        rows.push(row);
+        block.push(row);
       });
+      // without the estimate, a term's first line opens its block and carries its label
+      Object.assign(block[0], { label, kind: "estimate" });
+      rows.push(...block);
     }
     sparkDomains(rows);
 
@@ -693,7 +702,7 @@
     }
 
     const notes = (spec.notes || []).slice();
-    if (stars.length) notes.push(stars.map((t, i) => `${symbols[i]} p < ${t}`).join(", "));
+    if (stars.length && showEst) notes.push(stars.map((t, i) => `${symbols[i]} p < ${t}`).join(", "));
     const note = uncertaintyNote(spec, lines);
     if (note) notes.push(note);
     return {
@@ -756,7 +765,7 @@
     out.push("<tbody>");
     let prev = null;
     for (const r of t.rows) {
-      const cls = r.kind + (r.kind === "stat" && prev !== "stat" ? " first-stat" : "");
+      const cls = r.kind + (r.kind === "stat" && prev !== "stat" ? " first-stat" : "") + (r.sparkline ? " spark-row" : "");
       out.push(`<tr class="${cls}"><th>${h(r.label)}</th>` + r.cells.map((_, j) => htmlCell(r, j)).join("") + "</tr>");
       prev = r.kind;
     }
@@ -825,7 +834,7 @@
       let top = r.kind === "stat" && prev !== "stat" ? ".75pt" : "";
       if (k === 0 && !nh) top = "1.5pt";
       const bottom = k === last ? "1.5pt" : "";
-      const padTop = r.kind === "estimate" && k > 0;
+      const padTop = r.kind === "estimate" && k > 0 && !r.sparkline;
       const sp = r.sparkline;
       out.push("<tr>" + [r.label, ...r.cells].map((x, i) => wordCell(x, { left: i === 0, top, bottom, padTop, raw: sp && i ? sparkImg(sp.marks[i - 1], sp.color, x) : null })).join("") + "</tr>");
       prev = r.kind;
@@ -914,8 +923,8 @@ table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: n
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
 table.estrec-table tr.uncertainty td { color: var(--muted); }
-table.estrec-table td.spark { padding-top: 0; padding-bottom: 0; line-height: 0; }
-table.estrec-table td.spark svg { display: inline-block; vertical-align: middle; }
+table.estrec-table tbody tr.spark-row th, table.estrec-table tbody tr.spark-row td { padding-top: 0 !important; padding-bottom: 0 !important; line-height: 16px; }
+table.estrec-table td.spark svg { display: block; margin: 0 auto; }
 table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
 table.estrec-table tr.first-stat th, table.estrec-table tr.first-stat td { border-top: 0.75px solid var(--ink); padding-top: 5px; }
 table.estrec-table tbody tr:last-child th, table.estrec-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); padding-bottom: 5px; }

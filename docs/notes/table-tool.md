@@ -50,7 +50,13 @@ Decisions so far:
   draw inline SVG; Word gets `<img>` of the SVG, and the viewer's Copy turns it into PNG
   (Word drops SVG on paste); text, Markdown, CSV, LaTeX, great_tables and R show
   `[low, high]`. Coordinates are rounded in integer tenths so JS and Python match.
-  Open: Ted to check the Word paste; perhaps LaTeX (TikZ), R (tinytable images),
+  2026-11-07 (Ted: Word paste works; a column of sparklines alone; prettier marks): spec
+  `"estimate": false` drops the estimate row (the first line carries the term's label, no
+  stars; the viewer lists the estimate as a removable first item of "Each term");
+  sparkline rows have no vertical padding and an 80x16 image whose 0 rule runs its full
+  height, so stacked rows join; marks: a faint band swelling toward the estimate, a thin
+  round-capped line, dots with a background-coloured halo (`var(--bg,#fff)`).
+  Open: perhaps LaTeX (TikZ), R (tinytable images),
   great_tables (`gt.html`); a continuous 0 rule down a column (rows between break it now).
 - Web export redacts the union of the schemas' `x-identifying` paths outside the digest
   sections (meta, specification, metrics, parameters, structures).

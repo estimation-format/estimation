@@ -342,6 +342,10 @@ def _structural(spec: dict) -> list[Issue]:
             except re.error as e:
                 out.append(Issue("error", f"{key}[{j}]", f"pattern doesn't compile: {e}"))
     out += _line_issues(spec)
+    if "estimate" in spec and not isinstance(spec["estimate"], bool):
+        out.append(Issue("error", "estimate", "true or false"))
+    elif spec.get("estimate") is False and not uncertainty_lines(spec):
+        out.append(Issue("error", "estimate", "with no estimate and no lines, terms have nothing to show"))
     head = spec.get("head")
     if head is not None:
         if not isinstance(head, list):
@@ -520,23 +524,26 @@ def _spark_dark(color: str) -> str:
     return "#" + "".join(f"{v:02x}" for v in rgb)
 
 
-SPARK_W, SPARK_H = 72, 12
+SPARK_W, SPARK_H = 80, 16
+_HALO = 'style="stroke:var(--bg,#ffffff)"'
 
 
 def _spark_svg(m: dict | None, color: str, label: str = "") -> str:
-    """One interval as a small SVG: a grey rule at 0, the interval as a line with a dot at
-    each end in `color`, the estimate as a darker dot."""
+    """One interval as a small SVG of fixed size, on its axis: a grey rule at 0 running the
+    full height (so stacked rows join), the interval as a thin line in `color` inside a
+    faint band that swells toward the estimate, a dot at each end and a darker dot at the
+    estimate, each with a thin halo of the background so the line is scalloped there."""
     if m is None:
         return ""
     lo, hi = m["domain"]
-    pad = 3.0
+    pad = 4.0
 
     def x(v):
         # tenths of a pixel, rounded half up with integers so the browser draws the same
         n = math.floor((pad + (v - lo) / (hi - lo) * (SPARK_W - 2 * pad)) * 10 + 0.5)
         return f"{n // 10}.{n % 10}"
 
-    y = f"{SPARK_H / 2:.1f}"
+    y, top, bottom = "8.0", "2.0", "14.0"
     x0, xl, xe, xh = x(0.0), x(m["low"]), x(m["estimate"]), x(m["high"])
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{SPARK_W}" height="{SPARK_H}" '
@@ -544,10 +551,11 @@ def _spark_svg(m: dict | None, color: str, label: str = "") -> str:
         + (f' aria-label="{html.escape(label)}"' if label else "")
         + ">"
         f'<line x1="{x0}" y1="0" x2="{x0}" y2="{SPARK_H}" stroke="#555555" stroke-width="1"/>'
-        f'<line x1="{xl}" y1="{y}" x2="{xh}" y2="{y}" stroke="{color}" stroke-width="1.5"/>'
-        f'<circle cx="{xl}" cy="{y}" r="1.6" fill="{color}"/>'
-        f'<circle cx="{xh}" cy="{y}" r="1.6" fill="{color}"/>'
-        f'<circle cx="{xe}" cy="{y}" r="2.4" fill="{_spark_dark(color)}"/>'
+        f'<path d="M{xl} {y}Q{xe} {top} {xh} {y}Q{xe} {bottom} {xl} {y}Z" fill="{color}" fill-opacity="0.22"/>'
+        f'<line x1="{xl}" y1="{y}" x2="{xh}" y2="{y}" stroke="{color}" stroke-width="1.3" stroke-linecap="round"/>'
+        f'<circle cx="{xl}" cy="{y}" r="1.9" fill="{color}" stroke-width="0.9" {_HALO}/>'
+        f'<circle cx="{xh}" cy="{y}" r="1.9" fill="{color}" stroke-width="0.9" {_HALO}/>'
+        f'<circle cx="{xe}" cy="{y}" r="2.9" fill="{_spark_dark(color)}" stroke-width="1.1" {_HALO}/>'
         "</svg>"
     )
 
@@ -609,6 +617,7 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
     stars = spec.get("stars") or []
     symbols = fmt.get("star_symbols") or ["*" * (i + 1) for i in range(len(stars))]
     lines = uncertainty_lines(spec)
+    show_est = spec.get("estimate", True) is not False
     p_digits = fmt.get("p_digits", digits)
     p_style = fmt.get("p_style", "fixed")
 
@@ -675,12 +684,17 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
                     m.append(_spark_mark(r))
                 else:
                     b.append(_fill(t, r, digits, p_digits, p_style, missing))
-        out_rows.append({"label": label, "cells": est, "kind": "estimate"})
+        block = []
+        if show_est:
+            block.append({"label": label, "cells": est, "kind": "estimate"})
         for b, m, t in zip(below, marks, lines):
             row = {"label": "", "cells": b, "kind": "uncertainty"}
             if isinstance(t, dict):
                 row["sparkline"] = dict(t["sparkline"], marks=m)
-            out_rows.append(row)
+            block.append(row)
+        # without the estimate, a term's first line opens its block and carries its label
+        block[0].update(label=label, kind="estimate")
+        out_rows += block
     _spark_domains(out_rows)
 
     for s in spec.get("stats") or []:
@@ -732,7 +746,7 @@ def build_table(spec: dict, *, base_dir: str | os.PathLike | None = None, record
         out_rows.append({"label": label, "cells": cells, "kind": "stat"})
 
     notes = list(spec.get("notes") or [])
-    if stars:
+    if stars and show_est:
         notes.append(", ".join(f"{sym} p < {t:g}" for t, sym in zip(stars, symbols)))
     note = _uncertainty_note(spec, lines)
     if note:
@@ -826,7 +840,8 @@ def _spark_img(m: dict | None, color: str, label: str) -> str:
         return ""
     data = base64.b64encode(_spark_svg(m, color).encode("ascii")).decode("ascii")
     return (
-        f'<img width="{SPARK_W}" height="{SPARK_H}" alt="{html.escape(label)}" '
+        f'<img width="{SPARK_W}" height="{SPARK_H}" style="display:block;margin:0 auto;vertical-align:middle" '
+        f'alt="{html.escape(label)}" '
         f'src="data:image/svg+xml;base64,{data}">'
     )
 
@@ -850,6 +865,7 @@ def _render_html(t: dict) -> str:
     prev = None
     for r in t["rows"]:
         cls = r["kind"] + (" first-stat" if r["kind"] == "stat" and prev != "stat" else "")
+        cls += " spark-row" if "sparkline" in r else ""
         out.append(
             f'<tr class="{cls}"><th>{h(r["label"])}</th>'
             + "".join(_html_cell(r, j) for j in range(len(r["cells"])))
@@ -956,8 +972,8 @@ def _render_word(t: dict) -> str:
         if k == 0 and not nh:
             top = "1.5pt"
         bottom = "1.5pt" if k == last else ""
-        pad = r["kind"] == "estimate" and k > 0
         sp = r.get("sparkline")
+        pad = r["kind"] == "estimate" and k > 0 and not sp
         out.append(
             "<tr>"
             + "".join(

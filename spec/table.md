@@ -52,6 +52,7 @@ key words MUST, SHOULD and MAY are as in `spec/estrec.md` section 1.1. Schema:
 | `rows` | optional | the terms to show, in order, with labels (4) |
 | `keep`, `drop`, `keep_unlisted` | optional | which other terms to show (4) |
 | `uncertainty` | optional | the lines under each estimate (5); default `"std_error"` |
+| `estimate` | optional | `false` leaves out the estimate row (5); default `true` |
 | `stars` | optional | significance thresholds (5); default none |
 | `stats` | optional | rows under the estimates (6) |
 | `format` | optional | number display (7) |
@@ -131,6 +132,9 @@ row per line:
 - `null`: no lines.
 
 The default is `"std_error"`. A line is blank in a column when any value it needs is missing.
+With `"estimate": false` the estimate row is left out and a term is shown by its lines
+alone, the first carrying the term's label (a column of sparklines, say); there are no
+stars then. A spec with no estimate and no lines is an error.
 Other placeholders are an error.
 
 p-values, in lines and in test rows (6), take `format.p_digits` decimals (default

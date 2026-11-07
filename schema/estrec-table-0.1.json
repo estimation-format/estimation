@@ -79,6 +79,7 @@
         {"type": "array", "items": {"$ref": "#/$defs/line"}, "minItems": 1}
       ]
     },
+    "estimate": {"type": "boolean", "description": "false leaves out each term's estimate row, so the lines alone show it (the first carries the term's label). Default true."},
     "stars": {
       "anyOf": [
         {"type": "null"},

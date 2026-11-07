@@ -140,8 +140,16 @@ render_table <- function(spec, output = "default", records = NULL, base_dir = NU
     star_arg <- stats::setNames(stars, sym)
   }
   statistic <- if (length(lines)) sprintf("{line%d}", seq_along(lines)) else NULL
+  est_arg <- "estimate"
+  if (isFALSE(spec$estimate)) {
+    # no estimate row: the first line takes its place (spec/table.md 5)
+    if (!length(lines)) stop("estimate: with no estimate and no lines, terms have nothing to show", call. = FALSE)
+    est_arg <- statistic[1]; statistic <- statistic[-1]
+    if (!length(statistic)) statistic <- NULL
+    star_arg <- FALSE
+  }
   notes <- c(unlist(spec$notes), .tab_unc_note(unc, lines))
-  args <- list(models, output = output, coef_map = coef_map, statistic = statistic,
+  args <- list(models, output = output, coef_map = coef_map, estimate = est_arg, statistic = statistic,
                stars = star_arg, fmt = digits, gof_omit = ".*", add_rows = add_rows)
   if (!is.null(spec$title)) args$title <- spec$title
   if (length(notes)) args$notes <- as.list(notes)

@@ -177,6 +177,9 @@ def specs():
         s = copy.deepcopy(base)
         s["uncertainty"] = unc
         out.append(s)
+    s = copy.deepcopy(base)
+    s.update(uncertainty={"sparkline": {"scale": "table"}}, estimate=False)
+    out.append(s)
     return out
 
 
@@ -227,7 +230,7 @@ def test_renderers_match_python(node_result):
         pytest.skip("node not installed")
     all_specs = specs()
     sparks = [s for s in all_specs if "sparkline" in json.dumps(s.get("uncertainty"))]
-    assert len(sparks) == 3
+    assert len(sparks) == 4
     for spec in [all_specs[0]] + [s for s in all_specs if "head" in s] + sparks:
         py = et.build_table(spec, base_dir=EXAMPLES)
         script = (

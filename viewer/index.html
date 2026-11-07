@@ -145,8 +145,8 @@ table.estrec-table th, table.estrec-table td { padding: 1px 14px; white-space: n
 table.estrec-table tbody th { text-align: left; font-weight: 400; }
 table.estrec-table td { text-align: center; }
 table.estrec-table tr.uncertainty td { color: var(--muted); }
-table.estrec-table td.spark { padding-top: 0; padding-bottom: 0; line-height: 0; }
-table.estrec-table td.spark svg { display: inline-block; vertical-align: middle; }
+table.estrec-table tbody tr.spark-row th, table.estrec-table tbody tr.spark-row td { padding-top: 0 !important; padding-bottom: 0 !important; line-height: 16px; }
+table.estrec-table td.spark svg { display: block; margin: 0 auto; }
 .spark-fields { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .spark-fields input[type=color] { width: 34px; height: 24px; padding: 0 2px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
 table.estrec-table tbody tr.estimate:not(:first-child) th, table.estrec-table tbody tr.estimate:not(:first-child) td { padding-top: 6px; }
@@ -254,10 +254,11 @@ details.raw pre { font: 12px/1.45 var(--font-mono); background: var(--bg); paddi
           </fieldset>
 
           <fieldset>
-            <legend>Under each estimate</legend>
+            <legend>Each term</legend>
             <div id="lines"></div>
             <div class="addrow">
               <select id="line-add" aria-label="Line to add">
+                <option value="estimate" id="line-add-estimate">Estimate, with stars: -3.206***</option>
                 <option value="({std_error})">Standard error: (0.754)</option>
                 <option value="[{p_value}]">p-value: [0.012]</option>
                 <option value="({statistic})">t / z statistic: (-4.25)</option>
@@ -818,12 +819,24 @@ function lineList() {
 
 function setLines(arr) {
   state.spec.uncertainty = arr.length === 0 ? null : arr.length === 1 ? arr[0] : arr.slice();
+  if (!arr.length) delete state.spec.estimate;  // a term needs something to show
 }
 
 function renderLines() {
   const box = $("lines");
   box.replaceChildren();
   const arr = lineList();
+  const s = state.spec;
+  const est = s.estimate !== false;
+  $("line-add-estimate").hidden = est;
+  $("line-add-estimate").disabled = est;
+  if ($("line-add").value === "estimate" && est) $("line-add").selectedIndex = 1;
+  if (est) {
+    // the estimate is the first line of each term; it can go, leaving the lines alone
+    const drop = el("button", { class: "btn icon", type: "button", "aria-label": "Remove the estimate", text: "\u00d7", disabled: !arr.length,
+      title: arr.length ? "Show only the lines below" : "Add another line first", onclick: () => { s.estimate = false; update(); } });
+    box.append(el("div", { class: "item" }, el("div", { class: "fields" }, el("span", { text: "Estimate, with stars" })), el("div", { class: "tools" }, drop)));
+  }
   if (!arr.length) box.append(el("p", { class: "empty", text: "No lines: estimates only." }));
   arr.forEach((x, i) => {
     if (x && typeof x === "object") {
@@ -1126,6 +1139,7 @@ for (const id of ["opt-stars", "opt-pstyle"]) $(id).addEventListener("change", (
 $("line-add-btn").addEventListener("click", () => {
   const arr = lineList();
   const v = $("line-add").value;
+  if (v === "estimate") { delete state.spec.estimate; update(); return; }
   arr.push(v === "sparkline" ? { sparkline: { color: E.SPARK_COLOR, scale: "column" } } : v);
   setLines(arr);
   update();

@@ -368,3 +368,20 @@ def test_sparkline_validation():
     s["uncertainty"] = [{"sparkline": {"color": "red", "scale": "diagonal"}}, {"sparkline": 1}]
     paths = [i.path for i in et.validate_table(s, schema=None)]
     assert paths == ["uncertainty[0].sparkline.color", "uncertainty[0].sparkline.scale", "uncertainty[1]"]
+
+
+def test_no_estimate_row_lines_carry_the_term():
+    s = spec()
+    s["uncertainty"] = {"sparkline": {}}
+    s["estimate"] = False
+    t = et.build_table(s, base_dir=EXAMPLES)
+    est = [r for r in t["rows"] if r["kind"] != "stat"]
+    assert [r["label"] for r in est] == ["Weight (1000 lbs)", "Horsepower"]
+    assert all("sparkline" in r and r["kind"] == "estimate" for r in est)
+    assert not any("p <" in n for n in t["notes"])  # no stars without estimates
+    assert 'class="estimate spark-row"' in et.render(t, "html")
+    assert "padding-top:3pt" not in et.render(t, "word")
+    s["uncertainty"] = None
+    assert [i.path for i in et.validate_table(s, schema=None)] == ["estimate"]
+    s["estimate"] = "no"
+    assert [i.path for i in et.validate_table(s, schema=None)] == ["estimate"]

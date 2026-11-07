@@ -49,6 +49,10 @@ if (dir.exists(ex)) {
   spec$uncertainty <- list("std_error", list(sparkline = list(color = "#c0392b")))
   x <- render_table(spec, output = "data.frame", base_dir = ex)
   stopifnot(identical(unname(unlist(x[3, 4])), "[-4.750, -1.661]"))
+  spec$estimate <- FALSE
+  x <- render_table(spec, output = "data.frame", base_dir = ex)
+  stopifnot(identical(unname(unlist(x[1:2, 4])), c("(0.754)", "[-4.750, -1.661]")), x$term[1] == "Weight (1000 lbs)")
+  spec$estimate <- NULL
   spec$uncertainty <- list(sparkline = list(scale = "row"))
   stopifnot(identical(unname(unlist(render_table(spec, output = "data.frame", base_dir = ex)[2, 4])), "[-4.750, -1.661]"))
   spec$uncertainty <- list("({stderr})")
